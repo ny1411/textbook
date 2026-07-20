@@ -38,7 +38,7 @@
 
 ## Vector Databases & Indexing
 - [x] Approximate Nearest Neighbor (ANN)
-- [ ] HNSW
+- [x] HNSW
 - [ ] IVF
 - [ ] Product Quantization (PQ)
 - [ ] Optimized PQ (OPQ)
@@ -57,10 +57,10 @@
 ---
 
 ## Chunking Strategies
-- [ ] Fixed-size Chunking
+- [x] Fixed-size Chunking
 - [ ] Sliding Window Chunking
 - [ ] Recursive Chunking
-- [ ] Semantic Chunking
+- [x] Semantic Chunking
 - [ ] Structure-aware Chunking
 - [ ] Document-aware Chunking
 - [ ] Parent-Child Chunking
@@ -94,7 +94,7 @@
 ---
 
 ## Query Understanding
-- [ ] Query Rewriting
+- [x] Query Rewriting
 - [ ] Query Expansion
 - [ ] Query Decomposition
 - [ ] Query Classification
@@ -105,19 +105,20 @@
 ---
 
 ## Reranking
-- [ ] Cross Encoders
-- [ ] ColBERT
+- [x] Bi-encoders
+- [x] Cross Encoders
+- [x] ColBERT
 - [ ] Cohere Rerank
 - [ ] BGE Reranker
 - [ ] Jina Reranker
-- [ ] LLM-based Reranking
+- [x] LLM-based Reranking
 - [ ] Cascade Reranking
 
 ---
 
 ## Advanced Retrieval
 - [ ] Multi-query Retrieval
-- [ ] HyDE
+- [x] HyDE
 - [ ] Self-query Retrieval
 - [ ] Step-back Prompting
 - [ ] Hypothetical Document Embeddings
@@ -142,10 +143,21 @@
 ---
 
 ## LLMs & Text Generation
-- [ ] Transformer Architecture
-- [ ] LLM Sampling Strategies
-- [ ] Prompt Engineering
-- [ ] Prompt Engineering for RAG
+- [x] Transformer Architecture
+- [x] LLM Sampling Strategies
+  - [x] Greedy Decoding
+  - [x] Temparature
+  - [x] Top-K Sampling
+  - [x] Top-P Sampling
+  - [x] Repetition Penalty
+  - [x] Logit Bias
+- [x] Prompt Engineering
+- [x] Prompt Engineering for RAG
+- [x] In Context Learning
+- [x] Encouraging Reasoning
+- [x] Chain-of-thought 
+- [x] Context Window Management
+- [x] Management Stratergies
 - [ ] Citation Prompting
 - [ ] Grounded Prompting
 - [ ] Structured Outputs
