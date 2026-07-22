@@ -158,7 +158,8 @@
 - [x] Chain-of-thought 
 - [x] Context Window Management
 - [x] Management Stratergies
-- [ ] Citation Prompting
+- [x] Citation Prompting
+  - [x] ContextCite
 - [ ] Grounded Prompting
 - [ ] Structured Outputs
 - [ ] JSON Mode
@@ -167,7 +168,7 @@
 - [ ] XML Prompting
 - [ ] Handling Hallucinations
 - [ ] LLM Performance Evaluation
-- [ ] RAG vs Fine-tuning
+- [x] RAG vs Fine-tuning
 
 ---
 
@@ -205,7 +206,9 @@
 ---
 
 ## Agentic RAG
-- [ ] Agentic RAG Fundamentals
+- [x] Agentic RAG Fundamentals
+  - [x] Sequential Workflow
+  - [x] Parallel Workflow
 - [ ] Planner Agents
 - [ ] Retriever Agents
 - [ ] Research Agents
@@ -260,13 +263,13 @@
   - [x] Mean Average Precision (MAP)
   - [ ] nDCG
 - [ ] Generation Metrics
-  - [ ] Faithfulness
-  - [ ] Answer Relevance
+  - [x] Faithfulness
+  - [x] Answer Relevance
   - [ ] Context Precision
   - [ ] Context Recall
   - [ ] Hallucination Rate
 - [ ] Evaluation Frameworks
-  - [ ] Ragas
+  - [x] Ragas
   - [ ] DeepEval
   - [ ] LangSmith
   - [ ] TruLens
