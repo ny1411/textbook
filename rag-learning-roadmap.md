@@ -167,7 +167,7 @@
 - [ ] Tool Calling
 - [ ] XML Prompting
 - [ ] Handling Hallucinations
-- [ ] LLM Performance Evaluation
+- [x] LLM Performance Evaluation
 - [x] RAG vs Fine-tuning
 
 ---
@@ -278,6 +278,9 @@
 ---
 
 ## Production RAG
+- [x] Pheonix Tools
+  - [x] Traces
+  - [x] Evaluation Integration
 - [ ] Logging
 - [ ] Monitoring
 - [ ] Observability
@@ -288,8 +291,8 @@
 - [ ] Async Pipelines
 - [ ] Batch Processing
 - [ ] Queue Systems
-- [ ] Cost vs Response Quality
-- [ ] Latency vs Response Quality
+- [x] Cost vs Response Quality
+- [x] Latency vs Response Quality
 - [ ] Model Routing
 - [ ] Retry Logic
 - [ ] Fallback Models
@@ -299,7 +302,9 @@
 ## Security
 - [ ] Prompt Injection
 - [ ] Retrieval Poisoning
-- [ ] Data Leakage Prevention
+- [x] Data Leakage Prevention
+- [x] Data Tenat Separation
+- [x] LLM Data Leaking
 - [ ] Access Control
 - [ ] Row-level Security
 - [ ] PII Detection
@@ -308,7 +313,9 @@
 ---
 
 ## Performance Optimization
-- [ ] Quantization
+- [x] Quantization
+  - [x] 1-bit Quantized Embedding Model
+  - [x] Matryoshka Quantization
 - [ ] ANN Optimization
 - [ ] GPU Indexing
 - [ ] Latency Optimization
@@ -327,14 +334,15 @@
 ---
 
 ## Multimodal RAG
+- [x] Image Tokenization
 - [ ] Image Embeddings
 - [ ] OCR Pipelines
 - [ ] Table Retrieval
 - [ ] Chart Understanding
 - [ ] Video Retrieval
 - [ ] Audio Retrieval
-- [ ] Vision-Language Models
-- [ ] PDF Vision Models
+- [x] Vision-Language Models
+- [x] PDF Vision Models
 
 ---
 
