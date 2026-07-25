@@ -16,7 +16,21 @@
 ---
 
 ## Embeddings
-- [ ] Embedding Fundamentals
+- [x] Embedding Fundamentals
+- [x] Contextualized Token Embeddings
+  - [x] GloVe Word Embeddings
+  - [x] Word2Vec Algebra
+  - [x] GloVe vs BERT
+- [x] Token Embeddings
+  - [x] Cross Encoder
+  - [x] BERT
+- [x] Sentence Embeddings
+  - [x] Cosine Similarity
+  - [x] SBERT
+- [x] Two Stage Retrival Approach
+- [x] Dual Encoders
+  - [x] Contrastive Loss
+  - [x] Cross Entropy Loss
 - [ ] Dense Embeddings
 - [ ] Sparse Embeddings
 - [ ] Late Interaction Embeddings
