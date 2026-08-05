@@ -31,16 +31,16 @@
 - [x] Dual Encoders
   - [x] Contrastive Loss
   - [x] Cross Entropy Loss
-- [ ] Dense Embeddings
-- [ ] Sparse Embeddings
-- [ ] Late Interaction Embeddings
-- [ ] Multi-vector Embeddings
-- [ ] Embedding Normalization
-- [ ] Embedding Dimensionality Reduction
-- [ ] Quantized Embeddings
-- [ ] Domain-specific Embeddings
-- [ ] Embedding Models
-  - [ ] OpenAI
+- [x] Dense Embeddings
+- [x] Sparse Embeddings
+- [x] Late Interaction Embeddings
+- [x] Multi-vector Embeddings
+- [x] Embedding Normalization
+- [x] Embedding Dimensionality Reduction
+- [x] Quantized Embeddings
+- [x] Domain-specific Embeddings
+- [x] Embedding Models
+  - [x] OpenAI
   - [ ] Voyage AI
   - [ ] Jina AI
   - [ ] BAAI BGE
