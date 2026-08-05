@@ -170,14 +170,18 @@
 - [x] In Context Learning
 - [x] Encouraging Reasoning
 - [x] Chain-of-thought 
+  - [x] Few-shot CoT
+  - [x] Zero-shot CoT
+  - [x] Auto-CoT
 - [x] Context Window Management
 - [x] Management Stratergies
 - [x] Citation Prompting
   - [x] ContextCite
+- [x] Prompt Chaining
 - [ ] Grounded Prompting
 - [ ] Structured Outputs
 - [ ] JSON Mode
-- [ ] Function Calling
+- [x] Function Calling
 - [ ] Tool Calling
 - [ ] XML Prompting
 - [ ] Handling Hallucinations
