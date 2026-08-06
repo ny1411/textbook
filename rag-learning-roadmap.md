@@ -53,20 +53,20 @@
 ## Vector Databases & Indexing
 - [x] Approximate Nearest Neighbor (ANN)
 - [x] HNSW
-- [ ] IVF
-- [ ] Product Quantization (PQ)
-- [ ] Optimized PQ (OPQ)
-- [ ] Scalar Quantization
-- [ ] Binary Quantization
-- [ ] Vector Databases
-- [ ] Batch Indexing
-- [ ] Incremental Indexing
-- [ ] Real-time Indexing
-- [ ] Re-indexing
-- [ ] Index Versioning
-- [ ] Sharding
-- [ ] Replication
-- [ ] Compression
+- [x] IVF
+- [x] Compression
+  - [x] Product Quantization (PQ)
+  - [x] Optimized PQ (OPQ)
+  - [x] Scalar Quantization
+  - [x] Binary Quantization
+- [x] Vector Databases
+- [x] Batch Indexing
+- [x] Incremental Indexing
+- [x] Real-time Indexing
+- [x] Re-indexing
+- [x] Index Versioning
+- [x] Sharding
+- [x] Replication
 
 ---
 
