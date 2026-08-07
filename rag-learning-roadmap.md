@@ -72,18 +72,18 @@
 
 ## Chunking Strategies
 - [x] Fixed-size Chunking
-- [ ] Sliding Window Chunking
-- [ ] Recursive Chunking
+- [x] Sliding Window Chunking
+- [x] Recursive Chunking
 - [x] Semantic Chunking
-- [ ] Structure-aware Chunking
-- [ ] Document-aware Chunking
-- [ ] Parent-Child Chunking
-- [ ] Hierarchical Chunking
-- [ ] Adaptive Chunking
-- [ ] Multi-resolution Chunking
-- [ ] Chunk Overlap
-- [ ] Chunk Size Tradeoffs
-- [ ] Lost-in-the-Middle Problem
+- [x] Structure-aware Chunking
+- [x] Document-aware Chunking
+- [x] Parent-Child Chunking
+- [x] Hierarchical Chunking
+- [x] Adaptive Chunking
+- [x] Multi-resolution Chunking
+- [x] Chunk Overlap
+- [x] Chunk Size Tradeoffs
+- [x] Lost-in-the-Middle Problem
 
 ---
 
