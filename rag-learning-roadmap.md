@@ -88,33 +88,31 @@
 ---
 
 ## Retrieval Techniques
-- [ ] Dense Retrieval
-- [ ] Sparse Retrieval
-- [ ] Hybrid Retrieval
-- [ ] Parent Document Retrieval
-- [ ] Multi-vector Retrieval
-- [ ] Metadata Retrieval
-- [ ] Contextual Retrieval
-- [ ] Graph Retrieval
-- [ ] Knowledge Graph Retrieval
+- [x] Dense Retrieval
+- [x] Sparse Retrieval
+- [x] Hybrid Retrieval
+- [x] Parent Document Retrieval
+- [x] Multi-vector Retrieval
+- [x] Metadata Retrieval
+- [x] Contextual Retrieval
+- [x] Knowledge Graph Retrieval
 - [x] Similarity Metrics
   - [x] Cosine Similarity
   - [x] Dot Product
   - [x] Euclidean Distance
-- [ ] Score Fusion
 - [x] Reciprocal Rank Fusion (RRF)
-- [ ] Weighted Score Fusion
+- [x] Weighted Score Fusion
 
 ---
 
 ## Query Understanding
 - [x] Query Rewriting
-- [ ] Query Expansion
-- [ ] Query Decomposition
-- [ ] Query Classification
-- [ ] Query Routing
-- [ ] Intent Detection
-- [ ] Query Normalization
+- [x] Query Expansion
+- [x] Query Decomposition
+- [x] Query Classification
+- [x] Query Routing
+- [x] Intent Detection
+- [x] Query Normalization
 
 ---
 
