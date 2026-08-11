@@ -1,0 +1,227 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------ Model Setup ------
+
+model User{
+  id                    String @id @default(uuid()) @db.Uuid
+  name                  String?
+  email                 String @unique
+  profileImageUrl       String?
+  bio                   String?
+
+  notebooks             Notebooks[]
+  conversations         Conversations[]
+  documents             UploadedDocuments[]
+  artifacts             GeneratedArtifacts[]
+  memories              UserMemory[]
+  preferences           UserPreferences[]  
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Notebooks{
+  id                    String @id @default(uuid()) @db.Uuid
+  userId                String @db.Uuid 
+  name                  String?
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  documents             UploadedDocuments[]
+  conversations         Conversations[]
+  artifacts             GeneratedArtifacts[]
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt 
+
+  @@index([userId])
+  @@map("notebooks")
+}
+
+model UploadedDocuments{
+  id                    String @id @default(uuid()) @db.Uuid
+  userId                String @db.Uuid
+  notebookId            String @db.Uuid
+
+  name                  String?
+  fileType              String?
+  fileSize              String?
+  storageUrl            String?
+  
+  status                STATUS @default(UPLOADED)
+  pageCount             Int?
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook              Notebooks              @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  conversations         Conversations[]
+  messageSources        MessageSources[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([notebookId])
+  @@map("uploaded_documents")
+}
+
+model Conversations{
+  id                    String @id @default(uuid()) @db.Uuid
+  userId                String @db.Uuid
+  notebookId            String @db.Uuid
+
+  title                 String?
+
+  documents             ConversationDocuments[]
+  messages              ConversationMessages[]
+  artifacts             GeneratedArtifacts[]
+  
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook              Notebooks              @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([notebookId])
+  @@map("conversations")
+}
+
+model ConversationDocuments{
+  conversationId        String @db.Uuid
+  documentId            String @db.Uuid
+  
+  conversation          Conversations          @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  document              UploadedDocuments      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@id([conversationId, documentId])
+  @@index([documentId])
+  @@map("conversation_documents")
+}
+
+model ConversationMessages{
+  id                  String @id @default(uuid()) @db.Uuid
+  conversationId      String @db.Uuid
+
+  role                MESSAGEROLES
+  message             String?
+
+  conversation         Conversations            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sources             MessageSources[]
+
+  createdAt           DateTime @default(now())
+  
+  @@index([conversationId, createdAt])
+  @@map("conversation_messages")
+}
+
+model MessageSources{
+  messageId           String @db.Uuid
+  documentId          String @db.Uuid
+
+  pageNumber          Int?
+  chunkRef            String?
+  citationText        String?
+
+  message             ConversationMessages     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  document            UploadedDocuments        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+    
+  @@id([messageId, documentId])
+  @@index([documentId])
+  @@map("message_sources")
+}
+
+model GeneratedArtifacts{
+  id                  String @id @default(uuid()) @db.Uuid
+  userId              String @db.Uuid
+  notebookId          String @db.Uuid
+  conversationId      String @db.Uuid
+
+  type                DOCUMENTTYPE
+  title               String?
+
+  content             String?
+  storageUrl          String?
+
+  status              STATUS @default(PROCESSING)
+
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook            Notebooks                @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  conversation        Conversations            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+  @@index([notebookId])
+  @@index([conversationId])
+  @@map("generated_artifacts")
+}
+
+model UserMemory{
+  id                  String @id @default(uuid()) @db.Uuid
+  userId              String @db.Uuid
+  notebookId          String?
+  memoryText          String?
+  memoryType          String?
+
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model UserPreferences{
+  id                  String @id @default(uuid()) @db.Uuid
+  userId              String @db.Uuid
+  defaultLLM          String?
+
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ------ ENUMS ------
+
+enum STATUS{
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MESSAGEROLES{
+  USER
+  LLM
+  SYSTEM
+}
+
+enum DOCUMENTTYPE{
+  IMAGE
+  VIDEO
+  PDF
+  WORD
+  CSV
+  EXCEL
+  PRESENTATION
+}
