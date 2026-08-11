@@ -48,14 +48,14 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 2: Document Upload & Metadata Storage
 **Description:** Creating an API to receive PDF files from the user and storing basic information about the file (name, upload date) in a relational database (PostgreSQL).
-- [ ] Set up PostgreSQL database using Prisma (or SQLAlchemy).
+- [x] Set up PostgreSQL database using Prisma (or SQLAlchemy).
   - *Documentation:* [Prisma Docs](https://www.prisma.io/docs)
-- [ ] Build the `/upload` endpoint.
+- [x] Build the `/upload` endpoint.
   - *Documentation:* [FastAPI UploadFile](https://fastapi.tiangolo.com/tutorial/request-files/)
 - **Backend Files:**
   - `backend/routers/upload.py`: API routes for uploading files.
-  - `backend/database/models.py`: Database schema definitions.
-- **Key Functions:** `upload_document(file: UploadFile)`, `save_metadata_to_postgres(file_data)`.
+  - `backend/prisma/schema.prisma`: Database schema definitions.
+- **Key Functions:** `upload_document(file: UploadFile)`.
 
 ### Phase 3: Document Parsing & Text Extraction
 **Description:** AI models can't read raw PDF bytes. We must extract the human-readable text from the PDF.
