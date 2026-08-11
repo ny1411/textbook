@@ -37,7 +37,7 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 1: Project Initialization & Setup
 **Description:** Setting up the foundational folders, version control, and core frameworks (FastAPI for backend, Next.js for frontend).
-- [ ] Initialize `textbook-backend` and `textbook-frontend` repositories.
+- [x] Initialize `textbook-backend` and `textbook-frontend` repositories.
   - *Documentation:* [Next.js Docs](https://nextjs.org/docs) | [FastAPI Docs](https://fastapi.tiangolo.com/)
 - **Backend Files:**
   - `backend/main.py`: The entry point for the FastAPI server.
