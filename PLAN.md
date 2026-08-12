@@ -37,7 +37,7 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 1: Project Initialization & Setup
 **Description:** Setting up the foundational folders, version control, and core frameworks (FastAPI for backend, Next.js for frontend).
-- [ ] Initialize `textbook-backend` and `textbook-frontend` repositories.
+- [x] Initialize `textbook-backend` and `textbook-frontend` repositories.
   - *Documentation:* [Next.js Docs](https://nextjs.org/docs) | [FastAPI Docs](https://fastapi.tiangolo.com/)
 - **Backend Files:**
   - `backend/main.py`: The entry point for the FastAPI server.
@@ -180,6 +180,8 @@ Use `[x]` to mark tasks as completed.
   - `frontend/components/ChatBox.tsx`: The chat UI.
   - `frontend/components/Citation.tsx`: UI for rendering citations.
 - **Key Functions:** `useChat()` (React hook), `renderCitations()`.
+- **Component Directory:** Use [Beautiful UI](https://beautiful-ui-five.vercel.app/), [21st.dev](https://21st.dev), [shadcn ui](https://ui.shadcn.com/), [UI Goodies](https://uigoodies.com/)
+- **Special Components/Websites:** [Epiminds AI - Awwwards.com](https://www.awwwards.com/sites/epiminds-ai), [Rig AI](https://www.awwwards.com/sites/rig-ai), [Cartesia](https://saaslandingpage.com/cartesia/), [Sonic by Cartesia](https://www.cartesia.ai/sonic), [Hydra DB](https://hydradb.com/), [Aria Networks](https://arianetworks.com/)
 
 ### Phase 16: Deployment & Containerization (Production)
 **Description:** Moving the application from local development to the live internet using modern, free-tier cloud providers. Since our backend uses local ML models, it must be containerized.
