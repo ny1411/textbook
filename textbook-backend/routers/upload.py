@@ -1,8 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from db.supabase import supabase_client
 import os
 import uuid
-from supabase import Client, create_client
-from dotenv import load_dotenv
 import logging
 
 # setup a logger
@@ -10,17 +9,6 @@ logger = logging.getLogger(__name__)
 
 # create a Router
 router = APIRouter()
-
-# load .env
-load_dotenv()
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_SECRET_KEY")
-
-if not url or not key:
-    raise ValueError("Missing supabase credentials in .env")
-
-# create client
-supabase: Client = create_client(url, key)
 
 # Exact MIME types we allow
 ALLOWED_CONTENT_TYPES = {
@@ -61,7 +49,7 @@ async def upload_document(userId: str, file: UploadFile = File(...)):
         file_options = {"content-type": file.content_type}
         
         # upload file to Supabase Storage
-        supabase.storage.from_('textbook-documents').upload(
+        supabase_client.storage.from_('textbook-documents').upload(
             path=f'{userId}/{file_name}', 
             file=file_content, 
             file_options=file_options
