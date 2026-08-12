@@ -74,3 +74,21 @@ coverage.xml
 .DS_Store
 *.swp
 *.swo
+
+# Yarn / PnP
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc Frontend
+coverage/
+*.pem
+.vercel/
+.claude/
