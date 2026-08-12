@@ -59,9 +59,9 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 3: Document Parsing & Text Extraction
 **Description:** AI models can't read raw PDF bytes. We must extract the human-readable text from the PDF.
-- [ ] Implement text extraction for PDFs.
+- [x] Implement text extraction for PDFs.
   - *Details:* Use `pymupdf.open()` to load the document and iterate through pages using `page.get_text("text")` to extract plain text.
-  - *Documentation:* [PyMuPDF Text Extraction](https://pymupdf.readthedocs.io/en/latest/how-to.html#extracting-all-document-text)
+  - *Documentation:* [PyMuPDF Text Extraction](https://pymupdf.readthedocs.io/en/latest/the-basics.html)
 - **Backend Files:**
   - `backend/services/parser.py`: Logic to read and extract text.
 - **Key Functions:** `extract_text_with_pymupdf(pdf_bytes)`.
