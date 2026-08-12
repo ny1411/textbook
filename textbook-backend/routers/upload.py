@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from db.supabase import supabase_client
+from services.storage import upload_file_to_supabase
 import os
 import uuid
 import logging
@@ -47,10 +48,12 @@ async def upload_document(userId: str, file: UploadFile = File(...)):
         # set file config
         file_name = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
         file_options = {"content-type": file.content_type}
+        file_path = f"{userId}/{file_name}"
         
         # upload file to Supabase Storage
-        supabase_client.storage.from_('textbook-documents').upload(
-            path=f'{userId}/{file_name}', 
+        upload_file_to_supabase(
+            bucket_name='textbook-documents',
+            file_path=file_path, 
             file=file_content, 
             file_options=file_options
         )
