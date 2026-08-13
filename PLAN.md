@@ -68,12 +68,13 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 4: Advanced Chunking Strategies
 **Description:** LLMs have a limited "context window" (memory). We can't feed a 500-page book at once. We must split the extracted text into smaller "chunks".
-- [ ] **Semantic Chunking:** Split by natural sentence boundaries so meaning isn't cut in half.
-- [ ] **Parent-Child Chunking:** Create small chunks for highly accurate searching, but link them to a larger "parent" chunk so the LLM gets enough surrounding context to understand the small chunk.
+- [x] **Semantic Chunking:** Split by natural sentence boundaries so meaning isn't cut in half.
+- [x] **Parent-Child Chunking:** Create small chunks for highly accurate searching, but link them to a larger "parent" chunk so the LLM gets enough surrounding context to understand the small chunk.
+- [x] **Syntax-Aware/Code-Based Chunking:** Split text based on programming language syntax (e.g., functions, classes, etc.).
   - *Documentation:* [LangChain Text Splitters](https://python.langchain.com/v0.1/docs/modules/data_connection/document_transformers/) (Good conceptual reference for chunking strategies).
 - **Backend Files:**
   - `backend/services/chunker.py`: Logic to split text.
-- **Key Functions:** `semantic_chunking(raw_text)`, `create_parent_child_chunks(text)`.
+- **Key Functions:** `semantic_chunking(raw_text)`, `create_parent_child_chunks(text)`, `code_chunking(text)`.
 
 ### Phase 5: Dense Embeddings (Semantic Meaning)
 **Description:** Converting our text chunks into arrays of numbers (vectors) representing their meaning. This allows us to search for concepts (e.g., searching "canine" will find "dog").
