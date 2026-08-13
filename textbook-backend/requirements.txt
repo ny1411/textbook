@@ -5,3 +5,5 @@ python-dotenv
 python-multipart
 prisma
 supabase
+langchain-text-splitters
+langchain-experimental
