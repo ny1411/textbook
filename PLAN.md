@@ -78,12 +78,12 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 5: Dense Embeddings (Semantic Meaning)
 **Description:** Converting our text chunks into arrays of numbers (vectors) representing their meaning. This allows us to search for concepts (e.g., searching "canine" will find "dog").
-- [ ] Integrate a Sentence Transformer model (e.g., SBERT) to generate embeddings locally.
-  - *Details:* We convert text into high-dimensional vectors. `SentenceTransformer('all-MiniLM-L6-v2')` is a great lightweight model to start with.
-  - *Documentation:* [SentenceTransformers Docs](https://sbert.net/)
+- [x] Integrate a local embedding model via LangChain (`HuggingFaceBgeEmbeddings`).
+  - *Details:* We use `bge-large`, a top-tier open-source model, executed locally using LangChain's uniform API (which uses `sentence-transformers` under the hood). Local models require sufficient RAM for deployment and have smaller context windows (~512 tokens) compared to cloud providers like OpenAI/Voyage, but keep data completely private and avoid API costs.
+  - *Documentation:* [LangChain HuggingFace Embeddings](https://docs.langchain.com/oss/python/integrations/embeddings/bge_huggingface)
 - **Backend Files:**
-  - `backend/services/embeddings.py`: Code interacting with the embedding model.
-- **Key Functions:** `init_sentence_transformer()`, `generate_dense_embeddings(chunks)`.
+  - `backend/services/embedder.py`: Code interacting with the embedding model.
+- **Key Functions:** `bge_large_embedder()`.
 
 ### Phase 6: Sparse Indexing (Keyword Match)
 **Description:** Semantic search is bad at exact keyword matches (like finding a specific Invoice ID "INV-992"). We create a sparse index (BM25 or TF-IDF) to count word frequencies for exact matching.
