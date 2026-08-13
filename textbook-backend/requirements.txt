@@ -7,3 +7,5 @@ prisma
 supabase
 langchain-text-splitters
 langchain-experimental
+langchain_huggingface
+langchain-core
