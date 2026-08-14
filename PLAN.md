@@ -87,8 +87,8 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 6: Vector Database Setup (Qdrant)
 **Description:** Storing our chunks and metadata in a specialized database optimized for lightning-fast similarity searches. We will configure Qdrant to hold our Dense vectors (from Phase 5) and prepare it for advanced indexing techniques.
-- [ ] Connect to Qdrant.
-- [ ] Create a basic collection schema.
+- [x] Connect to Qdrant.
+- [x] Create a basic collection schema.
   - *Documentation:* [Qdrant Python Client](https://qdrant.tech/documentation/quick-start/)
 - **Backend Files:**
   - `backend/database/qdrant_client.py`: Database connection and schema setup.
