@@ -3,6 +3,8 @@ from qdrant_client.models import ScalarQuantization, ScalarQuantizationConfig, S
 from fastembed import SparseTextEmbedding
 from db.qdrant import client
 
+bm25_model = SparseTextEmbedding(model_name="Qdrant/bm25")
+
 def init_connection(
     collection_name: str = "textbook_chunks", 
     use_quantization: bool = False,
