@@ -85,23 +85,25 @@ Use `[x]` to mark tasks as completed.
   - `backend/services/embedder.py`: Code interacting with the embedding model.
 - **Key Functions:** `bge_large_embedder()`.
 
-### Phase 6: Sparse Indexing (Keyword Match)
-**Description:** Semantic search is bad at exact keyword matches (like finding a specific Invoice ID "INV-992"). We create a sparse index (BM25 or TF-IDF) to count word frequencies for exact matching.
-- [ ] Implement BM25 algorithm to tokenize text chunks.
-  - *Details:* BM25 evaluates how often a search term appears in a document. You can use the `rank_bm25` python library to easily tokenize and score keywords.
-  - *Documentation:* [rank_bm25 Library](https://pypi.org/project/rank-bm25/)
-- **Backend Files:**
-  - `backend/services/sparse_index.py`: Code for keyword statistical analysis.
-- **Key Functions:** `generate_bm25_tokens(chunks)`, `compute_tf_idf()`.
-
-### Phase 7: Vector Database Setup (Qdrant)
-**Description:** Storing our chunks, metadata, Dense Vectors (from Phase 5), and Sparse Vectors (from Phase 6) in a specialized database optimized for lightning-fast similarity searches.
-- [ ] Connect to Qdrant (or pgvector).
-- [ ] Configure an IVF (Inverted File) or HNSW index for speed.
+### Phase 6: Vector Database Setup (Qdrant)
+**Description:** Storing our chunks and metadata in a specialized database optimized for lightning-fast similarity searches. We will configure Qdrant to hold our Dense vectors (from Phase 5) and prepare it for advanced indexing techniques.
+- [ ] Connect to Qdrant.
+- [ ] Create a basic collection schema.
   - *Documentation:* [Qdrant Python Client](https://qdrant.tech/documentation/quick-start/)
 - **Backend Files:**
   - `backend/database/qdrant_client.py`: Database connection and schema setup.
-- **Key Functions:** `create_qdrant_collection()`, `upsert_points_to_qdrant(points)`.
+- **Key Functions:** `get_qdrant_client()`, `init_collection()`.
+
+### Phase 7: Advanced Indexing Mechanisms
+**Description:** Implementing all available indexing mechanisms using Qdrant. We will start with the techniques we can use immediately, and prepare the foundation for advanced scaling techniques later.
+- [ ] Implement **HNSW (Dense Semantic Retrieval)**: Qdrant's default blazing-fast semantic search index for our dense embeddings.
+- [ ] Implement **Sparse Vector Index (Learned Lexical Retrieval)**: Replaces standard BM25. We use `fastembed` to generate SPLADE/Sparse vectors for exact keyword matching, natively stored alongside dense vectors for Hybrid Search.
+- [ ] Implement **Filterable HNSW**: Set up metadata payloads (e.g. document IDs, page numbers) so we can pre-filter semantic searches instantly.
+- [ ] *For Later / Scaling:* **Product Quantization (PQ)** & **Scalar Quantization (SQ)** for vector compression when the dataset grows to millions of vectors.
+- [ ] *For Later / Reranking:* **Multivector Index** for late-interaction ColBERT-style retrieval (We will use this in Phase 10 Reranking).
+- **Backend Files:**
+  - `backend/services/sparse_index.py`: Code for sparse vector generation.
+- **Key Functions:** `generate_sparse_vectors(chunks)`, `configure_hnsw()`, `configure_payload_filters()`.
 
 ### Phase 8: Query Understanding & Expansion
 **Description:** Users often write bad or brief queries (e.g., "what about taxes?"). We use an LLM to rewrite or expand the query before we even search the database.
@@ -122,9 +124,9 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `perform_hybrid_search(query_vectors)`, `reciprocal_rank_fusion(dense_results, sparse_results)`.
 
 ### Phase 10: Reranking (Stage 2 Search)
-**Description:** Stage 1 is fast but slightly inaccurate. We take the top 20 results from Stage 1 and pass them through a Cross-Encoder (a slow, highly accurate model) to re-score and find the absolute best top 5 results.
-- [ ] Implement a Cross-Encoder for reranking.
-  - *Details:* Unlike bi-encoders (which embed query and doc separately), cross-encoders process both together, yielding a highly accurate similarity score but at a much higher computational cost.
+**Description:** Stage 1 is fast but slightly inaccurate. We take the top 20 results from Stage 1 and pass them through a powerful Cross-Encoder (like ColBERT) to re-score and find the absolute best top 5 results.
+- [ ] Implement a Cross-Encoder (e.g., ColBERT) for reranking.
+  - *Details:* Unlike bi-encoders (which embed query and doc separately), cross-encoders process both together (often token-by-token like ColBERT), yielding a highly accurate similarity score but at a much higher computational cost.
   - *Documentation:* [SBERT Cross-Encoders](https://sbert.net/examples/applications/cross-encoder/README.html)
 - **Backend Files:**
   - `backend/services/reranker.py`
