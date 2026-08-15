@@ -96,11 +96,11 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 7: Advanced Indexing Mechanisms
 **Description:** Implementing all available indexing mechanisms using Qdrant. We will start with the techniques we can use immediately, and prepare the foundation for advanced scaling techniques later.
-- [ ] Implement **HNSW (Dense Semantic Retrieval)**: Qdrant's default blazing-fast semantic search index for our dense embeddings.
-- [ ] Implement **Sparse Vector Index (Learned Lexical Retrieval)**: Replaces standard BM25. We use `fastembed` to generate SPLADE/Sparse vectors for exact keyword matching, natively stored alongside dense vectors for Hybrid Search.
-- [ ] Implement **Filterable HNSW**: Set up metadata payloads (e.g. document IDs, page numbers) so we can pre-filter semantic searches instantly.
-- [ ] *For Later / Scaling:* **Product Quantization (PQ)** & **Scalar Quantization (SQ)** for vector compression when the dataset grows to millions of vectors.
-- [ ] *For Later / Reranking:* **Multivector Index** for late-interaction ColBERT-style retrieval (We will use this in Phase 10 Reranking).
+- [x] Implement **HNSW (Dense Semantic Retrieval)**: Qdrant's default blazing-fast semantic search index for our dense embeddings.
+- [x] Implement **Sparse Vector Index (Learned Lexical Retrieval)**: Replaces standard BM25. We use `fastembed` to generate SPLADE/Sparse vectors for exact keyword matching, natively stored alongside dense vectors for Hybrid Search.
+- [x] Implement **Filterable HNSW**: Set up metadata payloads (e.g. document IDs, page numbers) so we can pre-filter semantic searches instantly.
+- [x] *For Later / Scaling:* **Product Quantization (PQ)** & **Scalar Quantization (SQ)** for vector compression when the dataset grows to millions of vectors.
+- [x] *For Later / Reranking:* **Multivector Index** for late-interaction ColBERT-style retrieval (We will use this in Phase 10 Reranking).
 - **Backend Files:**
   - `backend/services/sparse_index.py`: Code for sparse vector generation.
 - **Key Functions:** `generate_sparse_vectors(chunks)`, `configure_hnsw()`, `configure_payload_filters()`.
