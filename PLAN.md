@@ -111,12 +111,13 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 8: Query Understanding & Expansion
 **Description:** Users often write bad or brief queries (e.g., "what about taxes?"). We use an LLM to rewrite or expand the query before we even search the database.
-- [ ] **Query Rewriting:** LLM rewrites the query for clarity.
-- [ ] **HyDE (Hypothetical Document Embeddings):** Prompt the LLM to write a fake, hallucinated answer to the query, then embed that fake answer to find real documents that look similar. It is called "fake" (or hypothetical) simply because the AI does not check any facts when writing it. Basically adding made-up details.
+- [x] **Query Rewriting:** LLM rewrites the query for clarity.
+- [x] **HyDE (Hypothetical Document Embeddings):** Prompt the LLM to write a fake, hallucinated answer to the query, then embed that fake answer to find real documents that look similar. It is called "fake" (or hypothetical) simply because the AI does not check any facts when writing it. Basically adding made-up details.
   - *Details:* This significantly improves recall because embeddings of a generated "answer" often cluster closer to the real documentation than a short, poorly phrased user "question".
 - **Backend Files:**
-  - `backend/services/query_analyzer.py`
-- **Key Functions:** `rewrite_query(user_input)`, `generate_hyde_document(user_input)`.
+  - `backend/services/analyzer.py`
+  - `backend/core/llm.py`
+- **Key Functions:** `analyze_query(user_input)`.
 
 ### Phase 9: Hybrid Retrieval API (Stage 1 Search)
 **Description:** The actual search! We query the database using BOTH Dense search (meaning) and Sparse search (keywords), then mathematically merge the results.
