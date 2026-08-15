@@ -23,6 +23,7 @@ def init_connection(
     hnsw_m: int = 16,
     hnsw_ef_construct: int = 100,  
     payload_indexes: list[dict] = [
+        {"field_name": "user_id", "field_schema": "keyword"},
         {"field_name": "document_id", "field_schema": "keyword"},
         {"field_name": "page_number", "field_schema": "integer"},
         {"field_name": "chunk_id", "field_schema": "keyword"},
@@ -55,11 +56,12 @@ def init_connection(
         "sparse-text": SparseVectorParams()
     }
 
-    client.create_collection(
-        collection_name=collection_name,
-        vectors_config=dense_config,
-        sparse_vectors_config=sparse_config
-    )
+    if not client.collection_exists(collection_name):
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config=dense_config,
+            sparse_vectors_config=sparse_config
+        )
 
     for index in payload_indexes:
         enum = schema_mapper.get(index["field_schema"], models.PayloadSchemaType.KEYWORD)
