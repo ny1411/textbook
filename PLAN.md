@@ -101,9 +101,13 @@ Use `[x]` to mark tasks as completed.
 - [x] Implement **Filterable HNSW**: Set up metadata payloads (e.g. document IDs, page numbers) so we can pre-filter semantic searches instantly.
 - [x] *For Later / Scaling:* **Product Quantization (PQ)** & **Scalar Quantization (SQ)** for vector compression when the dataset grows to millions of vectors.
 - [x] *For Later / Reranking:* **Multivector Index** for late-interaction ColBERT-style retrieval (We will use this in Phase 10 Reranking).
+- [ ] **Data Validation & Type Casting**: Iterate through parsed chunks and strictly enforce metadata types (e.g., `str(document_id)`).
+- [ ] **Vector Generation**: Run the text through the dense and sparse embedders to create the vector arrays.
+- [ ] **Upsertion**: Safely upload the vectors and validated payloads to Qdrant.
 - **Backend Files:**
-  - `backend/services/sparse_index.py`: Code for sparse vector generation.
-- **Key Functions:** `generate_sparse_vectors(chunks)`, `configure_hnsw()`, `configure_payload_filters()`.
+  - `backend/services/indexing.py`
+  - `backend/services/ingestion.py`
+- **Key Functions:** `generate_sparse_vectors(chunks)`, `configure_hnsw()`, `configure_payload_filters()`,`ingest_documents()`, `validate_payload()`.
 
 ### Phase 8: Query Understanding & Expansion
 **Description:** Users often write bad or brief queries (e.g., "what about taxes?"). We use an LLM to rewrite or expand the query before we even search the database.
