@@ -101,9 +101,9 @@ Use `[x]` to mark tasks as completed.
 - [x] Implement **Filterable HNSW**: Set up metadata payloads (e.g. document IDs, page numbers) so we can pre-filter semantic searches instantly.
 - [x] *For Later / Scaling:* **Product Quantization (PQ)** & **Scalar Quantization (SQ)** for vector compression when the dataset grows to millions of vectors.
 - [x] *For Later / Reranking:* **Multivector Index** for late-interaction ColBERT-style retrieval (We will use this in Phase 10 Reranking).
-- [ ] **Data Validation & Type Casting**: Iterate through parsed chunks and strictly enforce metadata types (e.g., `str(document_id)`).
-- [ ] **Vector Generation**: Run the text through the dense and sparse embedders to create the vector arrays.
-- [ ] **Upsertion**: Safely upload the vectors and validated payloads to Qdrant.
+- [x] **Data Validation & Type Casting**: Iterate through parsed chunks and strictly enforce metadata types (e.g., `str(document_id)`).
+- [x] **Vector Generation**: Run the text through the dense and sparse embedders to create the vector arrays.
+- [x] **Upsertion**: Safely upload the vectors and validated payloads to Qdrant.
 - **Backend Files:**
   - `backend/services/indexing.py`
   - `backend/services/ingestion.py`
