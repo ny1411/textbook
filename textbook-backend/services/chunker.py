@@ -1,7 +1,7 @@
 import uuid
-from text_splitter import recursive_char_text_split, Language
+from services.text_splitter import recursive_char_text_split, Language
 from langchain_experimental.text_splitter import SemanticChunker
-from embedder import bge_large_embedder
+from services.embedder import bge_large_embedder
 
 def code_chunking(document: str, language: Language=None, metadata: dict=None):
     chunks = recursive_char_text_split(
