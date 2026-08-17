@@ -129,13 +129,15 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `perform_hybrid_search(query_vectors)`, `reciprocal_rank_fusion(dense_results, sparse_results)`.
 
 ### Phase 10: Reranking (Stage 2 Search)
-**Description:** Stage 1 is fast but slightly inaccurate. We take the top 20 results from Stage 1 and pass them through a powerful Cross-Encoder (like ColBERT) to re-score and find the absolute best top 5 results.
-- [ ] Implement a Cross-Encoder (e.g., ColBERT) for reranking.
-  - *Details:* Unlike bi-encoders (which embed query and doc separately), cross-encoders process both together (often token-by-token like ColBERT), yielding a highly accurate similarity score but at a much higher computational cost.
-  - *Documentation:* [SBERT Cross-Encoders](https://sbert.net/examples/applications/cross-encoder/README.html)
+**Description:** Stage 1 is fast but slightly inaccurate. We take the top 20 results from Stage 1 and pass them through a powerful Cross-Encoder to re-score and find the absolute best top 5 results.
+- [x] Implement a Cross-Encoder for reranking.
+  - *Details:* We use `BAAI/bge-reranker-base` loaded via LangChain (`HuggingFaceCrossEncoder`), which pairs directly with our `BAAI/bge-large` dense embedding model. Unlike bi-encoders (which embed query and doc separately), cross-encoders process query and passage together through deep cross-attention layers, yielding a highly accurate relevance score.
+  - *Documentation:* [LangChain HuggingFaceCrossEncoder Docs](https://reference.langchain.com/python/langchain-community/cross_encoders/huggingface/HuggingFaceCrossEncoder) | [SBERT Cross-Encoders](https://sbert.net/examples/applications/cross-encoder/README.html)
 - **Backend Files:**
   - `backend/services/reranker.py`
-- **Key Functions:** `rerank_with_cross_encoder(query, candidate_chunks)`.
+  - `backend/routers/search.py`
+- **Key Functions:** `reranker_with_cross_encoder(query, candidate_chunks, top_k)`.
+
 
 ### Phase 11: Generation Pipeline & Citations (RAG)
 **Description:** We inject our perfectly retrieved top 5 chunks into a prompt and ask the LLM to answer the user's question based *only* on those chunks.
