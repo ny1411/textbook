@@ -1,25 +1,21 @@
 from qdrant_client import models
 from db.qdrant import client
-from services.embedder import bge_large_embedder
-from services.indexing import bm25_model
+from services.embedder import get_vectors
 import uuid
 
 
 def ingest_chunks(chunks: list, user_id: str):
     if not chunks:
         return
-    
-    all_points = []
-    dense_embedder = bge_large_embedder()
 
     # collect all chunks in a batch
     texts = [chunk.page_content for chunk in chunks]
 
     # batch generate dense and sparse vectors
-    dense_vectors = dense_embedder.embed_documents(texts)
-    sparse_vectors_result = list(bm25_model.embed(texts))
+    dense_vectors, sparse_vectors = get_vectors(texts, is_query=False)
 
-    for chunk, dense_vec, sparse_res in zip(chunks, dense_vectors, sparse_vectors_result):
+    all_points = []
+    for chunk, dense_vec, sparse_vec in zip(chunks, dense_vectors, sparse_vectors):
         doc_id = chunk.metadata.get("source", "unknown")
         page = chunk.metadata.get("page") or 0
 
@@ -31,16 +27,9 @@ def ingest_chunks(chunks: list, user_id: str):
             "text": chunk.page_content,
         }
 
-        sparse_vec = models.SparseVector(
-            indices=sparse_res.indices.tolist(),
-            values=sparse_res.values.tolist()
-        )
-
-        point_id = str(uuid.uuid4())
-
         all_points.append(
             models.PointStruct(
-                id=point_id,
+                id=str(uuid.uuid4()),
                 payload=payload,
                 vector={
                     "dense-text": dense_vec,

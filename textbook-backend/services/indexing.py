@@ -1,10 +1,7 @@
 from qdrant_client.models import VectorParams, Distance, HnswConfigDiff, SparseVectorParams
 from qdrant_client.models import ScalarQuantization, ScalarQuantizationConfig, ScalarType
-from fastembed import SparseTextEmbedding
 from db.qdrant import client
 from qdrant_client import models
-
-bm25_model = SparseTextEmbedding(model_name="Qdrant/bm25")
 
 schema_mapper = {
     "keyword": models.PayloadSchemaType.KEYWORD,

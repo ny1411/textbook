@@ -2,28 +2,9 @@ from typing import Optional, Dict, List, Any
 from qdrant_client import models
 import logging
 from db.qdrant import client
-from services.embedder import bge_large_embedder
-from services.indexing import bm25_model
-
+from services.embedder import get_vectors
 
 logger = logging.getLogger(__name__)
-
-
-def get_query_vectors(query_text: str) -> Dict[str, Any]:
-    dense_embedder = bge_large_embedder()
-    dense_vector = dense_embedder.embed_query(query_text)
-
-    sparse_results = list(bm25_model.embed([query_text]))[0]
-    sparse_vector = models.SparseVector(
-        indices=sparse_results.indices.tolist(),
-        values=sparse_results.values.tolist(),
-    )
-
-    return {
-        "dense_vector": dense_vector,
-        "sparse_vector": sparse_vector,
-    }
-
 
 def reciprocal_rank_fusion(
     dense_results: List[models.ScoredPoint], 
@@ -80,8 +61,8 @@ def hybrid_search(
     collection_name: str = "textbook_chunks"
 ) -> List[Dict[str, Any]]:
 
-    # generate query from above function
-    query_vectors = get_query_vectors(query)
+    # generate vectors from get_vectors
+    dense_vector, sparse_vector = get_vectors(query, is_query=True)
 
     # multi-tenant payload filter
     filter_conditions = [
@@ -104,7 +85,7 @@ def hybrid_search(
     # dense search using Qdrant
     dense_response = client.query_points(
         collection_name=collection_name,
-        query=query_vectors["dense_vector"],
+        query=dense_vector,
         using="dense-text",
         query_filter=query_filter,
         limit=top_k,
@@ -114,7 +95,7 @@ def hybrid_search(
     # sparse search using Qdrant
     sparse_response = client.query_points(
         collection_name=collection_name,
-        query=query_vectors["sparse_vector"],
+        query=sparse_vector,
         using="sparse-text",
         query_filter=query_filter,
         limit=top_k,
