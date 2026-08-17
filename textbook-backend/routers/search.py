@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 import logging
 from services.retriever import hybrid_search
 from services.analyzer import analyze_query
+from services.reranker import reranker_with_cross_encoder
 from services.storage import download_file_from_supabase
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class SearchResultItem(BaseModel):
     page_number: Optional[int] = None
     dense_score: Optional[float] = None
     sparse_score: Optional[float] = None
+    rerank_score: Optional[float] = None
     payload: Dict[str, Any] = {}
 
 class SearchResponse(BaseModel):
@@ -46,14 +48,21 @@ async def search(request: SearchRequest):
         raw_results = hybrid_search(
             user_id=request.user_id,
             query=search_query,
-            top_k=request.top_k,
+            top_k=max(request.top_k, 20),
             document_id=request.document_id,
+        )
+
+        final_results = reranker_with_cross_encoder(
+            query=search_query,
+            candidate_chunks=raw_results,
+            top_k=request.top_k,
         )
 
         formatted_results = [
             SearchResultItem(
                 id=item["id"],
                 rrf_score=item["rrf_score"],
+                rerank_score=item["rerank_score"],
                 text=item["payload"].get("text", ""),
                 document_id=item["payload"].get("document_id"),
                 page_number=item["payload"].get("page_number"),
@@ -61,7 +70,7 @@ async def search(request: SearchRequest):
                 sparse_score=item.get("sparse_score"),
                 payload=item["payload"],
             )
-            for item in raw_results
+            for item in final_results
         ]
 
         return SearchResponse(
