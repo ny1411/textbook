@@ -6,28 +6,34 @@ import uuid
 
 
 def ingest_chunks(chunks: list, user_id: str):
-    dense_embedder = bge_large_embedder()
+    if not chunks:
+        return
     
     all_points = []
+    dense_embedder = bge_large_embedder()
 
-    for chunk in chunks:
+    # collect all chunks in a batch
+    texts = [chunk.page_content for chunk in chunks]
+
+    # batch generate dense and sparse vectors
+    dense_vectors = dense_embedder.embed_documents(texts)
+    sparse_vectors_result = list(bm25_model.embed(texts))
+
+    for chunk, dense_vec, sparse_res in zip(chunks, dense_vectors, sparse_vectors_result):
         doc_id = chunk.metadata.get("source", "unknown")
-        page = chunk.metadata.get("page", 0)
+        page = chunk.metadata.get("page") or 0
 
         payload = {
+            **chunk.metadata,           # preserve original metadata
             "user_id": str(user_id),
             "document_id": str(doc_id),
             "page_number": int(page),
             "text": chunk.page_content,
         }
 
-        dense_vectors = dense_embedder.embed_documents([chunk.page_content])[0]
-
-        # fastembed returns a generator, so we have to use list()[0] to get the result
-        sparse_vector_result = list(bm25_model.embed([chunk.page_content]))[0]
-        sparse_vectors = models.SparseVector(
-            indices=sparse_vector_result.indices.tolist(),
-            values=sparse_vector_result.values.tolist()
+        sparse_vec = models.SparseVector(
+            indices=sparse_res.indices.tolist(),
+            values=sparse_res.values.tolist()
         )
 
         point_id = str(uuid.uuid4())
@@ -37,8 +43,8 @@ def ingest_chunks(chunks: list, user_id: str):
                 id=point_id,
                 payload=payload,
                 vector={
-                    "dense-text": dense_vectors,
-                    "sparse-text": sparse_vectors
+                    "dense-text": dense_vec,
+                    "sparse-text": sparse_vec
                 },
             )
         )
