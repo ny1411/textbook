@@ -121,7 +121,7 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 9: Hybrid Retrieval API (Stage 1 Search)
 **Description:** The actual search! We query the database using BOTH Dense search (meaning) and Sparse search (keywords), then mathematically merge the results.
-- [ ] Combine results using Reciprocal Rank Fusion (RRF).
+- [x] Combine results using Reciprocal Rank Fusion (RRF).
   - *Details:* RRF is a simple formula: `1 / (k + rank)`. We calculate this score for both Dense and Sparse results and sum them up to get the final combined ranking.
 - **Backend Files:**
   - `backend/routers/search.py`: API endpoint for searching.
