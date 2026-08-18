@@ -141,9 +141,9 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 11: Generation Pipeline & Citations (RAG)
 **Description:** We inject our perfectly retrieved top 5 chunks into a prompt and ask the LLM to answer the user's question based *only* on those chunks.
-- [ ] Address "Lost-in-the-Middle": Order the chunks so the most important ones are at the very beginning and very end of the prompt.
+- [x] Address "Lost-in-the-Middle": Order the chunks so the most important ones are at the very beginning and very end of the prompt.
   - *Details:* LLMs tend to forget information located in the middle of a long prompt. Reordering contexts mitigates this issue.
-- [ ] Prompt the LLM to provide citations (e.g., "According to [doc1]...").
+- [x] Prompt the LLM to provide citations (e.g., "According to [doc1]...").
 - **Backend Files:**
   - `backend/routers/chat.py`: API endpoint for chat.
   - `backend/services/generator.py`: Logic to prompt the LLM.
