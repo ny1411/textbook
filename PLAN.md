@@ -151,9 +151,9 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 12: Agentic Workflow (LangGraph)
 **Description:** Upgrading our linear pipeline into a state machine. Instead of just "retrieve then answer," we create AI agents that can loop, plan, and use tools.
-- [ ] Build a Planner Agent (breaks down the task).
-- [ ] Build a Retriever Agent (executes searches).
-- [ ] Build a Reflection Agent (critiques the answer for hallucinations before sending it to the user).
+- [x] Build a Planner Agent (breaks down the task).
+- [x] Build a Retriever Agent (executes searches).
+- [x] Build a Reflection Agent (critiques the answer for hallucinations before sending it to the user).
   - *Documentation:* [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - **Backend Files:**
   - `backend/agents/graph.py`: Defines the flowchart of the agents.
