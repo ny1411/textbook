@@ -19,4 +19,5 @@ def get_llm(
         timeout=timeout,
         top_p=top_p,
         top_k=top_k,
+        max_retries=3,
     )
