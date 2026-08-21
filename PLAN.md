@@ -163,7 +163,7 @@ Use `[x]` to mark tasks as completed.
 ### Phase 13: Evaluation (Objective Testing)
 **Description:** We don't just guess if our AI is good. We write automated tests using Ragas or DeepEval to mathematically grade the AI.
 - [ ] Measure Retrieval metrics: `Recall@K`, `Mean Reciprocal Rank (MRR)`.
-- [ ] Measure Generation metrics: `Faithfulness`, `Answer Relevance`.
+- [ ] Measure Generation metrics: `Faithfulness`, `Answer Relevance`, `Groundedness`.
   - *Documentation:* [DeepEval Docs](https://docs.confident-ai.com/) | [Ragas Docs](https://docs.ragas.io/)
 - **Backend Files:**
   - `backend/tests/eval.py`
@@ -207,3 +207,114 @@ Use `[x]` to mark tasks as completed.
   - `backend/Dockerfile`: Instructions to build the Python environment and ML models.
 - **Frontend Files:**
   - `frontend/vercel.json`: (Optional) Vercel-specific routing or configuration.
+
+---
+
+## Master Quality Assurance & Testing Suite (All Services)
+
+Use this checklist to verify and test every component, service, database, agent workflow, API endpoint, and UI interface across the entire project.
+
+### 1. Backend Core Services & Transformations
+- [ ] **Document Parsing (`parser.py`):**
+  - Verify PyMuPDF extracts full text accurately from single-page and multi-page PDFs.
+  - Verify graceful handling of empty, scanned/image-only, or corrupted PDFs.
+  - Ensure page numbers and metadata are correctly mapped to extracted text blocks.
+- [ ] **Chunking Strategies (`chunker.py`):**
+  - **Semantic Chunking:** Test threshold-based split boundaries preserving sentence continuity.
+  - **Parent-Child Chunking:** Verify child chunks are correctly linked to parent IDs and maintain parent text metadata.
+  - **Code/Syntax Chunking:** Test code-aware splitters preserving functions, classes, and markdown code blocks.
+- [ ] **Embedding Generation (`embedder.py` & `indexing.py`):**
+  - **Dense Embedder (`bge-large`):** Verify 1024-dimensional float vector output and vector normalization.
+  - **Sparse Embedder (`FastEmbed` / SPLADE):** Verify sparse vector indices and values for lexical search.
+- [ ] **Query Understanding (`analyzer.py` & `llm.py`):**
+  - Test query rewriting produces clear, expanded standalone search queries.
+  - Test HyDE generation produces structured hypothetical documents without hallucination crashes.
+- [ ] **Reranking & Optimization (`reranker.py` & `generator.py`):**
+  - **Cross-Encoder Reranker:** Verify candidates are re-scored by relevance and truncated to requested `top_k`.
+  - **Lost-in-the-Middle Context Reordering:** Test that highest-scoring chunks are placed at prompt edges.
+  - **Citation Mapping:** Verify citations extract valid bracketed source IDs, page numbers, and chunk references.
+
+### 2. Database & Vector Store Integration
+- [ ] **Relational Database (Supabase PostgreSQL via Prisma):**
+  - Prisma client connection, health check, and schema migration integrity.
+  - Document metadata CRUD: Creating records on upload, fetching user documents, and updating processing status.
+  - User scoping and isolation: Ensure queries strictly isolate records by `user_id`.
+  - Cascading deletes: Verify deleting a document removes related metadata cleanly.
+- [ ] **Vector Database (Qdrant Cloud):**
+  - Collection creation, schema initialization (Dense 1024-dim + Sparse vectors), and HNSW index configuration.
+  - Upsert validation: Verify payloads contain valid types (`user_id`, `document_id`, `chunk_id`, `page_number`, `text`).
+  - Payload filtering: Verify queries with `user_id` and `document_id` filters return strictly matching points.
+  - Hybrid Search & RRF: Verify execution of dense + sparse queries and Reciprocal Rank Fusion mathematical score merging.
+- [ ] **Caching Layer (Upstash Redis):**
+  - Redis client connection and health ping.
+  - Cache hit/miss validation: Verify identical or semantically similar queries retrieve cached answers.
+  - TTL and cache invalidation: Test key expiration and eviction policies.
+
+### 3. Agentic Workflow & State Machine (LangGraph)
+- [ ] **Planner Node (`nodes.py`):**
+  - Verify user query decomposition into actionable search sub-queries.
+- [ ] **Retriever Node (`nodes.py`):**
+  - Verify execution of hybrid searches and accumulation of retrieved chunks into the `AgentState`.
+- [ ] **Reflection Node (`nodes.py`):**
+  - Test hallucination detection and groundedness checks against context chunks.
+  - Test conditional routing logic: routes to `generate` when answer is grounded, or re-plans/retrieves when critique fails.
+- [ ] **State Machine Guardrails (`graph.py`):**
+  - Verify state termination when reaching `max_iterations` to prevent infinite LLM loops.
+  - Test fallback outputs when no relevant documents exist in the vector database.
+
+### 4. API Routers & Gateways (FastAPI)
+- [ ] **Upload Endpoint (`POST /upload`):**
+  - Test valid PDF upload returns `200 OK` with `document_id` and triggers background ingestion.
+  - Test invalid file types (e.g. `.exe`, `.txt`, `.png`) return `400 Bad Request`.
+  - Test file size limit enforcement.
+- [ ] **Search Endpoint (`POST /search`):**
+  - Test hybrid search with valid `user_id`, `query`, and `top_k`.
+  - Test payload filtering by optional `document_id`.
+  - Verify response schema matches `SearchResponse`.
+- [ ] **Chat Endpoint (`POST /chat`):**
+  - Test standard RAG chat returns `200 OK` with `answer`, `citations`, and `applied_query`.
+  - Test with `use_analysis=True` and `use_analysis=False`.
+- [ ] **Agentic Chat Endpoint (`POST /agent/chat`):**
+  - Test agent chat returns `200 OK` with `answer`, `citations`, `confidence_score`, `is_grounded`, `critique`, and `iteration_count`.
+- [ ] **Middleware & Error Handling:**
+  - Verify CORS headers allow configured frontend origins.
+  - Verify unhandled exceptions return structured JSON error messages with appropriate HTTP status codes.
+
+### 5. Observability & Telemetry (Langfuse)
+- [ ] **Trace Capture:**
+  - Verify Langfuse traces capture every incoming request to `/chat` and `/agent/chat`.
+- [ ] **LangGraph Telemetry:**
+  - Verify individual node spans (Planner, Retriever, Reflection) appear nested with correct inputs/outputs.
+- [ ] **Token & Latency Tracking:**
+  - Verify prompt/completion token usage and execution latencies are recorded per trace.
+
+### 6. Quantitative Evaluation (DeepEval / Ragas)
+- [ ] **Retrieval Metrics:**
+  - Measure `Recall@K` across a golden evaluation dataset.
+  - Measure `Mean Reciprocal Rank (MRR)` to assess top-rank relevance.
+- [ ] **Generation Metrics:**
+  - Measure `Faithfulness` to ensure zero hallucinations against context passages.
+  - Measure `Answer Relevance` to verify user intent alignment.
+  - Measure `Context Precision` to evaluate retriever efficiency.
+
+### 7. Frontend Interface & Client-Side Testing (Next.js)
+- [ ] **Component & UI Tests:**
+  - **Upload Dropzone:** Test drag-and-drop file selection, upload progress bars, and file size validation.
+  - **Chat Interface:** Test message list rendering, markdown parsing, and autoscroll behavior.
+  - **Citation Badges & Drawers:** Test clicking citations opens side drawer highlighting exact source text and page numbers.
+  - **Agent Reasoning Inspector:** Test collapsible display showing agent thought steps, reflection critique, and confidence pills.
+- [ ] **Client State & API Integration:**
+  - Test custom `useChat` hook handling optimistic user messages, loading skeletons, and real-time streaming chunks.
+  - Test error toast banners on API 500 errors, network timeouts, or rate limit responses.
+  - Test responsive layouts across mobile, tablet, and desktop viewports.
+- [ ] **End-to-End User Journeys (Playwright / Cypress):**
+  - Journey 1: User uploads a PDF $\rightarrow$ verifies processing status $\rightarrow$ sends a question $\rightarrow$ receives streamed answer with clickable citation pills.
+  - Journey 2: User triggers an agentic query $\rightarrow$ inspects agent reflection iterations and verified grounded sources.
+
+### 8. Production Deployment & Infrastructure Health Checks
+- [ ] **Container & Build Tests:**
+  - Verify backend `Dockerfile` builds cleanly with PyMuPDF, PyTorch/Sentence-Transformers, and FastEmbed.
+  - Verify Next.js frontend builds without TypeScript or linting errors.
+- [ ] **Cloud Service Connectivity:**
+  - Test live connections from deployed backend to Supabase PostgreSQL, Qdrant Cloud, Upstash Redis, and Langfuse Cloud.
+  - Verify environment variables (`.env`) are securely set on Vercel and Render/Railway.
