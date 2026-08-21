@@ -21,11 +21,12 @@ def reranker_with_cross_encoder(
 
     reranker = get_cross_encoder()
 
-    # build (query, text) pairs
-    pairs = [
-        [query, chunk.get("payload", {}).get("text", "")]
-        for chunk in candidate_chunks
-    ]
+    # build (query, text) pairs safely from payload, metadata, or top-level text
+    pairs = []
+    for chunk in candidate_chunks:
+        payload = chunk.get("payload") if isinstance(chunk.get("payload"), dict) else chunk.get("metadata", {})
+        text = (payload.get("text") if isinstance(payload, dict) else None) or chunk.get("text") or ""
+        pairs.append([query, text])
 
     # compute reranking scores
     scores = reranker.score(pairs)
