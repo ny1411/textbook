@@ -19,7 +19,6 @@ def test_extract_text() -> str:
 
     print(f"Successfully extracted {len(extracted_data)} characters from PDF.")
     print("Sample snippet:\n", extracted_data[:300])
-    return extracted_data
 
 if __name__ == "__main__":
     test_extract_text()

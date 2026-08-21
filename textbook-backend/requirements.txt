@@ -16,3 +16,5 @@ langchain-google-genai
 langchain-community 
 sentence-transformers
 langgraph
+pytest
+httpx
