@@ -215,21 +215,21 @@ Use `[x]` to mark tasks as completed.
 Use this checklist to verify and test every component, service, database, agent workflow, API endpoint, and UI interface across the entire project.
 
 ### 1. Backend Core Services & Transformations
-- [ ] **Document Parsing (`parser.py`):**
+- [x] **Document Parsing (`parser.py`):**
   - Verify PyMuPDF extracts full text accurately from single-page and multi-page PDFs.
   - Verify graceful handling of empty, scanned/image-only, or corrupted PDFs.
   - Ensure page numbers and metadata are correctly mapped to extracted text blocks.
-- [ ] **Chunking Strategies (`chunker.py`):**
+- [x] **Chunking Strategies (`chunker.py`):**
   - **Semantic Chunking:** Test threshold-based split boundaries preserving sentence continuity.
   - **Parent-Child Chunking:** Verify child chunks are correctly linked to parent IDs and maintain parent text metadata.
   - **Code/Syntax Chunking:** Test code-aware splitters preserving functions, classes, and markdown code blocks.
-- [ ] **Embedding Generation (`embedder.py` & `indexing.py`):**
+- [x] **Embedding Generation (`embedder.py` & `indexing.py`):**
   - **Dense Embedder (`bge-large`):** Verify 1024-dimensional float vector output and vector normalization.
   - **Sparse Embedder (`FastEmbed` / SPLADE):** Verify sparse vector indices and values for lexical search.
-- [ ] **Query Understanding (`analyzer.py` & `llm.py`):**
+- [x] **Query Understanding (`analyzer.py` & `llm.py`):**
   - Test query rewriting produces clear, expanded standalone search queries.
   - Test HyDE generation produces structured hypothetical documents without hallucination crashes.
-- [ ] **Reranking & Optimization (`reranker.py` & `generator.py`):**
+- [x] **Reranking & Optimization (`reranker.py` & `generator.py`):**
   - **Cross-Encoder Reranker:** Verify candidates are re-scored by relevance and truncated to requested `top_k`.
   - **Lost-in-the-Middle Context Reordering:** Test that highest-scoring chunks are placed at prompt edges.
   - **Citation Mapping:** Verify citations extract valid bracketed source IDs, page numbers, and chunk references.
