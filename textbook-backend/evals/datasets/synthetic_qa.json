@@ -1,0 +1,180 @@
+[
+  {
+    "id": "syn_001",
+    "query": "How does scalar quantization reduce memory usage in vector databases like Qdrant?",
+    "ground_truth_contexts": [
+      "Scalar quantization (SQ) compresses 32-bit floating point vectors (FP32) into 8-bit integers (INT8), reducing RAM consumption by up to 75% with minimal accuracy loss."
+    ],
+    "ground_truth_answer": "Scalar quantization converts 32-bit floating-point vectors into 8-bit integers (INT8), reducing RAM requirements by up to 75% while maintaining high retrieval precision.",
+    "question_type": "conceptual",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Vector Quantization",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "syn_002",
+    "query": "What are the primary differences between RAG and Fine-tuning for adapting LLMs?",
+    "ground_truth_contexts": [
+      "RAG connects LLMs to external knowledge sources at query time to retrieve up-to-date facts without altering model weights. Fine-tuning trains model weights on specific datasets to teach new styles, tones, or domain-specific task formats."
+    ],
+    "ground_truth_answer": "RAG retrieves relevant external documents dynamically to provide factual grounding without updating model weights. In contrast, fine-tuning updates the model's internal weights to adapt tone, format, or specialized task behavior.",
+    "question_type": "comparative",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "RAG vs Fine-Tuning",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "syn_003",
+    "query": "Which open-source vector databases are commonly used in modern AI engineering stacks?",
+    "ground_truth_contexts": [
+      "Popular vector databases listed in the AI engineering roadmap include Qdrant, Chroma, Weaviate, Pinecone, LanceDB, FAISS, and MongoDB Atlas."
+    ],
+    "ground_truth_answer": "Common vector databases include Qdrant, Chroma, Weaviate, LanceDB, FAISS, and Pinecone.",
+    "question_type": "factoid",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Vector Databases",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "syn_004",
+    "query": "How does Parent-Child chunking improve RAG context quality during LLM generation?",
+    "ground_truth_contexts": [
+      "Parent-Child chunking indexes small child chunks for high-precision semantic search, but retrieves and passes the larger parent chunk to the LLM to preserve complete context and surrounding narrative."
+    ],
+    "ground_truth_answer": "Parent-Child chunking performs vector search on small child chunks to pinpoint precise keywords and concepts, then provides the broader parent chunk to the LLM so it has the full context necessary to answer accurately.",
+    "question_type": "conceptual",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Chunking Strategies",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "syn_005",
+    "query": "What is the primary role of the Cross-Encoder in a two-stage retrieval pipeline?",
+    "ground_truth_contexts": [
+      "Bi-encoders quickly retrieve candidate chunks from millions of vectors using ANN search, while a Cross-Encoder performs joint self-attention over the query and candidate passage pairs to accurately rerank the top candidates."
+    ],
+    "ground_truth_answer": "A Cross-Encoder serves as the Stage 2 reranker. It processes query and passage pairs simultaneously using full cross-attention to compute an accurate relevance score for the top retrieved candidate chunks.",
+    "question_type": "conceptual",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Reranking",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "id": "syn_006",
+    "query": "How does Reciprocal Rank Fusion (RRF) combine dense and sparse search rankings?",
+    "ground_truth_contexts": [
+      "Reciprocal Rank Fusion calculates a fused score for each document by summing 1 / (k + rank) across dense and sparse ranking lists, using a smoothing constant k typically set to 60."
+    ],
+    "ground_truth_answer": "RRF combines rankings from dense semantic search and sparse lexical search by calculating the sum of 1 / (60 + rank) for each document across both lists, producing a balanced, rank-invariant fusion.",
+    "question_type": "factoid",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Hybrid Search",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "syn_007",
+    "query": "What is the ReAct prompting framework used for in AI agents?",
+    "ground_truth_contexts": [
+      "The ReAct (Reasoning + Acting) framework prompts AI agents to interleave thought reasoning steps with tool execution actions and observations to solve complex, multi-step tasks."
+    ],
+    "ground_truth_answer": "The ReAct framework combines reasoning and action by prompting an LLM to generate explicit thoughts, execute tool calls, observe outcomes, and iterate toward solving multi-step tasks.",
+    "question_type": "conceptual",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "AI Agents",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "syn_008",
+    "query": "Why should an LLM generation pipeline mitigate the 'lost-in-the-middle' effect?",
+    "ground_truth_contexts": [
+      "LLMs exhibit higher attention and recall for information placed at the extreme beginning and end of long prompts, frequently overlooking details placed in the middle of the context window."
+    ],
+    "ground_truth_answer": "LLMs tend to recall information placed at the start and end of prompt contexts better than information placed in the middle. Reordering context so high-relevance chunks sit at the edges mitigates performance degradation.",
+    "question_type": "conceptual",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Prompt Engineering & Context Optimization",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "id": "syn_009",
+    "query": "What are common techniques used for prompt injection defense and AI safety?",
+    "ground_truth_contexts": [
+      "AI safety and defense practices include using OpenAI Moderation API, adversarial testing, constraining input and output formats, adding end-user IDs in prompt logs, and robust system prompt boundaries."
+    ],
+    "ground_truth_answer": "Common safety defenses include input/output constraints, adversarial testing, system prompt boundary enforcement, OpenAI Moderation API checks, and user ID tracking.",
+    "question_type": "factoid",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "AI Safety",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "syn_010",
+    "query": "How do Multimodal AI models differ from traditional text-only LLMs?",
+    "ground_truth_contexts": [
+      "Multimodal models can process, understand, and generate data across multiple modalities including text, images, video, and audio through vision and speech APIs like Whisper, DALL-E, and Vision LLMs."
+    ],
+    "ground_truth_answer": "Multimodal models process and generate multiple modalities such as text, images, video, and audio, whereas traditional LLMs are restricted to text tokens.",
+    "question_type": "conceptual",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Multimodal AI",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "syn_neg_001",
+    "query": "What is the capital city of France according to the AI textbook?",
+    "ground_truth_contexts": [],
+    "ground_truth_answer": "I cannot find the answer to your question in the provided documents.",
+    "question_type": "negative",
+    "is_answerable": false,
+    "metadata": {
+      "topic": "Negative Abstention",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "syn_neg_002",
+    "query": "How do you prepare a classic Margherita pizza dough?",
+    "ground_truth_contexts": [],
+    "ground_truth_answer": "I cannot find the answer to your question in the provided documents.",
+    "question_type": "negative",
+    "is_answerable": false,
+    "metadata": {
+      "topic": "Negative Abstention",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "id": "syn_false_001",
+    "query": "Why are Cross-Encoders faster than Bi-Encoders when searching across 10 million vector points?",
+    "ground_truth_contexts": [
+      "Bi-encoders are much faster for large-scale retrieval because vectors can be precomputed and searched via ANN indexes. Cross-encoders must perform full transformer inference for every query-document pair, making them computationally prohibitive for initial retrieval."
+    ],
+    "ground_truth_answer": "The premise is incorrect. Cross-encoders are significantly slower than Bi-encoders because they require joint self-attention inference over every candidate pair, whereas Bi-encoders allow fast approximate nearest-neighbor search over precomputed embeddings.",
+    "question_type": "false_premise",
+    "is_answerable": true,
+    "metadata": {
+      "topic": "Cross-Encoders vs Bi-Encoders",
+      "difficulty": "hard"
+    }
+  }
+]

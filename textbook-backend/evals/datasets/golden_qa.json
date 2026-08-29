@@ -1,0 +1,356 @@
+[
+    {
+        "id": "eval_001",
+        "query": "What is the primary difference between Bi-Encoders and Cross-Encoders?",
+        "ground_truth_contexts": [
+            "Bi-encoders embed queries and documents independently into fixed-size dense vectors, allowing fast ANN search. Cross-encoders process the query and document together through attention layers, capturing rich cross-token interactions at the cost of higher latency."
+        ],
+        "ground_truth_answer": "Bi-encoders encode queries and documents separately, enabling fast vector indexing and retrieval. Cross-encoders process both texts jointly via full self-attention, providing higher ranking accuracy but significantly higher computational latency.",
+        "question_type": "conceptual",
+        "expected_doc_ids": [
+            "chunk_transformers_p14_c2"
+        ],
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Cross-Encoders vs Bi-Encoders"
+        }
+    },
+    {
+        "id": "factoid_001",
+        "query": "What is the time complexity of HNSW search?",
+        "ground_truth_contexts": [
+            "HNSW provides logarithmic search time complexity O(log N) on average."
+        ],
+        "ground_truth_answer": "HNSW search has an average time complexity of O(log N).",
+        "question_type": "factoid",
+        "is_answerable": true
+    },
+    {
+        "id": "multihop_001",
+        "query": "How does Reciprocal Rank Fusion (RRF) combine scores from dense and sparse retrieval?",
+        "ground_truth_contexts": [
+            "RRF computes a score for each document as sum(1 / (k + rank_i)) across both dense and sparse rank lists.",
+            "The constant k is typically set to 60 to prevent high-ranking outliers from dominating the fused ranking."
+        ],
+        "ground_truth_answer": "RRF combines rankings from dense and sparse retrieval by summing the inverse of their ranks with a smoothing constant k (typically 60): RRF_score(d) = sum(1 / (k + rank_i(d))).",
+        "question_type": "multi_hop",
+        "is_answerable": true
+    },
+    {
+        "id": "negative_001",
+        "query": "What is the recommended recipe for baking sourdough bread in the textbook?",
+        "ground_truth_contexts": [],
+        "ground_truth_answer": "I do not have information about baking sourdough bread in the provided textbook.",
+        "question_type": "negative",
+        "is_answerable": false
+    },
+    {
+        "id": "paraphrase_001",
+        "query": "Why does an AI sometimes forget details in the middle of a long document?",
+        "ground_truth_contexts": [
+            "The lost-in-the-middle phenomenon refers to language models performing better when key information is at the beginning or end of the context window rather than in the middle."
+        ],
+        "ground_truth_answer": "This is known as the 'lost-in-the-middle' phenomenon, where LLMs pay higher attention to tokens at the start and end of the prompt and often overlook information placed in the middle.",
+        "question_type": "conceptual",
+        "is_answerable": true
+    },
+    {
+        "id": "multihop_complex_001",
+        "query": "When building an RAG pipeline, what is the exact formula for Weighted Hybrid Search (WHS) and why is the weight for BM25 typically set higher than for dense retrieval?",
+        "ground_truth_contexts": [
+            "Weighted Hybrid Search combines dense vector similarity with sparse lexical scores using the formula: WHS_score = alpha × S_dense + (1 - alpha) × S_sparse.",
+            "BM25 scores are often weighted higher (e.g., alpha=0.3) because sparse retrieval excels at exact keyword matches for technical terms, providing a strong baseline that dense retrieval alone might miss if the embedding space doesn't perfectly capture the specific terminology."
+        ],
+        "ground_truth_answer": "The formula for Weighted Hybrid Search is WHS_score = alpha × S_dense + (1 - alpha) × S_sparse. The weight for BM25 (sparse retrieval) is typically set higher (alpha < 0.5) to ensure that exact keyword matches for technical terms, which BM25 handles better, are not drowned out by the semantic similarity scores from dense retrieval.",
+        "question_type": "multi_hop_complex",
+        "is_answerable": true
+    },
+    {
+        "id": "eval_007",
+        "query": "In practical RAG systems, how does hybrid retrieval compare with dense-only retrieval when the query contains an exact product name, error code, or uncommon technical identifier?",
+        "ground_truth_contexts": [
+            "Hybrid retrieval combines dense semantic retrieval with sparse lexical retrieval such as BM25. Sparse retrieval is particularly effective for exact keyword matches, identifiers, and terminology that may not be represented precisely in the embedding space.",
+            "Dense retrieval captures semantic similarity and can retrieve relevant passages even when they use different wording from the query."
+        ],
+        "ground_truth_answer": "Hybrid retrieval is generally more robust for queries containing exact product names, error codes, or uncommon technical identifiers because BM25 can match those terms lexically, while dense retrieval contributes semantic matching for differently worded relevant passages.",
+        "question_type": "comparative",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Hybrid Retrieval",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_008",
+        "query": "Does the textbook say that Cross-Encoders are faster than Bi-Encoders because they avoid generating embeddings for every document?",
+        "ground_truth_contexts": [
+            "Bi-encoders embed queries and documents independently into fixed-size dense vectors, allowing documents to be embedded and indexed ahead of time for fast approximate nearest-neighbor retrieval.",
+            "Cross-encoders process the query and document together through attention layers and therefore require joint inference for candidate pairs, resulting in higher latency."
+        ],
+        "ground_truth_answer": "No. The premise is false. Bi-Encoders are faster for large-scale retrieval because document embeddings can be precomputed and indexed. Cross-Encoders jointly process each query-document pair and are therefore more computationally expensive, although they can provide more accurate ranking.",
+        "question_type": "false_premise",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Cross-Encoders vs Bi-Encoders",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_009",
+        "query": "In the context of the retrieval chapter, what does ANN stand for, and is it referring to artificial neural networks here?",
+        "ground_truth_contexts": [
+            "Approximate nearest-neighbor (ANN) search retrieves vectors that are close to a query vector without exhaustively comparing the query against every vector in the index.",
+            "Bi-encoders produce dense vectors that can be searched efficiently using approximate nearest-neighbor indexing."
+        ],
+        "ground_truth_answer": "Here, ANN stands for approximate nearest-neighbor search, not artificial neural network. It refers to an indexing/search technique for efficiently finding vectors close to a query vector.",
+        "question_type": "acronym_disambiguation",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "ANN Search",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_010",
+        "query": "Give me the short version of the lost-in-the-middle finding described in the textbook.",
+        "ground_truth_contexts": [
+            "The lost-in-the-middle phenomenon refers to language models performing better when key information is at the beginning or end of the context window rather than in the middle."
+        ],
+        "ground_truth_answer": "LLMs tend to use information placed at the beginning or end of a long context more effectively than equally important information placed in the middle.",
+        "question_type": "summary",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Long Context",
+            "topic": "Lost-in-the-Middle",
+            "difficulty": "medium"
+        }
+    },
+    {
+        "id": "eval_011",
+        "query": "For RRF, should I implement the fused score as `sum(1 / (k + rank_i))`, or does the formula require multiplying the ranks from the dense and sparse retrievers?",
+        "ground_truth_contexts": [
+            "RRF computes a score for each document as sum(1 / (k + rank_i)) across both dense and sparse rank lists.",
+            "The constant k is typically set to 60 to prevent high-ranking outliers from dominating the fused ranking."
+        ],
+        "ground_truth_answer": "Use the summation form: `RRF_score(d) = sum(1 / (k + rank_i(d)))` across the rank lists. RRF does not multiply the ranks. The smoothing constant k is typically 60.",
+        "question_type": "code_syntax",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Reciprocal Rank Fusion",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_012",
+        "query": "If alpha is 0.3 in the textbook's Weighted Hybrid Search equation, what percentage of the final score comes from dense retrieval and what percentage comes from sparse retrieval?",
+        "ground_truth_contexts": [
+            "Weighted Hybrid Search combines dense vector similarity with sparse lexical scores using the formula: WHS_score = alpha × S_dense + (1 - alpha) × S_sparse."
+        ],
+        "ground_truth_answer": "With alpha = 0.3, dense retrieval contributes 30% of the weighted score and sparse retrieval contributes 70%.",
+        "question_type": "factoid",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Weighted Hybrid Search",
+            "difficulty": "medium"
+        }
+    },
+    {
+        "id": "eval_013",
+        "query": "The chapter says BM25 is mainly useful because it understands the semantic meaning of a query better than embeddings. Is that accurate?",
+        "ground_truth_contexts": [
+            "BM25 is a sparse lexical retrieval method that excels at exact keyword matches, including technical terms.",
+            "Dense retrieval captures semantic similarity and can retrieve passages with different wording from the query."
+        ],
+        "ground_truth_answer": "No. That reverses the strengths of the two approaches. BM25 is useful for lexical and exact-term matching, while dense retrieval is the approach intended to capture semantic similarity.",
+        "question_type": "false_premise",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "BM25 vs Dense Retrieval",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_014",
+        "query": "I know HNSW is used for vector search, but what does the acronym expand to in this context?",
+        "ground_truth_contexts": [
+            "HNSW, or Hierarchical Navigable Small World, provides logarithmic search time complexity O(log N) on average for approximate nearest-neighbor search."
+        ],
+        "ground_truth_answer": "HNSW stands for Hierarchical Navigable Small World.",
+        "question_type": "acronym_disambiguation",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "HNSW",
+            "difficulty": "medium"
+        }
+    },
+    {
+        "id": "eval_015",
+        "query": "Why can't I just use a Cross-Encoder to index the entire corpus once and then do ANN search over its outputs?",
+        "ground_truth_contexts": [
+            "Bi-encoders embed queries and documents independently into fixed-size dense vectors, allowing document embeddings to be precomputed and used for ANN search.",
+            "Cross-encoders process the query and document together through attention layers, so their representation or score depends on the specific query-document pair."
+        ],
+        "ground_truth_answer": "Because a Cross-Encoder processes the query and document jointly, its output depends on the specific pair rather than being a query-independent document embedding. That prevents straightforward precomputation of reusable document vectors for ANN retrieval. Bi-Encoders are designed for that use case.",
+        "question_type": "conceptual",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Cross-Encoder Architecture",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_016",
+        "query": "The textbook mentions RRF with dense and sparse retrieval. If a document is ranked highly by BM25 but does not appear in the dense results at all, does RRF automatically assign it a zero contribution from the dense side?",
+        "ground_truth_contexts": [
+            "RRF computes a score for each document as sum(1 / (k + rank_i)) across both dense and sparse rank lists.",
+            "Documents receive contributions from the rank lists in which they appear; a document absent from a particular list contributes no term from that list."
+        ],
+        "ground_truth_answer": "Yes. A document that appears only in the sparse/BM25 ranking receives a contribution from that ranking and no contribution from the dense ranking because it has no dense rank.",
+        "question_type": "edge_case",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Reciprocal Rank Fusion",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_017",
+        "query": "What is the exact HNSW search complexity stated in the textbook: O(N), O(sqrt(N)), or O(log N)?",
+        "ground_truth_contexts": [
+            "HNSW provides logarithmic search time complexity O(log N) on average."
+        ],
+        "ground_truth_answer": "O(log N) on average.",
+        "question_type": "precision_factoid",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "HNSW",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_018",
+        "query": "Is there anything in the provided textbook about using BM25 specifically for searching medical drug interactions, or would that be outside the supplied material?",
+        "ground_truth_contexts": [],
+        "ground_truth_answer": "The provided material does not contain information specifically about using BM25 to search medical drug interactions.",
+        "question_type": "negative",
+        "is_answerable": false,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Out-of-Scope Domain Query",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_019",
+        "query": "If I increase k in RRF from 60 to 600, does that make the highest-ranked document dominate the fused score more strongly?",
+        "ground_truth_contexts": [
+            "The RRF constant k is used as a smoothing constant to prevent high-ranking outliers from dominating the fused ranking.",
+            "RRF scores documents using inverse rank contributions of the form 1 / (k + rank_i)."
+        ],
+        "ground_truth_answer": "No. Increasing k increases the smoothing effect and reduces the relative dominance of individual high ranks. The purpose of k is to prevent high-ranking outliers from dominating the fused ranking.",
+        "question_type": "comparative",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "RRF Parameter Sensitivity",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_020",
+        "query": "A user asks, 'Why did my embedding model fail to retrieve a passage containing the exact error code `ERR_CONN_RESET` even though the passage is obviously relevant?' Based only on the textbook, what retrieval weakness could explain this, and what complementary method is suggested?",
+        "ground_truth_contexts": [
+            "Dense retrieval captures semantic similarity but may fail to perfectly represent specific terminology in the embedding space.",
+            "Sparse retrieval such as BM25 excels at exact keyword matches for technical terms.",
+            "Hybrid retrieval combines dense semantic retrieval with sparse lexical retrieval to cover both types of matching."
+        ],
+        "ground_truth_answer": "Dense retrieval can miss highly specific terminology when the embedding space does not represent the exact term well. BM25 can complement it by matching the exact error code lexically, which is why hybrid retrieval combines sparse and dense methods.",
+        "question_type": "diagnostic_multi_hop",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Dense Retrieval Failure Modes",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_021",
+        "query": "Does 'lost in the middle' mean the model literally deletes or forgets the middle tokens from its context window?",
+        "ground_truth_contexts": [
+            "The lost-in-the-middle phenomenon refers to language models performing better when key information is at the beginning or end of the context window rather than in the middle."
+        ],
+        "ground_truth_answer": "No. It does not mean the model literally deletes the middle tokens. It describes a performance pattern in which information placed in the middle of a long context is more likely to be overlooked than information near the beginning or end.",
+        "question_type": "false_premise",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Long Context",
+            "topic": "Lost-in-the-Middle",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_022",
+        "query": "Can you give me the one-line rule for choosing between a Bi-Encoder and Cross-Encoder in a production retrieval pipeline?",
+        "ground_truth_contexts": [
+            "Bi-encoders independently encode queries and documents into dense vectors, enabling fast ANN retrieval at scale.",
+            "Cross-encoders jointly process query-document pairs and provide richer cross-token interactions at higher computational latency."
+        ],
+        "ground_truth_answer": "Use a Bi-Encoder for fast large-scale candidate retrieval and a Cross-Encoder when you can afford higher latency to improve the ranking of a smaller candidate set.",
+        "question_type": "summary",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Retrieval Architecture",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_023",
+        "query": "I want to implement WHS exactly as written. Should the code be `score = alpha * dense + (1 - alpha) * sparse` or `score = alpha * sparse + (1 - alpha) * dense`?",
+        "ground_truth_contexts": [
+            "Weighted Hybrid Search combines dense vector similarity with sparse lexical scores using the formula: WHS_score = alpha × S_dense + (1 - alpha) × S_sparse."
+        ],
+        "ground_truth_answer": "The textbook's formula is `score = alpha * dense + (1 - alpha) * sparse`.",
+        "question_type": "code_syntax",
+        "is_answerable": true
+    },
+    {
+        "id": "eval_024",
+        "query": "What does 'dense' mean in dense retrieval? Does it mean the retrieved documents are longer or more information-dense than BM25 results?",
+        "ground_truth_contexts": [
+            "Dense retrieval represents queries and documents as fixed-size dense vectors in an embedding space.",
+            "Sparse retrieval represents text using lexical features and is particularly effective for exact keyword matching."
+        ],
+        "ground_truth_answer": "No. 'Dense' refers to the vector representation: queries and documents are encoded into dense numerical vectors. It does not mean that the retrieved documents are longer or more information-dense.",
+        "question_type": "terminology_disambiguation",
+        "is_answerable": true,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Dense vs Sparse Retrieval",
+            "difficulty": "high"
+        }
+    },
+    {
+        "id": "eval_025",
+        "query": "What is the recommended recipe for configuring a Kubernetes cluster's HNSW index for GPU acceleration in the textbook?",
+        "ground_truth_contexts": [],
+        "ground_truth_answer": "I do not have information about Kubernetes HNSW GPU configuration in the provided textbook.",
+        "question_type": "negative",
+        "is_answerable": false,
+        "metadata": {
+            "chapter": "Retrieval & Embeddings",
+            "topic": "Out-of-Scope Infrastructure Query"
+        }
+    }
+]
