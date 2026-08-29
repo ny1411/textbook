@@ -161,13 +161,17 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `planner_node()`, `retriever_node()`, `reflection_node()`.
 
 ### Phase 13: Evaluation (Objective Testing)
-**Description:** We don't just guess if our AI is good. We write automated tests using Ragas or DeepEval to mathematically grade the AI.
-- [ ] Measure Retrieval metrics: `Recall@K`, `Mean Reciprocal Rank (MRR)`.
-- [ ] Measure Generation metrics: `Faithfulness`, `Answer Relevance`.
+**Description:** We don't just guess if our AI is good. We write automated benchmarks using deterministic retrieval math and LLM-as-a-Judge to mathematically grade the AI.
+- [x] Measure Retrieval metrics: `Recall@K`, `Precision@K`, `HitRate@K`, `MRR@K`, `NDCG@K`, `MAP@K`, `R-Precision`.
+- [x] Measure Generation metrics: `Faithfulness`, `Answer Relevance`, `Answer Correctness`, `Completeness`, `Conciseness`, `Citation Accuracy`, `Negative Rejection Accuracy`.
   - *Documentation:* [DeepEval Docs](https://docs.confident-ai.com/) | [Ragas Docs](https://docs.ragas.io/)
 - **Backend Files:**
-  - `backend/tests/eval.py`
-- **Key Functions:** `evaluate_retrieval_recall()`, `evaluate_generation_faithfulness()`.
+  - `textbook-backend/evals/metrics/retrieval.py`
+  - `textbook-backend/evals/metrics/generation.py`
+  - `textbook-backend/evals/eval_retrieval.py`
+  - `textbook-backend/evals/eval_generation.py`
+  - `textbook-backend/evals/run_evals.py`
+- **Key Functions:** `evaluate_retrieval()`, `evaluate_generation()`, `run_all_evals()`.
 
 ### Phase 14: Observability & Caching (Production Polish)
 **Description:** Tracking the LLM to see exactly what it is thinking, how much it costs, and caching common answers so we don't pay the LLM twice for the same question.
