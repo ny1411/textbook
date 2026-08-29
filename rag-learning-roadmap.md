@@ -271,22 +271,22 @@
 ---
 
 ## RAG Evaluation
-- [ ] Retrieval Metrics
+- [x] Retrieval Metrics
   - [x] Recall@K
   - [x] Precision@K
-  - [ ] Hit Rate
+  - [x] Hit Rate
   - [x] Mean Reciprocal Rank (MRR)
   - [x] Mean Average Precision (MAP)
-  - [ ] nDCG
-- [ ] Generation Metrics
+  - [x] nDCG
+- [x] Generation Metrics
   - [x] Faithfulness
   - [x] Answer Relevance
-  - [ ] Context Precision
-  - [ ] Context Recall
-  - [ ] Hallucination Rate
-- [ ] Evaluation Frameworks
+  - [x] Context Precision
+  - [x] Context Recall
+  - [x] Hallucination Rate
+- [x] Evaluation Frameworks
   - [x] Ragas
-  - [ ] DeepEval
+  - [x] DeepEval
   - [ ] LangSmith
   - [ ] TruLens
   - [ ] Phoenix
