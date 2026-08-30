@@ -1,93 +1,136 @@
-# Textbook Backend — Advanced AI Document Research Assistant
+# Textbook backend: AI document research assistant
 
-An AI-powered document research assistant backend modeled after **NotebookLM**. Built using **FastAPI**, **Prisma ORM**, **PostgreSQL**, **Qdrant Vector DB**, and **LangGraph**.
+The FastAPI backend for Textbook, an AI document research assistant modeled after Google NotebookLM. Built with FastAPI, LangGraph, Prisma, PostgreSQL via Supabase, Qdrant Cloud, and Google Gemini.
 
 ---
 
-## Tech Stack
+## Architecture and tech stack
 
-- **Framework:** FastAPI (Python)
-- **Database (Relational):** PostgreSQL via Supabase
+- **Framework:** FastAPI (Python 3.10+)
+- **Relational database:** PostgreSQL via Supabase
 - **ORM:** Prisma Client Python (`prisma`)
-- **Vector Database:** Qdrant Cloud (Dense + Sparse Vectors)
-- **Caching:** Redis (Upstash)
-- **AI & Data Engineering:**
-  - **PDF Parsing:** PyMuPDF (`fitz`)
-  - **Embeddings:** Sentence Transformers (`all-MiniLM-L6-v2`)
-  - **Keyword Indexing:** BM25 (`rank_bm25`)
-  - **Reranking:** Cross-Encoders (`sentence-transformers`)
-  - **Agentic Workflow:** LangGraph
-  - **Evaluation:** DeepEval / Ragas
-  - **Observability:** Langfuse Cloud
-- **Deployment:** Docker, Render / Railway
+- **Vector database:** Qdrant Cloud (Dense HNSW + Sparse BM25 + Payload Filters)
+- **Dense embeddings:** `BAAI/bge-large-en-v1.5` (1024-dimension normalized)
+- **Sparse embeddings:** `Qdrant/bm25` (FastEmbed)
+- **Reranker:** `BAAI/bge-reranker-base` (Cross-Encoder)
+- **Agent orchestration:** LangGraph (StateGraph with reflection and conditional retry loops)
+- **LLM provider:** Google Gemini (`gemini-3.6-flash` via `langchain-google-genai`)
+- **PDF extraction:** PyMuPDF (`pymupdf`)
+- **Benchmarking and evals:** Deterministic information retrieval metrics and LLM-as-a-judge
 
 ---
 
-## Project Structure (Planned & Current)
+## Directory structure
 
 ```text
 textbook-backend/
-├── main.py                # FastAPI entry point & app initialization
-├── requirements.txt       # Python package requirements
-├── README.md              # Backend documentation & roadmap
-├── venv/                  # Python virtual environment (git-ignored)
-├── prisma/                # Prisma schema and migrations (to be initialized)
-│   └── schema.prisma
-├── database/              # DB clients & connections
-│   ├── models.py
-│   └── qdrant_client.py
-├── routers/               # API route definitions
-│   ├── upload.py
-│   ├── search.py
-│   └── chat.py
-└── services/              # Core business & AI logic
-    ├── parser.py          # PDF text extraction
-    ├── chunker.py         # Semantic & Parent-Child text splitting
-    ├── embeddings.py      # Dense vector generation
-    ├── sparse_index.py    # BM25 keyword indexing
-    ├── retriever.py       # Hybrid retrieval & RRF
-    ├── reranker.py        # Cross-encoder re-scoring
-    └── generator.py       # RAG answer generation & citations
+├── main.py                # FastAPI entry point and route mounting
+├── requirements.txt       # Python dependencies
+├── .env                   # Environment variables (Qdrant, Supabase, Google)
+├── README.md              # Backend documentation
+├── core/                  # LLM setup and core configuration
+│   └── llm.py             # Google Gemini client initialization
+├── db/                    # Database clients
+│   ├── qdrant.py          # Qdrant client connection
+│   └── supabase.py        # Supabase client connection
+├── prisma/                # Prisma ORM schema
+│   └── schema.prisma      # Relational database models
+├── routers/               # API endpoint definitions
+│   ├── __init__.py        # Aggregator router (/api)
+│   ├── upload.py          # POST /api/upload - Document storage and ingestion
+│   ├── search.py          # POST /api/search - Hybrid search and cross-encoder
+│   └── chat.py            # POST /api/chat and POST /api/agent/chat
+├── services/              # Core business and AI services
+│   ├── parser.py          # PDF text extraction (PyMuPDF)
+│   ├── text_splitter.py   # Recursive character splitting
+│   ├── chunker.py         # Semantic, parent-child, and code chunking
+│   ├── embedder.py        # Dense (BGE-Large) and sparse (BM25) vectorizers
+│   ├── indexing.py        # Qdrant collection setup and payload indexing
+│   ├── ingestion.py       # Batch vector generation and point upsertion
+│   ├── analyzer.py        # Query rewriting, sub-queries, and HyDE generation
+│   ├── retriever.py       # Multi-tenant hybrid search and RRF fusion (k=60)
+│   ├── reranker.py        # Cross-encoder (BAAI/bge-reranker-base)
+│   ├── generator.py       # Lost-in-the-middle reordering and citation prompt
+│   └── storage.py         # Supabase bucket upload and download functions
+├── agents/                # LangGraph agentic workflows
+│   ├── state.py           # AgentState TypedDict schema
+│   ├── nodes.py           # planner, retriever, generator, reflection nodes
+│   └── graph.py           # Compiled LangGraph state machine
+├── evals/                 # Evaluation suite
+│   ├── datasets/          # Golden and synthetic evaluation datasets
+│   ├── metrics/           # Retrieval (math) and generation (LLM-judge) metrics
+│   ├── eval_retrieval.py  # Retrieval benchmark runner
+│   ├── eval_generation.py # Generation benchmark runner
+│   ├── run_evals.py       # Unified CLI evaluation runner
+│   └── reports/           # Evaluation reports (.json, .md)
+└── scripts/               # Utility scripts
+    ├── reset_db.py        # Reset and initialize Qdrant collection
+    └── seed_corpus.py     # Ingest ai-engineer.pdf benchmark corpus
 ```
 
 ---
 
-## Quickstart & Local Setup
+## Quickstart and local setup
 
 ### 1. Prerequisites
 - Python 3.10+
-- Node.js (required by Prisma CLI)
+- Node.js (for Prisma CLI)
+- Accounts for Qdrant Cloud, Supabase, and Google AI Studio
 
-### 2. Environment Setup
+### 2. Environment setup
+Create a `.env` file in `textbook-backend/`:
+```env
+GOOGLE_API_KEY="your-google-gemini-api-key"
+QDRANT_URL="https://your-cluster-id.us-east4-0.gcp.cloud.qdrant.io:6333"
+QDRANT_API_KEY="your-qdrant-api-key"
+DATABASE_URL="postgresql://postgres.your-project:your-password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true"
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SECRET_KEY="your-supabase-service-role-key"
+```
+
+### 3. Installation
 ```powershell
-# Navigate into backend directory
-cd textbook-backend
-
 # Create virtual environment
 python -m venv venv
 
-# Activate virtual environment (Windows PowerShell)
+# Activate virtual environment (Windows)
 .\venv\Scripts\Activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Generate Prisma client
+prisma generate
 ```
 
-### 3. Initialize Prisma ORM
+### 4. Database seeding and setup
 ```powershell
-prisma init
+# Reset Qdrant collection and configure HNSW and payload indexes
+python scripts/reset_db.py
+
+# Ingest and embed the sample textbook (ai-engineer.pdf)
+python scripts/seed_corpus.py
 ```
 
-### 4. Run Development Server
+### 5. Run development server
 ```powershell
-uvicorn main:app --reload
+uvicorn main:app --reload --port 8000
 ```
-Server will be running at `http://127.0.0.1:8000`. Access interactive API docs at `http://127.0.0.1:8000/docs`.
+- API docs: `http://localhost:8000/docs`
+
+### 6. Run evaluations
+```powershell
+# Run the complete retrieval and generation benchmark
+python evals/run_evals.py
+```
 
 ---
 
-## API Endpoints Summary
+## API endpoints summary
 
 | Method | Endpoint | Description | Status |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/` | Health check endpoint | Working |
+| `POST` | `/api/upload` | Upload multi-format documents to Supabase Storage | Working |
+| `POST` | `/api/search` | Two-stage hybrid search (dense + BM25 RRF + cross-encoder) | Working |
+| `POST` | `/api/chat` | Standard RAG pipeline with inline source citations | Working |
+| `POST` | `/api/agent/chat` | LangGraph agentic self-reflection chat pipeline | Working |
