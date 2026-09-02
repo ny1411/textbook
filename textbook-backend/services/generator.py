@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
 import logging
 from langchain_core.prompts import ChatPromptTemplate
 from core.llm import get_llm
@@ -78,7 +78,8 @@ def format_context_with_citations(chunks: List[Dict[str, Any]]) -> Tuple[str, Li
 def generate_answer(
     query: str, 
     chunks: List[Dict[str, Any]], 
-    temperature: float = 0.2
+    temperature: float = 0.2,
+    config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     if not chunks:
         return {
@@ -102,7 +103,7 @@ def generate_answer(
         response = chain.invoke({
             "context": context_str,
             "query": query,
-        })
+        }, config=config)
         answer_text = response.content if hasattr(response, "content") else str(response)
     except Exception as e:
         logger.error(f"Error generating answer: {str(e)}")

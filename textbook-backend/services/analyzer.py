@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional, Dict, Any
 from langchain_core.prompts import ChatPromptTemplate
 from core.llm import get_llm
 
@@ -27,9 +27,9 @@ prompt = ChatPromptTemplate.from_messages([
 analyzer_chain = prompt | structured_llm
 
 
-def analyze_query(user_query: str) -> QueryAnalysis:
+def analyze_query(user_query: str, config: Optional[Dict[str, Any]] = None) -> Optional[QueryAnalysis]:
     try:
-        return analyzer_chain.invoke({"user_query": user_query})
+        return analyzer_chain.invoke({"user_query": user_query}, config=config)
     except Exception as e:
         print("Error analyzing query:", e)
         return None

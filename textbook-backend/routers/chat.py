@@ -8,6 +8,7 @@ from services.reranker import reranker_with_cross_encoder
 from services.generator import generate_answer
 from agents.graph import graph
 from agents.state import AgentState
+from core.telemetry import create_langfuse_config
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     user_id: str
     query: str
+    conversation_id: Optional[str] = Field(None, description="Optional conversation/session ID to group messages in telemetry.")
     document_id: Optional[str] = None
     top_k: int = 5
     use_analysis: bool = False
@@ -43,14 +45,28 @@ class AgentChatResponse(ChatResponse):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
+    """Linear RAG pipeline endpoint with telemetry tracing."""
+    telemetry_config = create_langfuse_config(
+        user_id=request.user_id,
+        session_id=request.conversation_id,
+        trace_name="linear-rag-chat",
+        tags=["pipeline:linear-rag"],
+        metadata={
+            "document_id": request.document_id,
+            "top_k": request.top_k,
+            "use_analysis": request.use_analysis,
+        }
+    )
+
     try:
         query_to_use = request.query
         if request.use_analysis:
-            analysis = analyze_query(request.query)
-            query_to_use = analysis.rewritten_query
-            logger.info(f"Analysis: {analysis}")
+            analysis = analyze_query(request.query, config=telemetry_config)
+            if analysis and analysis.rewritten_query:
+                query_to_use = analysis.rewritten_query
+                logger.info(f"Analysis: {analysis}")
         
-        # run hybrid search
+        # Run hybrid search (dense + sparse)
         search_response = hybrid_search(
             user_id=request.user_id,
             query=query_to_use,
@@ -58,17 +74,18 @@ async def chat(request: ChatRequest) -> ChatResponse:
             document_id=request.document_id,
         )
 
-        # rerank chunks
+        # Rerank chunks using Cross-Encoder
         reranked_chunks = reranker_with_cross_encoder(
             query=query_to_use,
             candidate_chunks=search_response,
             top_k=request.top_k
         )
 
-        # pass reranked chunks to the generator
+        # Generate grounded answer with citations
         generation_result = generate_answer(
             query=query_to_use,
-            chunks=reranked_chunks
+            chunks=reranked_chunks,
+            config=telemetry_config
         )
 
         return ChatResponse(
@@ -85,6 +102,19 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
 @router.post("/agent/chat", response_model=AgentChatResponse)
 async def agent_chat(request: ChatRequest) -> AgentChatResponse:
+    """Agentic LangGraph workflow endpoint with telemetry tracing."""
+    telemetry_config = create_langfuse_config(
+        user_id=request.user_id,
+        session_id=request.conversation_id,
+        trace_name="agentic-rag-chat",
+        tags=["pipeline:agentic-rag", "langgraph"],
+        metadata={
+            "document_id": request.document_id,
+            "top_k": request.top_k,
+            "max_iterations": 2,
+        }
+    )
+
     try:
         initial_state: AgentState = {
             "user_id": request.user_id,
@@ -93,7 +123,7 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
             "max_iterations": 2,
         }
 
-        result: AgentState = graph.invoke(initial_state)
+        result: AgentState = graph.invoke(initial_state, config=telemetry_config)
 
         return AgentChatResponse(
             query=request.query,
