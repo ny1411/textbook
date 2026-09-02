@@ -6,6 +6,7 @@ python-multipart
 prisma
 supabase
 pymupdf 
+langchain
 langchain-text-splitters
 langchain-experimental
 langchain-huggingface
@@ -16,3 +17,5 @@ langchain-google-genai
 langchain-community 
 sentence-transformers
 langgraph
+langfuse>=2.0.0
+upstash-redis>=1.0.0
