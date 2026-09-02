@@ -175,7 +175,7 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 14: Observability & Caching (Production Polish)
 **Description:** Tracking the LLM to see exactly what it is thinking, how much it costs, and caching common answers so we don't pay the LLM twice for the same question.
-- [ ] Integrate Langfuse or Phoenix for traces (tracking).
+- [x] Integrate Langfuse for traces (tracking).
   - *Documentation:* [Langfuse Docs](https://langfuse.com/docs)
 - [ ] Integrate Redis for Semantic Caching.
   - *Documentation:* [Upstash Redis](https://upstash.com/docs/redis/overall/getstarted)
