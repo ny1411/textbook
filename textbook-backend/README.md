@@ -89,13 +89,33 @@ SUPABASE_SECRET_KEY="your-supabase-service-role-key"
 ```
 
 ### 3. Installation
+
+**Create virtual environment:**
 ```powershell
-# Create virtual environment
+# Windows (PowerShell / Command Prompt)
 python -m venv venv
 
-# Activate virtual environment (Windows)
-.\venv\Scripts\Activate
+# macOS / Linux
+python3 -m venv venv
+```
 
+**Activate virtual environment:**
+```powershell
+# Windows (PowerShell) - Note the leading ".\" or ".\venv\Scripts\Activate.ps1"
+.\venv\Scripts\Activate.ps1
+
+# (Optional) If PowerShell blocks script execution, run this once:
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Windows (Command Prompt - cmd.exe)
+venv\Scripts\activate.bat
+
+# macOS / Linux (bash/zsh)
+source venv/bin/activate
+```
+
+**Install dependencies & setup Prisma:**
+```powershell
 # Install dependencies
 pip install -r requirements.txt
 
