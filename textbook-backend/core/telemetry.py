@@ -29,6 +29,7 @@ def create_langfuse_config(
     trace_name: Optional[str] = None,
     tags: Optional[List[str]] = None,
     metadata: Optional[Dict[str, Any]] = None,
+    cache_hit: bool = False,
 ) -> Dict[str, Any]:
     """
     Generates a standard LangChain/LangGraph config dict with Langfuse callback,
