@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Union
 import logging
 from services.analyzer import analyze_query
 from services.retriever import hybrid_search
@@ -9,6 +9,7 @@ from services.generator import generate_answer
 from agents.graph import graph
 from agents.state import AgentState
 from core.telemetry import create_langfuse_config
+from services.caching import get_cached_response, set_cached_response
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,17 @@ class AgentChatResponse(ChatResponse):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
+    cached_response = get_cached_response(
+        user_id=request.user_id,
+        document_id=request.document_id,
+        query=request.query
+    )
+    if cached_response:
+        logger.info(f"Cache hit for /chat")
+        return ChatResponse(**cached_response)
+
+    logger.info(f"Cache miss for /chat")
+    
     """Linear RAG pipeline endpoint with telemetry tracing."""
     telemetry_config = create_langfuse_config(
         user_id=request.user_id,
@@ -55,7 +67,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
             "document_id": request.document_id,
             "top_k": request.top_k,
             "use_analysis": request.use_analysis,
-        }
+        },
+        cache_hit=bool(cached_response)
     )
 
     try:
@@ -88,12 +101,21 @@ async def chat(request: ChatRequest) -> ChatResponse:
             config=telemetry_config
         )
 
-        return ChatResponse(
+        result = ChatResponse(
             query=request.query,
             applied_query=query_to_use,
             answer=generation_result["answer"],
             citations=generation_result["citations"]
         )
+
+        set_cached_response(
+            user_id=request.user_id,
+            document_id=request.document_id,
+            query=request.query,
+            response=result
+        )
+
+        return result
 
     except Exception as e:
         logger.error(f"Search failed for user {request.user_id}: {str(e)}")
@@ -102,6 +124,17 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
 @router.post("/agent/chat", response_model=AgentChatResponse)
 async def agent_chat(request: ChatRequest) -> AgentChatResponse:
+    cached_response = get_cached_response(
+        user_id=request.user_id,
+        document_id=request.document_id,
+        query=request.query
+    )
+    if cached_response:
+        logger.info(f"Cache hit for /agent/chat")
+        return AgentChatResponse(**cached_response)
+
+    logger.info(f"Cache miss for /agent/chat")
+
     """Agentic LangGraph workflow endpoint with telemetry tracing."""
     telemetry_config = create_langfuse_config(
         user_id=request.user_id,
@@ -112,7 +145,8 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
             "document_id": request.document_id,
             "top_k": request.top_k,
             "max_iterations": 2,
-        }
+        },
+        cache_hit=bool(cached_response)
     )
 
     try:
@@ -125,7 +159,7 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
 
         result: AgentState = graph.invoke(initial_state, config=telemetry_config)
 
-        return AgentChatResponse(
+        result = AgentChatResponse(
             query=request.query,
             applied_query=result.get("rewritten_query") or request.query,
             answer=result.get("answer", "No answer could be generated."),
@@ -135,6 +169,15 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
             critique=result.get("critique"),
             iteration_count=result.get("iteration_count"),
         )
+
+        set_cached_response(
+            user_id=request.user_id,
+            document_id=request.document_id,
+            query=request.query,
+            response=result
+        )
+
+        return result
 
     except Exception as e:
         logger.error(f"Agentic chat failed for user {request.user_id}: {str(e)}")
