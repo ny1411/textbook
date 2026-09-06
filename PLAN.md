@@ -177,7 +177,7 @@ Use `[x]` to mark tasks as completed.
 **Description:** Tracking the LLM to see exactly what it is thinking, how much it costs, and caching common answers so we don't pay the LLM twice for the same question.
 - [x] Integrate Langfuse for traces (tracking).
   - *Documentation:* [Langfuse Docs](https://langfuse.com/docs)
-- [ ] Integrate Redis for Semantic Caching.
+- [x] Integrate Redis for Semantic Caching.
   - *Documentation:* [Upstash Redis](https://upstash.com/docs/redis/overall/getstarted)
 - **Backend Files:**
   - `backend/core/telemetry.py`
