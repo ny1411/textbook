@@ -3,7 +3,8 @@
 import {
     SlidersHorizontal,
     PanelRightClose,
-    PanelRight
+    PanelRight,
+    PanelLeft
 } from "lucide-react";
 import Image from "next/image";
 import logo from "@/public/logo.png"
@@ -12,7 +13,9 @@ interface HeaderProps {
     textbookTitle: string;
     userAvatar?: any;
     isStudioOpen?: boolean;
+    isSourceOpen?: boolean;
     onToggleStudio?: () => void;
+    onToggleSources?: () => void;
     onOpenInspector?: () => void;
 }
 
@@ -20,13 +23,24 @@ export function Header({
     textbookTitle = "AI Engineering",
     userAvatar = "N",
     isStudioOpen = true,
+    isSourceOpen = false,
     onToggleStudio,
+    onToggleSources,
     onOpenInspector
 }: HeaderProps) {
     return (
         <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-zinc-700 backdrop-blur-md">
             {/* Left Zone: Brand and Title */}
             <div className="flex items-center gap-2">
+                {/* Mobile Toggle Button for Left Sources (hidden on lg and above) */}
+                <button
+                    onClick={onToggleSources}
+                    className="lg:hidden p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
+                    title="Toggle Sources"
+                >
+                    <PanelLeft className="size-4" />
+                </button>
+
                 {/* App Logo */}
                 <div className="flex items-center gap-2 cursor-pointer">
                     <Image
