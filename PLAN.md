@@ -184,18 +184,82 @@ Use `[x]` to mark tasks as completed.
   - `backend/services/cache.py`
 - **Key Functions:** `init_langfuse()`, `semantic_cache_lookup(query)`.
 
-### Phase 15: Frontend Chat Interface
-**Description:** Building the user-facing web app using Next.js.
-- [ ] Build drag-and-drop document upload.
-- [ ] Build chat interface with streaming text and clickable citation links.
-  - *Documentation:* [Next.js App Router UI](https://nextjs.org/docs/app)
+### Phase 15: Frontend Research Interface (NotebookLM-Style Next.js App)
+**Description:** Building the user-facing web app using Next.js App Router, React 19, TypeScript, and Tailwind CSS v4. Modeled after Google NotebookLM, this interface features a 3-panel research workspace: Sources & Upload, Chat with Citation badging & Agentic reflection metrics, and a Studio/Inspector panel.
+
+#### Phase 15.1: Architecture & Design System Setup
+- [ ] Set up Next.js project structure, Tailwind CSS v4 design tokens, and utility libraries (`clsx`, `tailwind-merge`, `lucide-react`, `zustand`).
+- [ ] Implement responsive 3-column research layout (Sources Sidebar, Chat Center, Studio Inspector).
+  - *Documentation:* [Next.js App Router](https://nextjs.org/docs/app) | [Tailwind CSS v4](https://tailwindcss.com/docs)
 - **Frontend Files:**
-  - `frontend/app/page.tsx`: Main dashboard.
-  - `frontend/components/ChatBox.tsx`: The chat UI.
-  - `frontend/components/Citation.tsx`: UI for rendering citations.
-- **Key Functions:** `useChat()` (React hook), `renderCitations()`.
-- **Component Directory:** Use [Beautiful UI](https://beautiful-ui-five.vercel.app/), [21st.dev](https://21st.dev), [shadcn ui](https://ui.shadcn.com/), [UI Goodies](https://uigoodies.com/)
-- **Special Components/Websites:** [Epiminds AI - Awwwards.com](https://www.awwwards.com/sites/epiminds-ai), [Rig AI](https://www.awwwards.com/sites/rig-ai), [Cartesia](https://saaslandingpage.com/cartesia/), [Sonic by Cartesia](https://www.cartesia.ai/sonic), [Hydra DB](https://hydradb.com/), [Aria Networks](https://arianetworks.com/)
+  - `textbook-frontend/app/layout.tsx`: Root layout, fonts, and theme providers.
+  - `textbook-frontend/app/globals.css`: Design system tokens, slate dark theme, custom scrollbars.
+  - `textbook-frontend/components/layout/Header.tsx`: Top navigation bar with active notebook title and status.
+  - `textbook-frontend/components/layout/ResizableLayout.tsx`: 3-panel collapsible layout container.
+- **Key Functions:** `cn()`, `Header()`, `ResizableLayout()`.
+
+#### Phase 15.2: Backend Route Integration & Typed API Layer
+- [ ] Configure Next.js rewrites proxy in `next.config.ts` to seamlessly route `/api/*` requests to the FastAPI backend (`http://localhost:8000/api/*`) without CORS issues.
+- [ ] Define TypeScript schemas matching FastAPI Pydantic models (`ChatRequest`, `ChatResponse`, `AgentChatResponse`, `SearchRequest`, `SearchResponse`, `UploadResponse`).
+- [ ] Implement typed API fetch modules with centralized error handling.
+  - *Documentation:* [Next.js Rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)
+- **Frontend Files:**
+  - `textbook-frontend/next.config.ts`: Proxy rewrites configuration.
+  - `textbook-frontend/types/api.ts`: API request and response TypeScript interfaces.
+  - `textbook-frontend/lib/api/client.ts`: Base fetch client.
+  - `textbook-frontend/lib/api/upload.ts`: Document upload caller (`POST /api/upload`).
+  - `textbook-frontend/lib/api/chat.ts`: Fast RAG (`POST /api/chat`) and Agentic RAG (`POST /api/agent/chat`) callers.
+  - `textbook-frontend/lib/api/search.ts`: Diagnostic hybrid search caller (`POST /api/search`).
+- **Key Functions:** `uploadDocument()`, `sendChatMessage()`, `sendAgentChatMessage()`, `performSearch()`.
+
+#### Phase 15.3: Source Management & Document Upload
+- [ ] Build drag-and-drop document upload interface with file type validation (PDF, DOCX, TXT, MD).
+- [ ] Build sources sidebar showing uploaded files, file sizes, page counts, and active multi-selection checkboxes for filtering queries.
+- [ ] Implement document inspection modal to preview document text.
+- **Frontend Files:**
+  - `textbook-frontend/components/sources/FileUploadDropzone.tsx`: Drag-and-drop upload zone with progress bar.
+  - `textbook-frontend/components/sources/SourceCard.tsx`: Individual source card with delete and toggle.
+  - `textbook-frontend/components/sources/SidebarSources.tsx`: Complete source management panel.
+  - `textbook-frontend/components/sources/SourceViewerModal.tsx`: Extracted text viewer with passage highlighting.
+  - `textbook-frontend/hooks/useUpload.ts`: Hook managing file uploads and states.
+  - `textbook-frontend/hooks/useSources.ts`: Hook managing active documents and selection filters.
+- **Key Functions:** `useUpload()`, `useSources()`, `onDrop()`, `toggleSource()`.
+
+#### Phase 15.4: Interactive Chat Interface & Citation Engine
+- [ ] Build chat message container with user and assistant message bubbles.
+- [ ] Integrate `react-markdown` and `remark-gfm` with custom citation pill renderer.
+- [ ] Implement interactive citations: clicking a citation badge (`[1]`, `[source_1]`) highlights the exact source excerpt and displays metadata (page number, rerank score).
+- [ ] Implement mode toggle: switch between **Fast RAG** (`/api/chat`) and **Agentic RAG** (`/api/agent/chat`).
+- [ ] Add query suggestion prompt chips ("Summarize key concepts", "Compare findings", "Explain methodology").
+- **Frontend Files:**
+  - `textbook-frontend/components/chat/ChatInterface.tsx`: Main chat container with scroll area.
+  - `textbook-frontend/components/chat/ChatMessage.tsx`: Markdown message bubble with citation badges.
+  - `textbook-frontend/components/chat/ChatInput.tsx`: Auto-resizing textarea with submit action and mode toggle.
+  - `textbook-frontend/components/chat/CitationBadge.tsx`: Interactive citation pill with preview popover.
+  - `textbook-frontend/components/chat/SuggestedQueries.tsx`: Quick query suggestions.
+  - `textbook-frontend/hooks/useChat.ts`: Custom hook managing chat state, history, and pipeline mode.
+- **Key Functions:** `useChat()`, `handleSendMessage()`, `renderCitations()`, `onCitationClick()`.
+
+#### Phase 15.5: Agent Diagnostics & Studio Notes Panel
+- [ ] Build Studio/Inspector panel on the right side for notes, summaries, and deep citation analysis.
+- [ ] Build Agent Metrics card to display LangGraph self-reflection data: confidence score gauge, groundedness status, iteration count, and critique thoughts.
+- [ ] Build Retrieval Diagnostic modal to test and inspect Stage 1 (Hybrid Dense + Sparse) and Stage 2 (Cross-Encoder) scores.
+- **Frontend Files:**
+  - `textbook-frontend/components/layout/StudioPanel.tsx`: Right panel for notes and active citation view.
+  - `textbook-frontend/components/chat/AgentMetrics.tsx`: Confidence score, groundedness, and critique display.
+  - `textbook-frontend/components/search/RetrievalInspectorModal.tsx`: Retrieval testing drawer.
+  - `textbook-frontend/stores/useNotebookStore.ts`: Global state for active citation, active notebook, and studio notes.
+- **Key Functions:** `AgentMetrics()`, `RetrievalInspectorModal()`, `useNotebookStore()`.
+
+#### Phase 15.6: Verification & End-to-End Polish
+- [ ] Verify full roundtrip with FastAPI backend: PDF upload -> Hybrid Search -> Rerank -> Generation with Citations -> UI Render.
+- [ ] Verify multi-tenant isolation using consistent `userId`.
+- [ ] Validate responsive layout on desktop and tablet viewports.
+- [ ] Run Next.js linting and production build (`npm run build`).
+
+- **Component Directory Inspiration:** [Beautiful UI](https://beautiful-ui-five.vercel.app/), [21st.dev](https://21st.dev), [shadcn ui](https://ui.shadcn.com/), [UI Goodies](https://uigoodies.com/)
+- **Special Components/Websites Reference:** [Epiminds AI - Awwwards.com](https://www.awwwards.com/sites/epiminds-ai), [Rig AI](https://www.awwwards.com/sites/rig-ai), [Cartesia](https://saaslandingpage.com/cartesia/), [Sonic by Cartesia](https://www.cartesia.ai/sonic), [Hydra DB](https://hydradb.com/), [Aria Networks](https://arianetworks.com/)
+
 
 ### Phase 16: Deployment & Containerization (Production)
 **Description:** Moving the application from local development to the live internet using modern, free-tier cloud providers. Since our backend uses local ML models, it must be containerized.
