@@ -251,7 +251,15 @@ Use `[x]` to mark tasks as completed.
   - `textbook-frontend/stores/useNotebookStore.ts`: Global state for active citation, active notebook, and studio notes.
 - **Key Functions:** `AgentMetrics()`, `RetrievalInspectorModal()`, `useNotebookStore()`.
 
-#### Phase 15.6: Verification & End-to-End Polish
+### Phase 15.6: Better UX
+- [ ] Prevent lenis to hijak internal scroll areas like scrollable chatbox, scrollable source viewer, etc. Add lenis `data-lenis-prevent` on internal scroll containers, so chat scroll works smoothly.
+- [ ] Add **MeshGradint** to background of central hero section, use [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient).
+- [ ] Add **MeshGradint** on audio playback card, use animated shader as a living waveform blob visualizer from [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`
+- [ ] Add **Heatmap** effect during image generation using [Shader Paper Design Heatmap](https://shaders.paper.design/heatmap).
+- [ ] Add **LiquidMetal** blob pulse effect when agent is in reflecting/thinking mode. Use [Shader Paper Design Liquid Metal](https://shaders.paper.design/liquid-metal).
+- [ ] Add **PulsatingBorder** effect to chat input container when agent is generating responses. Use [Shader Paper Design Pulsating Border](https://shaders.paper.design/pulsing-border).
+
+#### Phase 15.7: Verification & End-to-End Polish
 - [ ] Verify full roundtrip with FastAPI backend: PDF upload -> Hybrid Search -> Rerank -> Generation with Citations -> UI Render.
 - [ ] Verify multi-tenant isolation using consistent `userId`.
 - [ ] Validate responsive layout on desktop and tablet viewports.
