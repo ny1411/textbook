@@ -48,7 +48,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={isAgentMode ? "Ask with Agentic Reasoning" : "Ask any question"}
-                    className="w-full resize-none bg-transparent outline-none text-md px-2 text-zinc-100 placeholder:text-zinc-500 leading-relaxed max-h-[180px] overflow-y-auto scrollbar-none selection:bg-indigo-600/10 selection:text-indigo-400"
+                    className="w-full resize-none bg-transparent outline-none text-md px-2 text-zinc-100 placeholder:text-zinc-500 leading-relaxed max-h-[180px] overflow-y-auto selection:bg-indigo-600/10 selection:text-indigo-400"
                 />
                 {/* Bottom control bar */}
                 <div className="flex items-center justify-between pt-2 mt-2">
