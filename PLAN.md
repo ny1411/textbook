@@ -188,7 +188,7 @@ Use `[x]` to mark tasks as completed.
 **Description:** Building the user-facing web app using Next.js App Router, React 19, TypeScript, and Tailwind CSS v4. Modeled after Google NotebookLM, this interface features a 3-panel research workspace: Sources & Upload, Chat with Citation badging & Agentic reflection metrics, and a Studio/Inspector panel.
 
 #### Phase 15.1: Architecture & Design System Setup
-- [ ] Set up Next.js project structure, Tailwind CSS v4 design tokens, and utility libraries (`clsx`, `tailwind-merge`, `lucide-react`, `zustand`).
+- [x] Set up Next.js project structure, Tailwind CSS v4 design tokens, and utility libraries (`clsx`, `tailwind-merge`, `lucide-react`, `zustand`).
 - [ ] Implement responsive 3-column research layout (Sources Sidebar, Chat Center, Studio Inspector).
   - *Documentation:* [Next.js App Router](https://nextjs.org/docs/app) | [Tailwind CSS v4](https://tailwindcss.com/docs)
 - **Frontend Files:**
