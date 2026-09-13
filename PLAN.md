@@ -189,7 +189,7 @@ Use `[x]` to mark tasks as completed.
 
 #### Phase 15.1: Architecture & Design System Setup
 - [x] Set up Next.js project structure, Tailwind CSS v4 design tokens, and utility libraries (`clsx`, `tailwind-merge`, `lucide-react`, `zustand`).
-- [ ] Implement responsive 3-column research layout (Sources Sidebar, Chat Center, Studio Inspector).
+- [x] Implement responsive 3-column research layout (Sources Sidebar, Chat Center, Studio Inspector).
   - *Documentation:* [Next.js App Router](https://nextjs.org/docs/app) | [Tailwind CSS v4](https://tailwindcss.com/docs)
 - **Frontend Files:**
   - `textbook-frontend/app/layout.tsx`: Root layout, fonts, and theme providers.
