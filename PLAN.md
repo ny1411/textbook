@@ -199,9 +199,9 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `cn()`, `Header()`, `ResizableLayout()`.
 
 #### Phase 15.2: Backend Route Integration & Typed API Layer
-- [ ] Configure Next.js rewrites proxy in `next.config.ts` to seamlessly route `/api/*` requests to the FastAPI backend (`http://localhost:8000/api/*`) without CORS issues.
-- [ ] Define TypeScript schemas matching FastAPI Pydantic models (`ChatRequest`, `ChatResponse`, `AgentChatResponse`, `SearchRequest`, `SearchResponse`, `UploadResponse`).
-- [ ] Implement typed API fetch modules with centralized error handling.
+- [x] Configure Next.js rewrites proxy in `next.config.ts` to seamlessly route `/api/*` requests to the FastAPI backend (`http://localhost:8000/api/*`) without CORS issues.
+- [x] Define TypeScript schemas matching FastAPI Pydantic models (`ChatRequest`, `ChatResponse`, `AgentChatResponse`, `SearchRequest`, `SearchResponse`, `UploadResponse`).
+- [x] Implement typed API fetch modules with centralized error handling.
   - *Documentation:* [Next.js Rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)
 - **Frontend Files:**
   - `textbook-frontend/next.config.ts`: Proxy rewrites configuration.
