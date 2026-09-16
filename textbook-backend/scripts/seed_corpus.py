@@ -22,7 +22,7 @@ PDF_PATH = Path(__file__).resolve().parent.parent.parent / "ai-engineer.pdf"
 
 def seed_pdf_corpus(
     pdf_path: Path = PDF_PATH,
-    user_id: str = "eval_test_user",
+    user_id: str = "default_user",
     document_id: str = "ai_engineer_handbook"
 ):
     if not pdf_path.exists():
