@@ -213,9 +213,9 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `uploadDocument()`, `sendChatMessage()`, `sendAgentChatMessage()`, `performSearch()`.
 
 #### Phase 15.3: Source Management & Document Upload
-- [ ] Build drag-and-drop document upload interface with file type validation (PDF, DOCX, TXT, MD).
-- [ ] Build sources sidebar showing uploaded files, file sizes, page counts, and active multi-selection checkboxes for filtering queries.
-- [ ] Implement document inspection modal to preview document text.
+- [x] Build drag-and-drop document upload interface with file type validation (PDF, DOCX, TXT, MD).
+- [x] Build sources sidebar showing uploaded files, file sizes, page counts, and active multi-selection checkboxes for filtering queries.
+- [x] Implement document inspection modal to preview document text.
 - **Frontend Files:**
   - `textbook-frontend/components/sources/FileUploadDropzone.tsx`: Drag-and-drop upload zone with progress bar.
   - `textbook-frontend/components/sources/SourceCard.tsx`: Individual source card with delete and toggle.
