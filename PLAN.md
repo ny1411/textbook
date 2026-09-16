@@ -226,11 +226,11 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `useUpload()`, `useSources()`, `onDrop()`, `toggleSource()`.
 
 #### Phase 15.4: Interactive Chat Interface & Citation Engine
-- [ ] Build chat message container with user and assistant message bubbles.
-- [ ] Integrate `react-markdown` and `remark-gfm` with custom citation pill renderer.
-- [ ] Implement interactive citations: clicking a citation badge (`[1]`, `[source_1]`) highlights the exact source excerpt and displays metadata (page number, rerank score).
-- [ ] Implement mode toggle: switch between **Fast RAG** (`/api/chat`) and **Agentic RAG** (`/api/agent/chat`).
-- [ ] Add query suggestion prompt chips ("Summarize key concepts", "Compare findings", "Explain methodology").
+- [x] Build chat message container with user and assistant message bubbles.
+- [x] Integrate `react-markdown` and `remark-gfm` with custom citation pill renderer.
+- [x] Implement interactive citations: clicking a citation badge (`[1]`, `[source_1]`) highlights the exact source excerpt and displays metadata (page number, rerank score).
+- [x] Implement mode toggle: switch between **Fast RAG** (`/api/chat`) and **Agentic RAG** (`/api/agent/chat`).
+- [x] Add query suggestion prompt chips ("Summarize key concepts", "Compare findings", "Explain methodology").
 - **Frontend Files:**
   - `textbook-frontend/components/chat/ChatInterface.tsx`: Main chat container with scroll area.
   - `textbook-frontend/components/chat/ChatMessage.tsx`: Markdown message bubble with citation badges.
