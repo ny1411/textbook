@@ -2,6 +2,7 @@
 
 import { ChatInput } from "@/components/chat/ChatInput";
 import { Header } from "@/components/layout/Header";
+import { SidebarSources } from "@/components/sources/SidebarSources";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
@@ -49,7 +50,7 @@ export default function Home() {
           `}
           data-lenis-prevent
         >
-          <div className="p-4">Left Panel (sources)</div>
+          <SidebarSources />
         </motion.aside>
 
         {/* Center Panel */}
