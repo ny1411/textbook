@@ -275,3 +275,26 @@ Use `[x]` to mark tasks as completed.
   - `backend/Dockerfile`: Instructions to build the Python environment and ML models.
 - **Frontend Files:**
   - `frontend/vercel.json`: (Optional) Vercel-specific routing or configuration.
+
+---
+
+### Remaining Implementations:
+**Description:** Essential production-readiness, data persistence, and security tasks to connect the prototype frontend to a multi-user, persistent backend.
+
+- [ ] **User Authentication & Session Persistence (Supabase Auth):**
+  - Implement Login/Signup modal or page using Supabase Auth (`@supabase/ssr` or `@supabase/supabase-js`).
+  - Wire actual user UUID into `useUserStore` instead of hardcoded `"default_user"`.
+  - Implement `GET /api/documents?userId=...` so the Sources sidebar automatically fetches and persists existing documents on page reload.
+- [ ] **End-to-End Ingestion Trigger (Upload -> Qdrant Indexing):**
+  - Chain `upload_document` to automatically run `extract_text_with_pymupdf()`, chunking (`semantic_chunking()` / `parent_child_chunking()`), vector embedding, and upserting points to Qdrant so uploaded files are immediately searchable.
+  - *Optional / Production:* Offload parsing & embedding to a background worker (e.g., Celery or Upstash QStash).
+- [ ] **Full-Cycle Document Deletion API (`DELETE /api/documents`):**
+  - Create a unified deletion endpoint that atomically cleans up:
+    1. Supabase Storage: delete file bytes from `textbook-documents` bucket.
+    2. Qdrant Cloud: delete all vector points matching `document_id` and `user_id`.
+    3. PostgreSQL: cascade delete metadata from `uploaded_documents` table via Prisma.
+- [ ] **Conversation & Chat History Persistence:**
+  - Persist conversation messages, generated answers, and citations into PostgreSQL (`conversations`, `conversation_messages`, and `message_sources` Prisma tables).
+  - Enable multiple notebook threads and past chat history switching.
+- [ ] **Streaming Responses (Server-Sent Events / SSE):**
+  - Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens with citation badges rendering as they arrive.
