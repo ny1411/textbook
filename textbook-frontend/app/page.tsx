@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatInput } from "@/components/chat/ChatInput";
+import ChatInterface from "@/components/chat/ChatInterface";
 import { Header } from "@/components/layout/Header";
 import { SidebarSources } from "@/components/sources/SidebarSources";
 import { AnimatePresence, motion } from "framer-motion";
@@ -55,10 +55,7 @@ export default function Home() {
 
         {/* Center Panel */}
         <section className="flex-1 min-w-0 flex flex-col h-full relative" data-lenis-prevent>
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Chat history will render here */}
-          </div>
-          <ChatInput onSend={(query, isAgent) => console.log("Sent:", { query, isAgent })} />
+          <ChatInterface />
         </section>
 
         {/* Right Panel */}
