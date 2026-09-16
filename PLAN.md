@@ -293,9 +293,15 @@ Use `[x]` to mark tasks as completed.
   - Implement Login/Signup modal or page using Supabase Auth (`@supabase/ssr` or `@supabase/supabase-js`).
   - Wire actual user UUID into `useUserStore` instead of hardcoded `"default_user"`.
   - Implement `GET /api/documents?userId=...` so the Sources sidebar automatically fetches and persists existing documents on page reload.
-- [ ] **End-to-End Ingestion Trigger (Upload -> Qdrant Indexing):**
-  - Chain `upload_document` to automatically run `extract_text_with_pymupdf()`, chunking (`semantic_chunking()` / `parent_child_chunking()`), vector embedding, and upserting points to Qdrant so uploaded files are immediately searchable.
-  - *Optional / Production:* Offload parsing & embedding to a background worker (e.g., Celery or Upstash QStash).
+- [ ] **Adaptive Content-Aware Ingestion Pipeline (Upload -> Dynamic Chunking -> Qdrant Indexing):**
+  - Ensure `POST /api/upload` not only saves the file to Supabase Storage, but automatically triggers text extraction, chunking, embedding, and upserting into Qdrant so documents are instantly queryable in `/api/chat`.
+  - **Dynamic Strategy Selection:** Inspect the uploaded file type and structure to route into the optimal chunking strategy:
+    - **Code Chunking:** For programming scripts and code files (`.py`, `.ts`, `.js`, `.json`, etc.) preserving function, class, and block scope boundaries using language-aware AST chunkers.
+    - **Semantic Chunking:** For dense prose, essays, and unstructured text using cosine distance breakpoints between consecutive sentences to keep related concepts together.
+    - **Parent-Child Chunking:** For long-form textbooks, academic papers, and manuals with headers/sections to generate small child chunks (for high-precision vector search) linked to larger parent context windows (for complete context in generation).
+  - **Cache Invalidation:** Invalidate/flush Redis semantic cache keys for the user (`cache:{user_id}:*`) whenever a new document is ingested so stale "no relevant documents" responses are never served.
+  - *Optional / Production:* Offload parsing & embedding to a background worker (e.g., Celery, FastAPI `BackgroundTasks`, or Upstash QStash).
+
 - [ ] **Full-Cycle Document Deletion API (`DELETE /api/documents`):**
   - Create a unified deletion endpoint that atomically cleans up:
     1. Supabase Storage: delete file bytes from `textbook-documents` bucket.
