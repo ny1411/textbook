@@ -16,7 +16,6 @@ interface HeaderProps {
     isSourceOpen?: boolean;
     onToggleStudio?: () => void;
     onToggleSources?: () => void;
-    onOpenInspector?: () => void;
 }
 
 export function Header({
@@ -25,8 +24,7 @@ export function Header({
     isStudioOpen = true,
     isSourceOpen = false,
     onToggleStudio,
-    onToggleSources,
-    onOpenInspector
+    onToggleSources
 }: HeaderProps) {
     return (
         <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-zinc-700 backdrop-blur-md">
@@ -59,14 +57,6 @@ export function Header({
 
             {/* Right Zone */}
             <div className="flex items-center gap-2">
-                {/* Diagnostic Inspector Button */}
-                <button
-                    onClick={onOpenInspector}
-                    title="Open Retrieval Inspector"
-                    className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
-                >
-                    <SlidersHorizontal className="size-4" />
-                </button>
                 {/* Studio Panel Toggle */}
                 <button
                     onClick={onToggleStudio}
