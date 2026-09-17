@@ -2,7 +2,10 @@
 
 import ChatInterface from "@/components/chat/ChatInterface";
 import { Header } from "@/components/layout/Header";
+import { StudioPanel } from "@/components/layout/StudioPanel";
+import { RetrievalInspectorModal } from "@/components/search/RetrievalInspectorModal";
 import { SidebarSources } from "@/components/sources/SidebarSources";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
@@ -11,6 +14,8 @@ export default function Home() {
   const [isSourceOpen, setIsSourceOpen] = useState(false);
   const [textbookTitle, setTextbookTitle] = useState("AI Engineering");
   const [userAvatar, setUserAvatar] = useState("N");
+
+  const { isInspectorOpen, setInspectorOpen } = useTextbookStore();
 
   return (
     <div className="h-dvh w-screen flex flex-col overflow-hidden bg-zinc-900 text-zinc-100 antialiased">
@@ -21,7 +26,6 @@ export default function Home() {
         onToggleStudio={() => setIsStudioOpen(!isStudioOpen)}
         onToggleSources={() => setIsSourceOpen(!isSourceOpen)}
         userAvatar={userAvatar}
-        onOpenInspector={() => { }}
       />
       <main className="flex-1 flex overflow-hidden">
         {/* Backdrop overlay for mobile/tablet when either sidebar is open */}
@@ -80,14 +84,15 @@ export default function Home() {
               `}
               data-lenis-prevent
             >
-              {/* Inner container with fixed width prevents text squishing while collapsing */}
-              <div className="p-4">
-                Right panel (studio)
-              </div>
+              <StudioPanel />
             </motion.aside>
           )}
         </AnimatePresence>
       </main>
+      <RetrievalInspectorModal
+        isOpen={isInspectorOpen}
+        onClose={() => setInspectorOpen(false)}
+      />
     </div>
   );
 }

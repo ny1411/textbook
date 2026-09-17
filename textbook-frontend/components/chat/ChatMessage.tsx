@@ -7,6 +7,7 @@ import { CitationItem } from "@/types/api";
 import { ChatMessageItem } from "@/types/chat";
 import { AlertTriangle, CheckCircle, FileSpreadsheet, Sparkles, UserRound, Zap } from "lucide-react";
 import { CitationBadge } from "./CitationBadge";
+import { AgentMetrics } from "./AgentMetrics";
 
 interface ChatMessageProps {
     message: ChatMessageItem;
@@ -146,6 +147,17 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                         </div>
                     )}
                 </div>
+
+                {!isUser && message.isAgentMode && message.agentMetadata && (
+                    <AgentMetrics
+                        confidenceScore={message.agentMetadata.confidence_score}
+                        isGrounded={message.agentMetadata.is_grounded}
+                        critique={message.agentMetadata.critique}
+                        iterationCount={message.agentMetadata.iterationCount}
+                        className="mt-3"
+                    />
+                )}
+
                 {!isUser && message.citations && message.citations.length > 0 && (
                     <div className="mt-3 pt-2.5 border-t border-zinc-800/80 w-full">
                         <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mb-2">
