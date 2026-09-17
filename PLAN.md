@@ -257,7 +257,7 @@ Use `[x]` to mark tasks as completed.
 - [ ] Add **MeshGradint** on audio playback card, use animated shader as a living waveform blob visualizer from [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`
 - [ ] Add **Heatmap** effect during image generation using [Shader Paper Design Heatmap](https://shaders.paper.design/heatmap).
 - [ ] Add **LiquidMetal** blob pulse effect when agent is in reflecting/thinking mode. Use [Shader Paper Design Liquid Metal](https://shaders.paper.design/liquid-metal).
-- [ ] Add **PulsatingBorder** effect to chat input container when agent is generating responses. Use [Shader Paper Design Pulsating Border](https://shaders.paper.design/pulsing-border).
+- [x] Add **PulsatingBorder** effect to chat input container when agent is generating responses. Use [Shader Paper Design Pulsating Border](https://shaders.paper.design/pulsing-border).
 
 #### Phase 15.7: Verification & End-to-End Polish
 - [ ] Verify full roundtrip with FastAPI backend: PDF upload -> Hybrid Search -> Rerank -> Generation with Citations -> UI Render.
