@@ -330,3 +330,24 @@ Use `[x]` to mark tasks as completed.
 - [ ] **Studio Notes Export & Audio Overview (NotebookLM Podcast):**
   - Export Studio notes to `.md` / Markdown and PDF.
   - Implement two-speaker Audio Overview generation (podcast conversation discussing uploaded sources) powered by ElevenLabs or Edge-TTS.
+
+- [ ] **Voice Interaction Mode (Speech-to-Text & Text-to-Speech):**
+  - **User Voice Recording (Speech-to-Text / STT):**
+    - Add interactive microphone button to `ChatInput.tsx` with recording timer and live audio waveform blob visualizer.
+    - Capture audio via browser `MediaRecorder` API and transcribe either via Web Speech API or backend endpoint `POST /api/voice/transcribe` (powered by OpenAI Whisper or local `faster-whisper`).
+    - Automatically populate transcript into chat input with optional auto-send trigger ("hands-free voice mode").
+  - **LLM Voice Playback (Text-to-Speech / TTS):**
+    - Add "Read Aloud / Listen" speaker button to `ChatMessage.tsx` assistant bubbles and Studio note summaries.
+    - Stream high-quality synthesized speech via `POST /api/voice/synthesize` (using Edge-TTS, ElevenLabs, or OpenAI `tts-1`) or client-side Web Speech API.
+    - Embed interactive audio player card with playback controls (Play/Pause, speed toggle: 1x, 1.25x, 1.5x, 2x, seek bar) and reactive living waveform visualization (using Paper Design MeshGradient shader).
+
+- [ ] **AI Concept & Diagram Image Generation with Heatmap Loading Animation:**
+  - **Diagram & Illustration Generation:**
+    - Enable visual concept explanations (e.g., *"Generate a diagram of the Transformer attention mechanism"*, *"Visualize neural network layers"*, or an "Illustrate Concept" button on citations).
+    - Backend endpoint `POST /api/image/generate` synthesizing technical illustrations and diagrams (via Flux, Imagen, or DALL-E 3).
+  - **Heatmap Shader Loading Animation:**
+    - While synthesis is in progress, render an animated **Heatmap shader** card using `@paper-design/shaders-react` ([Shader Paper Design Heatmap](https://shaders.paper.design/heatmap)).
+    - Thermal chromatic fluid dynamics pulse across the placeholder container with real-time progress steps (*"Analyzing concept geometry..."* -> *"Synthesizing visual topology..."* -> *"Rendering final figure..."*).
+  - **Image Card & Studio Integration:**
+    - Seamless crossfade transition from the dynamic heatmap shader into the generated illustration.
+    - Interactive controls: full-screen lightbox preview, download image, copy to clipboard, and 1-click **"Save Figure to Studio Notes"** with caption and source document reference.
