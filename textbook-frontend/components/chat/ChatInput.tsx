@@ -93,7 +93,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                 bg-zinc-900/70 p-3 shadow-xl focus-within:border-zinc-700 
                 transition-all">
 
-                <ChatInputBorder isActive={true} isAgentMode={isAgentMode} />
+                <ChatInputBorder isActive={isLoading} isAgentMode={isAgentMode} />
 
                 <input {...getInputProps()} />
 
@@ -110,6 +110,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                 <textarea
                     ref={textareaRef}
                     rows={1}
+                    disabled={isLoading}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
