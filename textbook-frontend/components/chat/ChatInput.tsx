@@ -1,5 +1,7 @@
 "use client";
 
+import { ChatInputBorder } from "./ChatInputBorder";
+
 import { useState, useRef, useEffect } from "react";
 import { ArrowUp, LoaderCircle, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -91,6 +93,8 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                 bg-zinc-900/70 p-3 shadow-xl focus-within:border-zinc-700 
                 transition-all">
 
+                <ChatInputBorder isActive={true} isAgentMode={isAgentMode} />
+
                 <input {...getInputProps()} />
 
                 {isDragActive && (
@@ -110,7 +114,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={isAgentMode ? "Ask with Agentic Reasoning" : "Ask any question"}
-                    className="w-full resize-none bg-transparent outline-none text-md px-2 text-zinc-100 placeholder:text-zinc-500 leading-relaxed max-h-[180px] overflow-y-auto selection:bg-indigo-600/10 selection:text-indigo-400"
+                    className="relative w-full resize-none bg-transparent outline-none text-md px-2 text-zinc-100 placeholder:text-zinc-500 leading-relaxed max-h-[180px] overflow-y-auto selection:bg-indigo-600/10 selection:text-indigo-400"
                 />
                 {/* Bottom control bar */}
                 <div className="flex items-center justify-between pt-2 mt-2">
