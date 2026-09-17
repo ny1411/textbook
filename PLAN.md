@@ -241,9 +241,9 @@ Use `[x]` to mark tasks as completed.
 - **Key Functions:** `useChat()`, `handleSendMessage()`, `renderCitations()`, `onCitationClick()`.
 
 #### Phase 15.5: Agent Diagnostics & Studio Notes Panel
-- [ ] Build Studio/Inspector panel on the right side for notes, summaries, and deep citation analysis.
-- [ ] Build Agent Metrics card to display LangGraph self-reflection data: confidence score gauge, groundedness status, iteration count, and critique thoughts.
-- [ ] Build Retrieval Diagnostic modal to test and inspect Stage 1 (Hybrid Dense + Sparse) and Stage 2 (Cross-Encoder) scores.
+- [x] Build Studio/Inspector panel on the right side for notes, summaries, and deep citation analysis.
+- [x] Build Agent Metrics card to display LangGraph self-reflection data: confidence score gauge, groundedness status, iteration count, and critique thoughts.
+- [x] Build Retrieval Diagnostic modal to test and inspect Stage 1 (Hybrid Dense + Sparse) and Stage 2 (Cross-Encoder) scores.
 - **Frontend Files:**
   - `textbook-frontend/components/layout/StudioPanel.tsx`: Right panel for notes and active citation view.
   - `textbook-frontend/components/chat/AgentMetrics.tsx`: Confidence score, groundedness, and critique display.
@@ -312,3 +312,21 @@ Use `[x]` to mark tasks as completed.
   - Enable multiple notebook threads and past chat history switching.
 - [ ] **Streaming Responses (Server-Sent Events / SSE):**
   - Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens with citation badges rendering as they arrive.
+
+- [ ] **Intent Routing & Dual-Mode Conversational Chat (Casual Chat vs RAG vs General Knowledge):**
+  - **Problem:** Currently, *every* query is blindly sent to Qdrant vector search and Cross-Encoder rerank. If the user greets ("hello", "who are you?") or asks general questions not in their uploaded PDF, the system hits a dead-end wall: *"No relevant documents found to answer your question."*
+  - **Fast Intent Router:** Use `services/analyzer.py`'s `intent` classifier (`casual_chat`, `general_knowledge`, `textbook_rag`) to route queries:
+    - `casual_chat`: Greetings and assistant meta-questions bypass vector search and generate conversational replies.
+    - `textbook_rag`: Closed-domain queries strictly retrieve chunks and cite sources.
+    - `general_knowledge` / Fallback: When no chunks pass the retrieval threshold, provide an answer using base LLM knowledge accompanied by an ungrounded warning badge (*"Answered using general AI knowledge; not found in your uploaded documents"*).
+  - **Conversational Multi-Turn Contextualization:** Pass chat history into a query contextualizer node (e.g. rewriting *"can you give an example of that?"* -> *"can you give an example of backpropagation?"*) so follow-up questions retrieve relevant chunks.
+
+- [ ] **Modal Wiring & Layout Verification (Inspector Modal Mount):**
+  - Wire `RetrievalInspectorModal` into `app/page.tsx` with `useTextbookStore` so clicking `Diagnostics` in `StudioPanel` or the `SlidersHorizontal` icon in `Header` opens the Stage 1 & Stage 2 inspector modal.
+
+- [ ] **Zero-State Onboarding & Sample Textbook Loader:**
+  - When a user has not uploaded any documents, offer a 1-click "Load Sample AI Engineering Textbook" button so users can immediately test search, citations, and studio notes without having to find and upload a PDF first.
+
+- [ ] **Studio Notes Export & Audio Overview (NotebookLM Podcast):**
+  - Export Studio notes to `.md` / Markdown and PDF.
+  - Implement two-speaker Audio Overview generation (podcast conversation discussing uploaded sources) powered by ElevenLabs or Edge-TTS.
