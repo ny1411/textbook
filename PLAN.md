@@ -289,7 +289,7 @@ Use `[x]` to mark tasks as completed.
 ### Remaining Implementations:
 **Description:** Essential production-readiness, data persistence, and security tasks to connect the prototype frontend to a multi-user, persistent backend.
 
-- [ ] **User Authentication & Session Persistence (Supabase Auth):**
+- [x] **User Authentication & Session Persistence (Supabase Auth):**
   - Implement Login/Signup modal or page using Supabase Auth (`@supabase/ssr` or `@supabase/supabase-js`).
   - Wire actual user UUID into `useUserStore` instead of hardcoded `"default_user"`.
   - Implement `GET /api/documents?userId=...` so the Sources sidebar automatically fetches and persists existing documents on page reload.
