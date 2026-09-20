@@ -293,7 +293,7 @@ Use `[x]` to mark tasks as completed.
   - Implement Login/Signup modal or page using Supabase Auth (`@supabase/ssr` or `@supabase/supabase-js`).
   - Wire actual user UUID into `useUserStore` instead of hardcoded `"default_user"`.
   - Implement `GET /api/documents?userId=...` so the Sources sidebar automatically fetches and persists existing documents on page reload.
-- [ ] **Adaptive Content-Aware Ingestion Pipeline (Upload -> Dynamic Chunking -> Qdrant Indexing):**
+- [x] **Adaptive Content-Aware Ingestion Pipeline (Upload -> Dynamic Chunking -> Qdrant Indexing):**
   - Ensure `POST /api/upload` not only saves the file to Supabase Storage, but automatically triggers text extraction, chunking, embedding, and upserting into Qdrant so documents are instantly queryable in `/api/chat`.
   - **Dynamic Strategy Selection:** Inspect the uploaded file type and structure to route into the optimal chunking strategy:
     - **Code Chunking:** For programming scripts and code files (`.py`, `.ts`, `.js`, `.json`, etc.) preserving function, class, and block scope boundaries using language-aware AST chunkers.
