@@ -10,8 +10,6 @@ def ingest_chunks(chunks: list, user_id: str):
 
     # collect all chunks in a batch
     texts = [chunk.page_content for chunk in chunks]
-
-    # batch generate dense and sparse vectors
     dense_vectors, sparse_vectors = get_vectors(texts, is_query=False)
 
     all_points = []

@@ -69,5 +69,33 @@ def set_cached_response(
         redis.json.set(key, "$", data)
         redis.expire(key, ttl_seconds)
         logger.info(f"Response cached with ttl: {ttl_seconds} seconds.")
+   
     except Exception as e:
         logger.warning(f"Cache write failed: {e}")
+
+def invalidate_user_cache(user_id: str) -> int:
+    """Safely purge all cached query responses for given user using non-blocking scan"""
+    if not redis:
+        return 0
+
+    pattern = f"cache:{user_id}:*"
+    cursor=0
+    total_deleted=0
+
+    try:
+        while True:
+            cursor, keys = redis.scan(cursor, match=pattern, count=100)
+
+            if keys:
+                redis.delete(*keys)
+                total_deleted += len(keys)
+            
+            if cursor == 0:
+                break
+
+        logger.info(f"Invalidated {total_deleted} cache entries for user: {user_id}")
+        return total_deleted
+    
+    except Exception as e:
+        logger.error(f"Failed to invalidate cache for user {user_id}: {e}")
+        return 0
