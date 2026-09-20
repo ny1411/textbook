@@ -105,6 +105,19 @@ def generate_answer(
             "query": query,
         }, config=config)
         answer_text = response.content if hasattr(response, "content") else str(response)
+
+        # extract and join text from all content blocks provided by LLM
+        if hasattr(response, "content"):
+            if isinstance(response.content, list):
+                answer_text = "".join(
+                    part.get("text", "") if isinstance(part, dict) else str(part)
+                    for part in response.content
+                )
+            else:
+                answer_text = str(response.content)
+        else:
+            answer_text = str(response)
+
     except Exception as e:
         logger.error(f"Error generating answer: {str(e)}")
         answer_text = f"An error occurred while generating the answer: {str(e)}"
