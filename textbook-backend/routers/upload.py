@@ -1,9 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from db.supabase import supabase_client
-from services.storage import upload_file_to_supabase
 import os
 import uuid
 import logging
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from services.ingestion import process_and_ingest
+from services.storage import upload_file_to_supabase
 
 # setup a logger
 logger = logging.getLogger(__name__)
@@ -23,17 +23,32 @@ ALLOWED_CONTENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation", 
 }
 
+ALLOWED_FILE_EXTENSIONS = {
+    ".txt", ".csv", ".md", ".pdf",
+    ".doc", ".docx", ".xlsx", ".ppt", ".pptx",
+    ".py", ".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".json",
+    ".c", ".cpp", ".cs", ".java", ".rs", ".go", ".swift", ".php",
+}
+
 # Prefixes for categories we allow entirely
 ALLOWED_PREFIXES = ("image/", "audio/")
 
 # define the Endpoint
 @router.post("/upload")
-async def upload_document(userId: str, file: UploadFile = File(...)):
+async def upload_document(
+    userId: str,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
     """
     `file: UploadFile` tells FastAPI that we expect a file to be sent in the request.
     """
+
+    extension = os.path.splitext(file.filename)[1].lower()
+
     # Check if the content type starts with an allowed prefix OR is exactly in the allowed set
     is_valid_type = (
+        extension in ALLOWED_FILE_EXTENSIONS or
         file.content_type in ALLOWED_CONTENT_TYPES or 
         file.content_type.startswith(ALLOWED_PREFIXES)
     )
@@ -49,6 +64,7 @@ async def upload_document(userId: str, file: UploadFile = File(...)):
         file_name = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
         file_options = {"content-type": file.content_type}
         file_path = f"{userId}/{file_name}"
+        document_id = str(uuid.uuid4())
         
         # upload file to Supabase Storage
         upload_file_to_supabase(
@@ -58,11 +74,22 @@ async def upload_document(userId: str, file: UploadFile = File(...)):
             file_options=file_options
         )
         
+        background_tasks.add_task(
+            process_and_ingest,
+            file_bytes=file_content,
+            filename=file.filename,
+            content_type=file.content_type,
+            user_id=userId,
+            document_id=document_id
+        )
+
         # return response
         return {
                 "message": "File uploaded successfully",
                 "filename": file.filename,
-                "filepath": f"{userId}/{file_name}"
+                "filepath": f"{userId}/{file_name}",
+                "document_id": document_id,
+                "status": "processing",
         }
         
     except Exception as e:
