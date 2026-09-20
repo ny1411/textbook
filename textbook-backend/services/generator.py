@@ -52,7 +52,7 @@ def format_context_with_citations(chunks: List[Dict[str, Any]]) -> Tuple[str, Li
         doc_id = payload.get("document_id") or chunk.get("document_id") or "unknown_doc"
         page_num = payload.get("page_number") if payload.get("page_number") is not None else chunk.get("page_number")
         chunk_id = chunk.get("id") or payload.get("chunk_id") or f"chunk_{i}"
-        text = payload.get("text") or chunk.get("text") or ""
+        text = payload.get("parent_text") or payload.get("text") or chunk.get("text") or ""
 
         # append more data to inject in the LLM context prompt
         page_str = f"Page {page_num}" if page_num is not None else "Page N/A"

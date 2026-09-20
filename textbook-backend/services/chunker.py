@@ -14,10 +14,10 @@ def code_chunking(document: str, language: Language=None, metadata: dict=None):
     
     return chunks
 
-def semantic_chunking(document: str):
+def semantic_chunking(document: str, metadata: dict = None):
     engine = bge_large_embedder()
     splitter = SemanticChunker(engine)
-    documents = splitter.create_documents([document])
+    documents = splitter.create_documents([document], metadatas=[metadata or {}])
 
     return documents
 
@@ -31,6 +31,7 @@ def create_parent_child_chunks(document: str, metadata: dict=None):
 
     all_children = []
 
+    # split parent into child chunks
     for parent in parent_chunks:
         parent_id = str(uuid.uuid4())
         parent.metadata["parent_id"] = parent_id
@@ -39,9 +40,15 @@ def create_parent_child_chunks(document: str, metadata: dict=None):
             [parent.page_content], 
             chunk_size=400, 
             chunk_overlap=50,
-            metadatas=[parent.metadata]
         )
 
-        all_children.extend(child_chunks)
+        # embed parent metadata and parent texts in child metadata
+        for child in child_chunks:
+            child.metadata = {
+                **(metadata or {}),
+                "parent_id": parent_id,
+                "parent_text": parent.page_content,
+            }
+            all_children.append(child)
 
-    return parent_chunks, all_children
+    return all_children
