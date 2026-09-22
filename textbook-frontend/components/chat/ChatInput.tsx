@@ -37,6 +37,8 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                     userId: userId,
                     filename: request.filename,
                     filepath: request.filepath,
+                    documentId: request.document_id,
+                    status: "processing",
                     size: file.size,
                     type: file.type,
                     uploadedAt: new Date(),

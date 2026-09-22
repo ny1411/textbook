@@ -2,6 +2,8 @@ export interface UploadResponse {
     message: string;
     filename: string;
     filepath: string;
+    document_id: string;
+    status: string;
 }
 
 export interface SearchRequest {

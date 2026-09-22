@@ -1,13 +1,16 @@
 "use client";
 
-import { useSourceStore } from "@/stores/useSourcesStore";
-import { SourceDocument } from "@/types/source";
 import { Files, Upload } from "lucide-react";
 import { useState } from "react";
 import { SourceCard } from "./SourceCard";
 import { SourceViewerModel } from "./SourceViewerModel";
+import { useSourceStore } from "@/stores/useSourcesStore";
+import { SourceDocument } from "@/types/source";
+import { useDocumentPoller } from "@/hooks/useDocumentStatusPoller";
 
 export function SidebarSources() {
+    useDocumentPoller();
+
     const sources = useSourceStore((s) => s.source);
     const removeSource = useSourceStore((s) => s.removeSource);
     const [inspectedSource, setInspectSource] = useState<SourceDocument | null>(null);

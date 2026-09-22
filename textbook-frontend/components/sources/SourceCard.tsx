@@ -1,5 +1,5 @@
 import { SourceDocument } from "@/types/source";
-import { Eye, FileText, Trash2 } from "lucide-react";
+import { Eye, FileText, Loader2, Trash2 } from "lucide-react";
 
 interface SourceCardProps {
     source: SourceDocument;
@@ -21,20 +21,27 @@ export function SourceCard({ source, onDelete, onInspect }: SourceCardProps) {
                 </p>
                 <p className="text-xs text-zinc-500">{formattedSize}</p>
             </div>
-            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                <button
-                    onClick={() => onInspect(source)}
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 cursor-pointer transition-colors"
-                    title="Inspect source">
-                    <Eye size={15} className="text-zinc-500" />
-                </button>
-                <button
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
-                    title="Remove source"
-                    onClick={() => onDelete(source.filepath)}>
-                    <Trash2 size={15} className="text-zinc-500" />
-                </button>
-            </div>
+
+            {source.status === "processing" ?
+                (<span className="flex items-center gap-1 text-zinc-500 text-xs">
+                    <Loader2 size={12} className="animate-spin" />
+                </span>)
+                :
+                <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => onInspect(source)}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 cursor-pointer transition-colors"
+                        title="Inspect source">
+                        <Eye size={15} className="text-zinc-500" />
+                    </button>
+                    <button
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
+                        title="Remove source"
+                        onClick={() => onDelete(source.filepath)}>
+                        <Trash2 size={15} className="text-zinc-500" />
+                    </button>
+                </div>
+            }
         </div>
     )
 }

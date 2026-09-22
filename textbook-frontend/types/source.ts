@@ -1,14 +1,19 @@
+export type IngestionStatus = "processing" | "ready" | "failed"
+
 export interface SourceDocument {
     userId: string;
     filename: string;
     filepath: string;
+    documentId?: string;
+    status?: IngestionStatus;
+    error?: string;
     size?: number;
     type?: string;
     uploadedAt?: Date;
     pageCount?: number;
 }
 
-export interface UploadProgress{
+export interface UploadProgress {
     file: File;
     progress: number;
     status: "uploading" | "success" | "error";
