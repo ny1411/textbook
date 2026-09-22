@@ -302,6 +302,24 @@ Use `[x]` to mark tasks as completed.
   - **Cache Invalidation:** Invalidate/flush Redis semantic cache keys for the user (`cache:{user_id}:*`) whenever a new document is ingested so stale "no relevant documents" responses are never served.
   - *Optional / Production:* Offload parsing & embedding to a background worker (e.g., Celery, FastAPI `BackgroundTasks`, or Upstash QStash).
 
+- [ ] **Document Ingestion Status Tracking & Race Condition Guard:**
+  - **Problem:** When a document is uploaded, background ingestion takes time to chunk and embed. If the user asks a question immediately, the chat queries an incomplete Qdrant index, returns a negative response ("cannot find answer"), and caches it in Redis. Additionally, the UI does not show whether a document is still indexing or ready.
+  - **Ingestion Status in UI:** Show live document state in the Sources sidebar (`PROCESSING` with spinner -> `READY` badge) so the user knows when a source is queryable.
+  - **Cache Poisoning Prevention:** In `routers/chat.py`, avoid caching negative fallback responses when an ingestion is in progress for the user's active documents.
+
+- [ ] **Cross-Encoder Score Normalization (Fix "0% Match" Citations):**
+  - **Problem:** `BAAI/bge-reranker-base` outputs raw unnormalized logits (e.g. `-4.2`, `-1.5`, `0.3`). The frontend displays `Math.round(rerank_score * 100)% match`, causing negative or near-zero raw logits to show as `0% match`.
+  - **Sigmoid Activation:** In `services/reranker.py`, pass cross-encoder scores through the Sigmoid function $\sigma(x) = \frac{1}{1 + e^{-x}}$ to map logits to normalized probabilities $[0.0, 1.0]$ so citation match percentages accurately reflect relevance (e.g. 85% match).
+
+- [ ] **Robust Multi-Source Citation Parsing & Prompt Formatting:**
+  - **Problem:** In `ChatMessage.tsx`, the citation regex `/\[(?:Source\s*|source_)?(\d+|[a-zA-Z0-9_-]+)\]/gi` only matches single IDs like `[Source 1]`. When the LLM groups citations (e.g., `[Source 1, Source 2, Source 3]`), they fail to match and remain unstyled raw text.
+  - **Regex & Component Parser:** Update `ChatMessage.tsx` to recognize comma-separated and grouped source references and split them into individual interactive `<CitationBadge />` elements with hover previews.
+  - **Prompt Guideline:** Update `services/generator.py` prompt instructions to explicitly request single bracketed citations (e.g. `[Source 1][Source 2]`) for consistency.
+
+- [ ] **Streaming Responses (Server-Sent Events / SSE) & Socket Timeout Prevention:**
+  - **Problem:** Heavy RAG pipelines (hybrid search + cross-encoder rerank on CPU + LLM call) can take 30-50+ seconds on first run, causing Next.js dev server proxy to abort with `socket hang up` (`ECONNRESET`).
+  - **Solution:** Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens via SSE (`StreamingResponse`). Emitting the first token within 1-2 seconds keeps the HTTP socket alive and eliminates proxy timeouts.
+
 - [ ] **Full-Cycle Document Deletion API (`DELETE /api/documents`):**
   - Create a unified deletion endpoint that atomically cleans up:
     1. Supabase Storage: delete file bytes from `textbook-documents` bucket.
