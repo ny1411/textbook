@@ -302,7 +302,7 @@ Use `[x]` to mark tasks as completed.
   - **Cache Invalidation:** Invalidate/flush Redis semantic cache keys for the user (`cache:{user_id}:*`) whenever a new document is ingested so stale "no relevant documents" responses are never served.
   - *Optional / Production:* Offload parsing & embedding to a background worker (e.g., Celery, FastAPI `BackgroundTasks`, or Upstash QStash).
 
-- [ ] **Document Ingestion Status Tracking & Race Condition Guard:**
+- [x] **Document Ingestion Status Tracking & Race Condition Guard:**
   - **Problem:** When a document is uploaded, background ingestion takes time to chunk and embed. If the user asks a question immediately, the chat queries an incomplete Qdrant index, returns a negative response ("cannot find answer"), and caches it in Redis. Additionally, the UI does not show whether a document is still indexing or ready.
   - **Ingestion Status in UI:** Show live document state in the Sources sidebar (`PROCESSING` with spinner -> `READY` badge) so the user knows when a source is queryable.
   - **Cache Poisoning Prevention:** In `routers/chat.py`, avoid caching negative fallback responses when an ingestion is in progress for the user's active documents.
