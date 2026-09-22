@@ -1,3 +1,4 @@
+from services.status import is_user_ingesting
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, List, Union
@@ -45,7 +46,7 @@ class AgentChatResponse(ChatResponse):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
+async def chat(request: ChatRequest) -> ChatResponse:    
     cached_response = get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -94,6 +95,15 @@ async def chat(request: ChatRequest) -> ChatResponse:
             top_k=request.top_k
         )
 
+        ingestion_active = is_user_ingesting(user_id=request.user_id, document_id=request.document_id)
+        if len(reranked_chunks) == 0 and ingestion_active:
+            return ChatResponse(
+                query=request.query,
+                applied_query=query_to_use,
+                answer="One or more documents are still being processed and indexed. Please wait a moment and try again.",
+                citations=[]
+            )
+
         # Generate grounded answer with citations
         generation_result = generate_answer(
             query=query_to_use,
@@ -108,12 +118,15 @@ async def chat(request: ChatRequest) -> ChatResponse:
             citations=generation_result["citations"]
         )
 
-        set_cached_response(
-            user_id=request.user_id,
-            document_id=request.document_id,
-            query=request.query,
-            response=result
-        )
+        if len(reranked_chunks) > 0 and not ingestion_active:
+            set_cached_response(
+                user_id=request.user_id,
+                document_id=request.document_id,
+                query=request.query,
+                response=result
+            )
+        else:
+            logger.info("Skipping cache write: Ingestion in progress or no chunks found.")
 
         return result
 
@@ -170,12 +183,16 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
             iteration_count=result.get("iteration_count"),
         )
 
-        set_cached_response(
-            user_id=request.user_id,
-            document_id=request.document_id,
-            query=request.query,
-            response=result
-        )
+        ingestion_active = is_user_ingesting(user_id=request.user_id, document_id=request.document_id)
+        if len(result.citations) > 0 and not ingestion_active:
+            set_cached_response(
+                user_id=request.user_id,
+                document_id=request.document_id,
+                query=request.query,
+                response=result
+            )
+        else:
+            logger.info("Skipping agent cache write: Ingestion in progress or no citations found.")
 
         return result
 
