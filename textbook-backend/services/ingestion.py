@@ -7,6 +7,7 @@ from services.parser import extract_text_with_pymupdf
 from services.caching import invalidate_user_cache
 from services.chunker import code_chunking, semantic_chunking, create_parent_child_chunks
 from services.embedder import get_vectors
+from services.status import set_document_status
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,12 @@ def process_and_ingest(
         text = extract_text_with_pymupdf(file_bytes, filename, content_type)
         if not text.strip():
             logger.warning(f"No extractable text found in {filename}.")
+            set_document_status(
+                document_id=document_id, 
+                user_id=user_id, 
+                status="failed", 
+                error="No extractable text found"
+            )
             return
 
         metadata = {
@@ -117,6 +124,17 @@ def process_and_ingest(
 
         ingest_chunks(chunks=chunks, user_id=user_id, document_id=document_id)
         logger.info(f"Ingestion complete for {filename}.")
+        set_document_status(
+            document_id=document_id, 
+            user_id=user_id, 
+            status="ready"
+        )
         
     except Exception as e:
         logger.error(f"Error ingesting document {filename}: {str(e)}", exc_info=True)
+        set_document_status(
+            document_id=document_id, 
+            user_id=user_id, 
+            status="failed", 
+            error=str(e)
+        )

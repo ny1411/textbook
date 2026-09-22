@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from services.ingestion import process_and_ingest
 from services.storage import upload_file_to_supabase
+from services.status import set_document_status
 
 # setup a logger
 logger = logging.getLogger(__name__)
@@ -73,6 +74,13 @@ async def upload_document(
             file=file_content, 
             file_options=file_options
         )
+
+        set_document_status(
+            document_id=document_id,
+            user_id=userId,
+            status="processing",
+            filename=file.filename,
+        )
         
         background_tasks.add_task(
             process_and_ingest,
@@ -94,5 +102,11 @@ async def upload_document(
         
     except Exception as e:
         logger.error(f"Supabase upload error for user {userId}: {str(e)}")
+        set_document_status(
+            document_id=document_id,
+            user_id=userId,
+            status="failed",
+            error=str(e),
+        )
         raise HTTPException(status_code=500, detail=f"Could not save file")
     
