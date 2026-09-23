@@ -58,6 +58,8 @@ def hybrid_search(
     query: str, 
     top_k: int = 20, 
     document_id: Optional[str] = None,
+    document_ids: Optional[List[str]] = None,
+    notebook_id: Optional[str] = None,
     collection_name: str = "textbook_chunks"
 ) -> List[Dict[str, Any]]:
 
@@ -69,14 +71,33 @@ def hybrid_search(
         models.FieldCondition(
             key="user_id",
             match=models.MatchValue(value=str(user_id)),
-        )
+        ),
     ]
+    
+    if notebook_id:
+        filter_conditions.append(    
+            models.FieldCondition(
+                key="notebook_id",
+                match=models.MatchValue(value=str(notebook_id)),
+            ),
+        )
 
-    if document_id:
+    target_docs = list(document_ids) if document_ids else []
+    if document_id and document_id not in target_docs:
+        target_docs.append(document_id)
+
+    if len(target_docs) == 1:
         filter_conditions.append(
             models.FieldCondition(
                 key="document_id",
-                match=models.MatchValue(value=str(document_id)),
+                match=models.MatchValue(value=str(target_docs[0])),
+            )
+        )
+    elif len(target_docs) > 1:
+        filter_conditions.append(
+            models.FieldCondition(
+                key="document_id",
+                match=models.MatchAny(any=target_docs),
             )
         )
 
