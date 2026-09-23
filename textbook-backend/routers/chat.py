@@ -21,6 +21,8 @@ class ChatRequest(BaseModel):
     query: str
     conversation_id: Optional[str] = Field(None, description="Optional conversation/session ID to group messages in telemetry.")
     document_id: Optional[str] = None
+    document_ids: Optional[List[str]] = None
+    notebook_id: Optional[str] = None
     top_k: int = 5
     use_analysis: bool = False
 
@@ -86,6 +88,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
             query=query_to_use,
             top_k=max(request.top_k, 20),
             document_id=request.document_id,
+            document_ids=request.document_ids,
+            notebook_id=request.notebook_id,
         )
 
         # Rerank chunks using Cross-Encoder
@@ -167,6 +171,8 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
             "user_id": request.user_id,
             "query": request.query,
             "document_id": request.document_id,
+            "document_ids": request.document_ids,
+            "notebook_id": request.notebook_id,
             "max_iterations": 2,
         }
 

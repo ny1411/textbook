@@ -63,6 +63,8 @@ def retriever_node(state: AgentState) -> Dict[str, Any]:
             query=q,
             top_k=10,
             document_id=state.get("document_id"),
+            document_ids=state.get("document_ids"),
+            notebook_id=state.get("notebook_id")
         )
         for chunk in results:
             chunk_id = chunk.get("id")

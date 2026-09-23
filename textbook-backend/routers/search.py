@@ -15,6 +15,8 @@ class SearchRequest(BaseModel):
     user_id: str = Field(..., description="Unique ID of the user for multi-tenant data isolation")
     query: str = Field(..., min_length=1, description="Search query string.")
     document_id: Optional[str] = Field(None, description="Optional document ID for document filtering.")
+    document_ids: Optional[List[str]] = Field(None, description="Optional document IDs for document filtering.")
+    notebook_id: Optional[str] = Field(None, description="Optional notebook ID for notebook filtering.")
     top_k: int = Field(20, ge=1, le=100, description="Number of results to retrieve.")
     use_analysis: bool = Field(False, description="Whether to apply Query Rewriting or HyDE before search.")
 
@@ -50,6 +52,8 @@ async def search(request: SearchRequest):
             query=search_query,
             top_k=max(request.top_k, 20),
             document_id=request.document_id,
+            document_ids=request.document_ids,
+            notebook_id=request.notebook_id,
         )
 
         final_results = reranker_with_cross_encoder(

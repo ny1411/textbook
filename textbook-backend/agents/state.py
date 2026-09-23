@@ -5,6 +5,8 @@ class AgentState(TypedDict, total=False):
     query: str
     rewritten_query: Optional[str]
     document_id: Optional[str]
+    document_ids: Optional[List[str]]
+    notebook_id: Optional[str]
     sub_queries: List[str]
     documents: List[Dict[str, Any]]
     answer: Optional[str]
