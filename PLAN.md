@@ -325,6 +325,20 @@ Use `[x]` to mark tasks as completed.
     1. Supabase Storage: delete file bytes from `textbook-documents` bucket.
     2. Qdrant Cloud: delete all vector points matching `document_id` and `user_id`.
     3. PostgreSQL: cascade delete metadata from `uploaded_documents` table via Prisma.
+
+- [ ] **Notebook-Level Vector Scoping & Multi-Document Selection Filter:**
+  - **Problem:** As documents accumulate in Qdrant under a shared collection, queries without scoping search across all documents ever uploaded by the user, causing cross-domain context contamination (e.g. querying a Physics problem returns chunks from an unrelated History textbook).
+  - **Notebook Workspace Partitioning (`notebook_id`):**
+    - Add `notebook_id` to Qdrant payload schema indexes (`services/indexing.py`) with `is_tenant=True` optimization.
+    - Attach `notebook_id` to all chunk payloads during `process_and_ingest` and upload endpoint (`routers/upload.py`).
+    - Enforce `notebook_id` filtering in `services/retriever.py` (`hybrid_search`) alongside `user_id`.
+    - Align with PostgreSQL/Prisma relational hierarchy: `User` -> `Notebooks` -> `UploadedDocuments` & `Conversations`.
+  - **Hierarchical Multi-Document Filtering (`document_ids`):**
+    - Maintain and upgrade `document_id` in `hybrid_search` to support `document_ids: Optional[List[str]]` using Qdrant's `models.MatchAny(any=document_ids)`.
+    - `notebook_id` acts as the coarse-grained workspace boundary; `document_ids` acts as the fine-grained source selection lens within the notebook.
+  - **Frontend Workspace & Source Checkbox Toggles:**
+    - Store active `notebookId` in `useTextbookStore` and pass it to `/api/upload` and `/api/chat`.
+    - Add active source checkboxes in `SidebarSources.tsx` allowing users to query all notebook sources (default) or restrict retrieval to selected files.
 - [ ] **Conversation & Chat History Persistence:**
   - Persist conversation messages, generated answers, and citations into PostgreSQL (`conversations`, `conversation_messages`, and `message_sources` Prisma tables).
   - Enable multiple notebook threads and past chat history switching.
