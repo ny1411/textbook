@@ -1,5 +1,6 @@
 import uuid
 import logging
+from typing import Optional
 from qdrant_client import models
 from db.qdrant import client
 from langchain_text_splitters import Language
@@ -47,7 +48,12 @@ def code_chunker(raw_text: str, filename: str, metadata: dict):
     logger.info(f"Routing {filename} to Semantic Chunking.")
     return semantic_chunking(raw_text, metadata)
 
-def ingest_chunks(chunks: list, user_id: str, document_id: str = None):
+def ingest_chunks(
+    chunks: list,
+    user_id: str,
+    document_id: str = None,
+    notebook_id: Optional[str] = None
+):
     if not chunks:
         return
 
@@ -61,10 +67,12 @@ def ingest_chunks(chunks: list, user_id: str, document_id: str = None):
     for chunk, dense_vec, sparse_vec in zip(chunks, dense_vectors, sparse_vectors):
         doc_id = document_id or chunk.metadata.get("source") or chunk.metadata.get("document_id") or "unknown"
         page = chunk.metadata.get("page") or chunk.metadata.get("page_number") or 0
+        doc_notebook_id = chunk.metadata.get("notebook_id") or notebook_id
 
         payload = {
             **chunk.metadata,
             "user_id": str(user_id),
+            "notebook_id":str(doc_notebook_id) if doc_notebook_id else None,
             "document_id": str(doc_id),
             "page_number": int(page),
             "text": chunk.page_content,
@@ -98,7 +106,8 @@ def process_and_ingest(
     filename: str, 
     content_type: str, 
     user_id: str, 
-    document_id: str
+    document_id: str,
+    notebook_id: Optional[str] = None,
 ):
     try:
         text = extract_text_with_pymupdf(file_bytes, filename, content_type)
@@ -117,12 +126,19 @@ def process_and_ingest(
             "document_id": document_id,
             "filename": filename,
             "user_id": user_id,
+            "notebook_id": notebook_id,
         }
 
         chunks = code_chunker(raw_text=text, filename=filename, metadata=metadata)
         logger.info(f"Generated {len(chunks)} chunks from {filename}.")
 
-        ingest_chunks(chunks=chunks, user_id=user_id, document_id=document_id)
+        ingest_chunks(
+            chunks=chunks,
+            user_id=user_id,
+            document_id=document_id,
+            notebook_id=notebook_id
+        )
+
         logger.info(f"Ingestion complete for {filename}.")
         set_document_status(
             document_id=document_id, 

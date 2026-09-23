@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+from typing import Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from services.ingestion import process_and_ingest
 from services.storage import upload_file_to_supabase
@@ -39,7 +40,8 @@ ALLOWED_PREFIXES = ("image/", "audio/")
 async def upload_document(
     userId: str,
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    notebookId: Optional[str] = None,
 ):
     """
     `file: UploadFile` tells FastAPI that we expect a file to be sent in the request.
@@ -88,7 +90,8 @@ async def upload_document(
             filename=file.filename,
             content_type=file.content_type,
             user_id=userId,
-            document_id=document_id
+            document_id=document_id,
+            notebook_id=notebookId,
         )
 
         # return response

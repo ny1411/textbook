@@ -21,6 +21,7 @@ def init_connection(
     hnsw_ef_construct: int = 100,  
     payload_indexes: list[dict] = [
         {"field_name": "user_id", "field_schema": "keyword"},
+        {"field_name": "notebook_id", "field_schema": "keyword"},
         {"field_name": "document_id", "field_schema": "keyword"},
         {"field_name": "page_number", "field_schema": "integer"},
         {"field_name": "chunk_id", "field_schema": "keyword"},
