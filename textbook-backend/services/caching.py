@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from typing import Optional, Dict, Any
+import hashlib
+from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 from upstash_redis import Redis
 
@@ -13,21 +14,59 @@ token: str = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
 
 redis: Redis | None = Redis(url=url, token=token) if url and token else None
 
-def _make_key(user_id: str, document_id: Optional[str], query: str) -> str:
-    doc = document_id if document_id else "all"
-    clean_query = query.strip().lower()
-    return f"cache:{user_id}:{doc}:{clean_query}"
+def _make_key(
+    user_id: str,
+    query: str,
+    document_id: Optional[str] = None,
+    document_ids: Optional[List[str]] = None,
+    notebook_id: Optional[str] = None,
+    pipeline: str = "linear",
+    top_k: int = 5,
+    use_analysis: bool = False,
+) -> str:
+    scoped_document_ids = sorted(set(document_ids or []))
+    if document_id:
+        scoped_document_ids = sorted(set([*scoped_document_ids, document_id]))
+
+    scope = json.dumps(
+        {
+            "query": query.strip().lower(),
+            "notebook_id": notebook_id,
+            "document_ids": scoped_document_ids if document_ids is not None or document_id else None,
+            "pipeline": pipeline,
+            "top_k": top_k,
+            "use_analysis": use_analysis,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(scope.encode("utf-8")).hexdigest()
+    return f"cache:{user_id}:{digest}"
 
 def get_cached_response(
-    user_id: str, 
-    document_id: Optional[str], 
-    query: str
+    user_id: str,
+    query: str,
+    document_id: Optional[str] = None,
+    document_ids: Optional[List[str]] = None,
+    notebook_id: Optional[str] = None,
+    pipeline: str = "linear",
+    top_k: int = 5,
+    use_analysis: bool = False,
 ) -> Optional[Dict[str, Any]]:    
     if not redis:
         return None
 
     try:
-        key = _make_key(user_id, document_id, query)
+        key = _make_key(
+            user_id=user_id,
+            query=query,
+            document_id=document_id,
+            document_ids=document_ids,
+            notebook_id=notebook_id,
+            pipeline=pipeline,
+            top_k=top_k,
+            use_analysis=use_analysis,
+        )
         cached_data = redis.json.get(key)
         if cached_data:
             if isinstance(cached_data, list) and len(cached_data) > 0:
@@ -43,17 +82,31 @@ def get_cached_response(
     return None
 
 def set_cached_response(
-    user_id: str, 
-    document_id: Optional[str], 
-    query: str, 
+    user_id: str,
+    query: str,
     response: Any,
+    document_id: Optional[str] = None,
+    document_ids: Optional[List[str]] = None,
+    notebook_id: Optional[str] = None,
+    pipeline: str = "linear",
+    top_k: int = 5,
+    use_analysis: bool = False,
     ttl_seconds: int = 86400
 ) -> None:
     if not redis:
         return None
 
     try:
-        key = _make_key(user_id, document_id, query)
+        key = _make_key(
+            user_id=user_id,
+            query=query,
+            document_id=document_id,
+            document_ids=document_ids,
+            notebook_id=notebook_id,
+            pipeline=pipeline,
+            top_k=top_k,
+            use_analysis=use_analysis,
+        )
 
         if hasattr(response, "model_dump"):
             data = response.model_dump()

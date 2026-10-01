@@ -52,7 +52,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
     cached_response = get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
-        query=request.query
+        document_ids=request.document_ids,
+        notebook_id=request.notebook_id,
+        query=request.query,
+        pipeline="linear",
+        top_k=request.top_k,
+        use_analysis=request.use_analysis,
     )
     if cached_response:
         logger.info(f"Cache hit for /chat")
@@ -68,6 +73,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
         tags=["pipeline:linear-rag"],
         metadata={
             "document_id": request.document_id,
+            "document_ids": request.document_ids,
+            "notebook_id": request.notebook_id,
             "top_k": request.top_k,
             "use_analysis": request.use_analysis,
         },
@@ -126,8 +133,13 @@ async def chat(request: ChatRequest) -> ChatResponse:
             set_cached_response(
                 user_id=request.user_id,
                 document_id=request.document_id,
+                document_ids=request.document_ids,
+                notebook_id=request.notebook_id,
                 query=request.query,
-                response=result
+                response=result,
+                pipeline="linear",
+                top_k=request.top_k,
+                use_analysis=request.use_analysis,
             )
         else:
             logger.info("Skipping cache write: Ingestion in progress or no chunks found.")
@@ -144,7 +156,12 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
     cached_response = get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
-        query=request.query
+        document_ids=request.document_ids,
+        notebook_id=request.notebook_id,
+        query=request.query,
+        pipeline="agent",
+        top_k=request.top_k,
+        use_analysis=request.use_analysis,
     )
     if cached_response:
         logger.info(f"Cache hit for /agent/chat")
@@ -160,6 +177,8 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
         tags=["pipeline:agentic-rag", "langgraph"],
         metadata={
             "document_id": request.document_id,
+            "document_ids": request.document_ids,
+            "notebook_id": request.notebook_id,
             "top_k": request.top_k,
             "max_iterations": 2,
         },
@@ -194,8 +213,13 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
             set_cached_response(
                 user_id=request.user_id,
                 document_id=request.document_id,
+                document_ids=request.document_ids,
+                notebook_id=request.notebook_id,
                 query=request.query,
-                response=result
+                response=result,
+                pipeline="agent",
+                top_k=request.top_k,
+                use_analysis=request.use_analysis,
             )
         else:
             logger.info("Skipping agent cache write: Ingestion in progress or no citations found.")
