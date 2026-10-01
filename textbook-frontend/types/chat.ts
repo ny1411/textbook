@@ -1,10 +1,12 @@
-import { CitationItem } from "./api";
+import { ChatIntent, CitationItem } from "./api";
 
 export interface ChatMessageItem {
     id: string;
     role: "user" | "assistant";
     content: string;
     appliedQuery?: string;
+    intent?: ChatIntent;
+    warning?: string | null;
     citations?: CitationItem[];
     isAgentMode?: boolean;
     agentMetadata?: {

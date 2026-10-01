@@ -47,7 +47,11 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
             >
                 {!isUser && (
                     <div className="flex flex-wrap items-center gap-1.5 mb-1.5 text-[11px]">
-                        {message.isAgentMode ? (
+                        {message.intent && message.intent !== "textbook_rag" ? (
+                            <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">
+                                {message.intent === "casual_chat" ? "Conversation" : "General knowledge"}
+                            </span>
+                        ) : message.isAgentMode ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 font-medium">
                                 <Sparkles size={11} />
                                 Agentic RAG
@@ -59,7 +63,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                             </span>
                         )}
 
-                        {message.agentMetadata?.is_grounded !== undefined && (
+                        {message.intent === "textbook_rag" && message.agentMetadata?.is_grounded !== undefined && (
                             <span
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${message.agentMetadata.is_grounded
                                     ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
@@ -78,7 +82,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                             </span>
                         )}
 
-                        {message.agentMetadata?.confidence_score !== undefined &&
+                        {message.intent === "textbook_rag" && message.agentMetadata?.confidence_score !== undefined &&
                             message.agentMetadata.confidence_score !== null && (
                                 <span className="px-2 py-0.5 rounded-full bg-zinc-800/80 text-zinc-300 font-mono">
                                     {message.agentMetadata.confidence_score}% confidence
@@ -148,7 +152,14 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                     )}
                 </div>
 
-                {!isUser && message.isAgentMode && message.agentMetadata && (
+                {!isUser && message.warning && (
+                    <div role="note" className="mt-2 flex items-center gap-1.5 text-xs text-amber-400">
+                        <AlertTriangle size={13} className="shrink-0" />
+                        {message.warning}
+                    </div>
+                )}
+
+                {!isUser && message.isAgentMode && message.agentMetadata && message.intent === "textbook_rag" && (
                     <AgentMetrics
                         confidenceScore={message.agentMetadata.confidence_score}
                         isGrounded={message.agentMetadata.is_grounded}

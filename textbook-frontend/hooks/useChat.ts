@@ -25,6 +25,10 @@ export function useChat() {
             if (!trimmedQuery || isLoading) return;
 
             const activeAgentMode = overrideAgentMode ?? isAgentMode;
+            const history = messages
+                .filter((message) => !message.id.startsWith("error-"))
+                .slice(-20)
+                .map(({ role, content }) => ({ role, content: content.slice(0, 8000) }));
 
             const userMessage: ChatMessageItem = {
                 id: `user-${Date.now()}`,
@@ -42,6 +46,7 @@ export function useChat() {
                     const response = await sendAgentChatMessage({
                         user_id: userId,
                         query: trimmedQuery,
+                        history,
                         document_ids: selectedDocumentIds ?? undefined,
                         notebook_id: activeNotebookId,
                         top_k: 5,
@@ -52,6 +57,8 @@ export function useChat() {
                         role: "assistant",
                         content: response.answer,
                         appliedQuery: response.applied_query,
+                        intent: response.intent,
+                        warning: response.warning,
                         citations: response.citations || [],
                         isAgentMode: true,
                         agentMetadata: {
@@ -67,6 +74,7 @@ export function useChat() {
                     const response = await sendChatMessage({
                         user_id: userId,
                         query: trimmedQuery,
+                        history,
                         document_ids: selectedDocumentIds ?? undefined,
                         notebook_id: activeNotebookId,
                         top_k: 5,
@@ -77,6 +85,8 @@ export function useChat() {
                         role: "assistant",
                         content: response.answer,
                         appliedQuery: response.applied_query,
+                        intent: response.intent,
+                        warning: response.warning,
                         citations: response.citations || [],
                         createdAt: new Date(),
                     };
@@ -96,7 +106,7 @@ export function useChat() {
             } finally {
                 setIsLoading(false);
             }
-        }, [userId, isLoading, isAgentMode, selectedDocumentIds, activeNotebookId]
+        }, [userId, isLoading, isAgentMode, selectedDocumentIds, activeNotebookId, messages]
     );
 
     const clearChat = useCallback(() => {

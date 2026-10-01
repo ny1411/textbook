@@ -35,7 +35,10 @@ export interface SearchResultItem {
     payload?: Record<string, unknown>
 }
 
+export type ChatIntent = "casual_chat" | "general_knowledge" | "textbook_rag";
+
 export interface ChatRequest{
+    history?: { role: "user" | "assistant"; content: string }[];
     user_id: string;
     query: string;
     conversation_id?: string | null;
@@ -47,6 +50,9 @@ export interface ChatRequest{
 }
 
 export interface ChatResponse{
+    intent?: ChatIntent;
+    is_grounded?: boolean | null;
+    warning?: string | null;
     query: string;
     answer: string;
     applied_query: string;
