@@ -17,5 +17,7 @@ langchain-google-genai
 langchain-community 
 sentence-transformers
 langgraph
-langfuse>=2.0.0
+# Tested Cloud SDK/exporter pair: 1.45's default transport ignores proxy env.
+langfuse==4.15.0
+opentelemetry-exporter-otlp-proto-http==1.44.0
 upstash-redis>=1.0.0
