@@ -345,13 +345,22 @@ Use `[x]` to mark tasks as completed.
 - [ ] **Streaming Responses (Server-Sent Events / SSE):**
   - Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens with citation badges rendering as they arrive.
 
-- [ ] **Intent Routing & Dual-Mode Conversational Chat (Casual Chat vs RAG vs General Knowledge):**
+- [x] **Intent Routing & Dual-Mode Conversational Chat (Casual Chat vs RAG vs General Knowledge):**
   - **Problem:** Currently, *every* query is blindly sent to Qdrant vector search and Cross-Encoder rerank. If the user greets ("hello", "who are you?") or asks general questions not in their uploaded PDF, the system hits a dead-end wall: *"No relevant documents found to answer your question."*
   - **Fast Intent Router:** Use `services/analyzer.py`'s `intent` classifier (`casual_chat`, `general_knowledge`, `textbook_rag`) to route queries:
     - `casual_chat`: Greetings and assistant meta-questions bypass vector search and generate conversational replies.
     - `textbook_rag`: Closed-domain queries strictly retrieve chunks and cite sources.
     - `general_knowledge` / Fallback: When no chunks pass the retrieval threshold, provide an answer using base LLM knowledge accompanied by an ungrounded warning badge (*"Answered using general AI knowledge; not found in your uploaded documents"*).
   - **Conversational Multi-Turn Contextualization:** Pass chat history into a query contextualizer node (e.g. rewriting *"can you give an example of that?"* -> *"can you give an example of backpropagation?"*) so follow-up questions retrieve relevant chunks.
+
+- [ ] **Chat Text Area Media Inputs & Pasted Screenshots:**
+  - Allow users to paste copied screenshots or images directly into `ChatInput.tsx`, alongside their text question. Preserve normal text-paste behavior.
+  - Support image attachments through clipboard paste, drag-and-drop, and a file picker; show thumbnail previews with remove controls before sending.
+  - Accept text-plus-image and image-only messages, with supported image formats, attachment count, and file-size limits validated on both frontend and backend. Display clear upload progress and retryable errors.
+  - Extend both `/api/chat` and `/api/agent/chat` to accept image attachments and pass them to a vision-capable model so users can ask about screenshots, diagrams, equations, or photographed textbook pages.
+  - Include attachment context in intent routing and follow-up contextualization; distinguish image-based observations from claims supported by retrieved textbook citations.
+  - Render attached images in chat history and retain their context for follow-up questions; isolate attachment access by user and notebook and define cleanup for abandoned uploads.
+  - **Acceptance:** Copy a screenshot, paste it into the chat text area, add "Explain this", and receive an answer that considers the image. Verify image-only sends, multiple images, removal, unsupported/oversized files, and unchanged text-only chat behavior.
 
 - [ ] **Modal Wiring & Layout Verification (Inspector Modal Mount):**
   - Wire `RetrievalInspectorModal` into `app/page.tsx` with `useTextbookStore` so clicking `Diagnostics` in `StudioPanel` or the `SlidersHorizontal` icon in `Header` opens the Stage 1 & Stage 2 inspector modal.
