@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, CircleAlert, GitCompare, Sparkles } from "lucide-react";
+import { HeroMeshGradient } from "./HeroMeshGradient";
 
 interface SuggestedQueriesProps {
     onSelectQuery: (query: string) => void;
@@ -24,7 +25,8 @@ const SUGGESTED_QUERIES = [
 
 export function SuggestedQueries({ onSelectQuery }: SuggestedQueriesProps) {
     return (
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+        <div className="relative isolate w-full max-w-2xl mx-auto flex flex-col items-center justify-center overflow-hidden rounded-3xl p-6 text-center animate-in fade-in duration-300">
+            <HeroMeshGradient />
             <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 text-indigo-400 shadow-inner">
                 <Sparkles size={20} />
             </div>
@@ -42,7 +44,7 @@ export function SuggestedQueries({ onSelectQuery }: SuggestedQueriesProps) {
                             key={idx}
                             type="button"
                             onClick={() => onSelectQuery(chip.query)}
-                            className="flex flex-col items-start text-left p-3 rounded-xl border border-zinc-800 bg-zinc-900/60 
+                            className="flex flex-col items-start text-left p-3 rounded-xl border border-zinc-800 bg-zinc-950/70
                          hover:bg-zinc-800/80 hover:border-zinc-700 transition-all cursor-pointer group"
                         >
                             <div className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors mb-2">
@@ -51,7 +53,7 @@ export function SuggestedQueries({ onSelectQuery }: SuggestedQueriesProps) {
                             <span className="text-xs font-semibold text-zinc-200 group-hover:text-white">
                                 {chip.label}
                             </span>
-                            <span className="text-[11px] text-zinc-500 mt-1 line-clamp-2 leading-snug">
+                            <span className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-snug">
                                 {chip.query}
                             </span>
                         </button>
