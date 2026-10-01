@@ -69,7 +69,7 @@ model UploadedDocuments{
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   notebook              Notebooks              @relation(fields: [notebookId], references: [id], onDelete: Cascade)
 
-  conversations         Conversations[]
+  conversations         ConversationDocuments[]
   messageSources        MessageSources[]
 
   createdAt             DateTime @default(now())
