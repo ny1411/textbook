@@ -1,8 +1,19 @@
 from fastapi import FastAPI
 from routers import api_router
+from contextlib import asynccontextmanager
 import logging
+from services.indexing import init_connection
 
-app = FastAPI()
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_connection()
+    logger.info("Qdrant collection and payload indexes are ready.")
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 logging.basicConfig(
     level=logging.INFO,
