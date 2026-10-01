@@ -6,6 +6,19 @@ from services.embedder import get_vectors
 
 logger = logging.getLogger(__name__)
 
+def _resolve_target_documents(
+    document_id: Optional[str],
+    document_ids: Optional[List[str]],
+) -> Optional[List[str]]:
+    if document_ids is None and document_id is None:
+        return None
+
+    target_docs = [str(doc_id) for doc_id in (document_ids or [])]
+    if document_id:
+        target_docs.append(str(document_id))
+
+    return list(dict.fromkeys(target_docs))
+
 def reciprocal_rank_fusion(
     dense_results: List[models.ScoredPoint], 
     sparse_results: List[models.ScoredPoint], 
@@ -63,6 +76,10 @@ def hybrid_search(
     collection_name: str = "textbook_chunks"
 ) -> List[Dict[str, Any]]:
 
+    target_docs = _resolve_target_documents(document_id, document_ids)
+    if target_docs == []:
+        return []
+
     # generate vectors from get_vectors
     dense_vector, sparse_vector = get_vectors(query, is_query=True)
 
@@ -82,18 +99,14 @@ def hybrid_search(
             ),
         )
 
-    target_docs = list(document_ids) if document_ids else []
-    if document_id and document_id not in target_docs:
-        target_docs.append(document_id)
-
-    if len(target_docs) == 1:
+    if target_docs and len(target_docs) == 1:
         filter_conditions.append(
             models.FieldCondition(
                 key="document_id",
                 match=models.MatchValue(value=str(target_docs[0])),
             )
         )
-    elif len(target_docs) > 1:
+    elif target_docs and len(target_docs) > 1:
         filter_conditions.append(
             models.FieldCondition(
                 key="document_id",
