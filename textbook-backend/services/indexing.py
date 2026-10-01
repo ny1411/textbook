@@ -25,6 +25,49 @@ DEFAULT_PAYLOAD_INDEXES = [
     {"field_name": "chunk_id", "field_schema": "keyword"},
 ]
 
+DENSE_VECTOR_NAME = "dense-text"
+DENSE_VECTOR_SIZE = 1024
+SPARSE_VECTOR_NAME = "sparse-text"
+
+
+def validate_collection_configuration(
+    collection_name: str = "textbook_chunks",
+    payload_indexes: list[dict] | None = None,
+    *,
+    require_payload_indexes: bool = True,
+):
+    """Read and validate the deployed collection without changing stored data.
+
+    An existing collection with incompatible vectors requires an explicit data
+    migration. Provisioning must never recreate it to repair a schema mismatch.
+    """
+    collection = client.get_collection(collection_name)
+    params = collection.config.params
+    vectors = params.vectors
+    dense = vectors.get(DENSE_VECTOR_NAME) if isinstance(vectors, dict) else None
+    errors = []
+    if dense is None:
+        errors.append(f"missing named vector {DENSE_VECTOR_NAME}")
+    else:
+        if dense.size != DENSE_VECTOR_SIZE:
+            errors.append(f"{DENSE_VECTOR_NAME} must have size {DENSE_VECTOR_SIZE}")
+        if dense.distance != Distance.COSINE:
+            errors.append(f"{DENSE_VECTOR_NAME} must use Cosine distance")
+    if SPARSE_VECTOR_NAME not in (params.sparse_vectors or {}):
+        errors.append(f"missing named vector {SPARSE_VECTOR_NAME}")
+
+    if require_payload_indexes:
+        desired_indexes = DEFAULT_PAYLOAD_INDEXES if payload_indexes is None else payload_indexes
+        for index in desired_indexes:
+            if _index_needs_update((collection.payload_schema or {}).get(index["field_name"]), index):
+                errors.append(f"missing or incompatible payload index {index['field_name']}")
+
+    if errors:
+        raise ValueError(
+            f"Incompatible Qdrant collection {collection_name!r}: " + "; ".join(errors)
+        )
+    return collection
+
 
 def _build_field_schema(index: dict):
     schema_type = schema_mapper.get(
@@ -57,7 +100,7 @@ def ensure_payload_indexes(
     collection_name: str = "textbook_chunks",
     payload_indexes: list[dict] | None = None,
 ) -> None:
-    desired_indexes = payload_indexes or DEFAULT_PAYLOAD_INDEXES
+    desired_indexes = DEFAULT_PAYLOAD_INDEXES if payload_indexes is None else payload_indexes
     collection = client.get_collection(collection_name)
     existing_indexes = collection.payload_schema or {}
 
@@ -74,6 +117,7 @@ def ensure_payload_indexes(
             wait=True,
         )
 
+
 def init_connection(
     collection_name: str = "textbook_chunks", 
     use_quantization: bool = False,
@@ -83,8 +127,8 @@ def init_connection(
 ):
     if use_quantization:
         dense_config = {
-            "dense-text": VectorParams(
-                size=1024,
+            DENSE_VECTOR_NAME: VectorParams(
+                size=DENSE_VECTOR_SIZE,
                 distance=Distance.COSINE,
                 hnsw_config=HnswConfigDiff(m=hnsw_m, ef_construct=hnsw_ef_construct),
                 quantization_config=ScalarQuantization(
@@ -97,15 +141,15 @@ def init_connection(
         }
     else:
         dense_config = {
-            "dense-text": VectorParams(
-                size=1024,
+            DENSE_VECTOR_NAME: VectorParams(
+                size=DENSE_VECTOR_SIZE,
                 distance=Distance.COSINE,
                 hnsw_config=HnswConfigDiff(m=hnsw_m, ef_construct=hnsw_ef_construct)
             )
         }
 
     sparse_config = {
-        "sparse-text": SparseVectorParams()
+        SPARSE_VECTOR_NAME: SparseVectorParams()
     }
 
     if not client.collection_exists(collection_name):
@@ -115,6 +159,12 @@ def init_connection(
             sparse_vectors_config=sparse_config
         )
 
+    # Fail before any index writes if the existing collection cannot be used by
+    # ingestion and hybrid retrieval. Never reset a populated collection.
+    validate_collection_configuration(
+        collection_name=collection_name,
+        require_payload_indexes=False,
+    )
     ensure_payload_indexes(
         collection_name=collection_name,
         payload_indexes=payload_indexes,
