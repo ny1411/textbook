@@ -326,7 +326,7 @@ Use `[x]` to mark tasks as completed.
     2. Qdrant Cloud: delete all vector points matching `document_id` and `user_id`.
     3. PostgreSQL: cascade delete metadata from `uploaded_documents` table via Prisma.
 
-- [ ] **Notebook-Level Vector Scoping & Multi-Document Selection Filter:**
+- [x] **Notebook-Level Vector Scoping & Multi-Document Selection Filter:**
   - **Problem:** As documents accumulate in Qdrant under a shared collection, queries without scoping search across all documents ever uploaded by the user, causing cross-domain context contamination (e.g. querying a Physics problem returns chunks from an unrelated History textbook).
   - **Notebook Workspace Partitioning (`notebook_id`):**
     - Add `notebook_id` to Qdrant payload schema indexes (`services/indexing.py`) with `is_tenant=True` optimization.

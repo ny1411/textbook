@@ -83,6 +83,7 @@ Create a `.env` file in `textbook-backend/`:
 GOOGLE_API_KEY="your-google-gemini-api-key"
 QDRANT_URL="https://your-cluster-id.us-east4-0.gcp.cloud.qdrant.io:6333"
 QDRANT_API_KEY="your-qdrant-api-key"
+QDRANT_TIMEOUT_SECONDS="30"
 DATABASE_URL="postgresql://postgres.your-project:your-password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true"
 SUPABASE_URL="https://your-project.supabase.co"
 SUPABASE_SECRET_KEY="your-supabase-service-role-key"
@@ -134,7 +135,7 @@ python scripts/seed_corpus.py
 
 ### 5. Run development server
 ```powershell
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
 ```
 - API docs: `http://localhost:8000/docs`
 
