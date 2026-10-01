@@ -1,6 +1,11 @@
 from functools import lru_cache
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from typing import List, Dict, Any
+import logging
+import math
+from services.relevance import normalize_relevance
+
+logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=1)
 def get_cross_encoder(model_name: str = "BAAI/bge-reranker-base") -> HuggingFaceCrossEncoder:
@@ -33,12 +38,18 @@ def reranker_with_cross_encoder(
     # attach scores to items
     scored_candidates = []
     for chunk, score in zip(candidate_chunks, scores):
+        logit = float(score)
+        if not math.isfinite(logit):
+            logger.warning("Discarding candidate with a non-finite cross-encoder score")
+            continue
         chunk_copy = dict(chunk)
-        chunk_copy["rerank_score"] = float(score) 
+        chunk_copy["rerank_logit"] = logit
+        chunk_copy["rerank_score"] = normalize_relevance(logit)
 
         scored_candidates.append(chunk_copy)
     
     # sort in descending order
-    scored_candidates.sort(key=lambda x: x["rerank_score"], reverse=True)
+    # Sort logits so sigmoid saturation cannot change the ranking.
+    scored_candidates.sort(key=lambda x: x["rerank_logit"], reverse=True)
 
     return scored_candidates[:top_k]

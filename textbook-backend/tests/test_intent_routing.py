@@ -96,12 +96,13 @@ def test_followup_uses_history_and_preserves_retrieval_scope(pipeline, endpoint)
 
 def test_relevance_threshold_rejects_low_scores(monkeypatch):
     monkeypatch.setenv("CHAT_MIN_RERANK_SCORE", "0")
-    chunks = [{"rerank_score": -3}, {"rerank_score": 2}, {}]
+    chunks = [{"rerank_score": 0.05, "rerank_logit": -3},
+              {"rerank_score": 0.88, "rerank_logit": 2}, {}]
     assert relevant_chunks(chunks) == [chunks[1]]
 
 
 def test_low_relevance_results_trigger_general_fallback(pipeline):
-    pipeline.setattr(chat_router, "hybrid_search", lambda **kwargs: [{"rerank_score": -10}])
+    pipeline.setattr(chat_router, "hybrid_search", lambda **kwargs: [{"rerank_score": 0.00005, "rerank_logit": -10}])
     result = asyncio.run(chat_router.chat(chat_router.ChatRequest(user_id="user", query="question")))
     assert result.intent == "general_knowledge"
     assert result.citations == []
@@ -119,7 +120,8 @@ def test_ingestion_notice_is_preserved(pipeline, endpoint):
 
 @pytest.mark.parametrize("endpoint", [chat_router.chat, chat_router.agent_chat])
 def test_relevant_sources_keep_grounded_generation(pipeline, endpoint):
-    chunk = {"id": "chunk", "rerank_score": 4, "payload": {"text": "Backpropagation example"}}
+    chunk = {"id": "chunk", "rerank_score": 0.98, "rerank_logit": 4,
+             "payload": {"text": "Backpropagation example"}}
     citation = {"source_id": 1, "chunk_id": "chunk", "text": "Backpropagation example"}
     pipeline.setattr(chat_router, "hybrid_search", lambda **kwargs: [chunk])
     pipeline.setattr(nodes, "hybrid_search", lambda **kwargs: [chunk])

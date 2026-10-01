@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { StudioNote, useTextbookStore } from "@/stores/useTextbookStore";
 import { useState } from "react";
 import { toast } from "sonner";
+import { relevancePercentage } from "@/lib/relevance";
 import {
     BookOpen,
     FileText,
@@ -30,6 +31,7 @@ export function StudioPanel() {
 
     const [newNoteContent, setNewNoteContent] = useState<string>("");
     const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
+    const scorePercentage = relevancePercentage(activeCitation?.rerank_score);
 
     const handleCreateNote = (e: React.FormEvent) => {
         e.preventDefault();
@@ -136,12 +138,11 @@ export function StudioPanel() {
                                                 </span>
                                             )}
                                     </div>
-                                    {activeCitation.rerank_score !== null &&
-                                        activeCitation.rerank_score !== undefined && (
-                                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono">
-                                                {Math.round(activeCitation.rerank_score * 100)}% match
-                                            </span>
-                                        )}
+                                    {scorePercentage !== null && (
+                                        <span title="Normalized cross-encoder relevance; not a calibrated probability" className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono">
+                                            {scorePercentage}% match
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800/80 text-xs text-zinc-200 leading-relaxed font-serif">

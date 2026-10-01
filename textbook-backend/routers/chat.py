@@ -64,7 +64,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         document_ids=request.document_ids,
         notebook_id=request.notebook_id,
         query=request.query,
-        pipeline="linear-intent-v1",
+        pipeline="linear-intent-v2-normalized",
         top_k=request.top_k,
         use_analysis=request.use_analysis,
     )
@@ -155,7 +155,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
                 notebook_id=request.notebook_id,
                 query=request.query,
                 response=result,
-                pipeline="linear-intent-v1",
+                pipeline="linear-intent-v2-normalized",
                 top_k=request.top_k,
                 use_analysis=request.use_analysis,
             )
@@ -177,7 +177,7 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
         document_ids=request.document_ids,
         notebook_id=request.notebook_id,
         query=request.query,
-        pipeline="agent-intent-v1",
+        pipeline="agent-intent-v2-normalized",
         top_k=request.top_k,
         use_analysis=request.use_analysis,
     )
@@ -247,7 +247,7 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
                 notebook_id=request.notebook_id,
                 query=request.query,
                 response=result,
-                pipeline="agent-intent-v1",
+                pipeline="agent-intent-v2-normalized",
                 top_k=request.top_k,
                 use_analysis=request.use_analysis,
             )
