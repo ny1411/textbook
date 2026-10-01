@@ -6,6 +6,8 @@ import { CitationItem } from "@/types/api";
 import { ChatMessageItem } from "@/types/chat";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useSourceStore } from "@/stores/useSourcesStore";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 
 export function useChat() {
     const [messages, setMessages] = useState<ChatMessageItem[]>([]);
@@ -14,6 +16,8 @@ export function useChat() {
     const [selectedMessage, setSelectedMessage] = useState<CitationItem | null>(null);
 
     const userId = useUserStore((s) => s.userId);
+    const selectedDocumentIds = useSourceStore((s) => s.selectedDocumentIds);
+    const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
 
     const sendMessage = useCallback(
         async (queryText: string, overrideAgentMode?: boolean) => {
@@ -38,6 +42,8 @@ export function useChat() {
                     const response = await sendAgentChatMessage({
                         user_id: userId,
                         query: trimmedQuery,
+                        document_ids: selectedDocumentIds ?? undefined,
+                        notebook_id: activeNotebookId,
                         top_k: 5,
                     });
 
@@ -61,6 +67,8 @@ export function useChat() {
                     const response = await sendChatMessage({
                         user_id: userId,
                         query: trimmedQuery,
+                        document_ids: selectedDocumentIds ?? undefined,
+                        notebook_id: activeNotebookId,
                         top_k: 5,
                     });
 
@@ -88,7 +96,7 @@ export function useChat() {
             } finally {
                 setIsLoading(false);
             }
-        }, [userId, isLoading, isAgentMode]
+        }, [userId, isLoading, isAgentMode, selectedDocumentIds, activeNotebookId]
     );
 
     const clearChat = useCallback(() => {

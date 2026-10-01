@@ -11,6 +11,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useSourceStore } from "@/stores/useSourcesStore";
 import { ACCEPTED_TYPES } from "@/types/source";
 import { useDropzone } from "react-dropzone";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 
 interface ChatInputProps {
     onSend: (message: string, isAgentMode: boolean) => void;
@@ -25,6 +26,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
 
     const userId = useUserStore((s) => s.userId);
     const addSource = useSourceStore((s) => s.addSource);
+    const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
 
     const handleUploadFiles = async (files: File[]) => {
         if (!files.length) return
@@ -32,12 +34,13 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
 
         for (const file of files) {
             try {
-                const request = await uploadDocument(userId, file);
+                const request = await uploadDocument(userId, file, activeNotebookId);
                 addSource({
                     userId: userId,
                     filename: request.filename,
                     filepath: request.filepath,
                     documentId: request.document_id,
+                    notebookId: activeNotebookId,
                     status: "processing",
                     size: file.size,
                     type: file.type,

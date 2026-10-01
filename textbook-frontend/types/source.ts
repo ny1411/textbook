@@ -5,6 +5,7 @@ export interface SourceDocument {
     filename: string;
     filepath: string;
     documentId?: string;
+    notebookId?: string;
     status?: IngestionStatus;
     error?: string;
     size?: number;

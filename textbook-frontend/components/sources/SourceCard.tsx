@@ -3,16 +3,26 @@ import { Eye, FileText, Loader2, Trash2 } from "lucide-react";
 
 interface SourceCardProps {
     source: SourceDocument;
+    isSelected: boolean;
+    onToggle: (documentId: string) => void;
     onDelete: (filepath: string) => void;
     onInspect: (source: SourceDocument) => void;
 }
 
-export function SourceCard({ source, onDelete, onInspect }: SourceCardProps) {
+export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect }: SourceCardProps) {
     const formattedSize = source.size ?
         `${(source.size / 1024).toFixed(0)}KB` : "Unknown Size";
 
     return (
         <div className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 transition-all group">
+            <input
+                type="checkbox"
+                checked={isSelected}
+                disabled={!source.documentId || source.status === "failed"}
+                onChange={() => source.documentId && onToggle(source.documentId)}
+                aria-label={`Use ${source.filename} in answers`}
+                className="size-4 shrink-0 accent-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+            />
             <FileText size={20} className="text-indigo-400 shrink-0" />
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-zinc-200 truncate"

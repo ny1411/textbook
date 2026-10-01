@@ -16,6 +16,7 @@ import { performSearch } from "@/lib/api/search";
 import { useSourceStore } from "@/stores/useSourcesStore";
 import { SearchResultItem } from "@/types/api";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 
 interface RetrievalInspectorModal {
     isOpen: boolean;
@@ -25,6 +26,7 @@ interface RetrievalInspectorModal {
 export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorModal) {
     const userId = useUserStore((s) => s.userId);
     const sources = useSourceStore((s) => s.source);
+    const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
 
     const [query, setQuery] = useState("");
     const [selectedDocId, setSelectedDocId] = useState<string>("");
@@ -48,6 +50,7 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                 user_id: userId,
                 query: query.trim(),
                 document_id: selectedDocId || undefined,
+                notebook_id: activeNotebookId,
                 top_k: topK,
                 use_analysis: useAnalysis,
             });
@@ -57,9 +60,9 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
             setResults(response.results || []);
             setAppliedQuery(query.trim());
             toast.success(`Retrived ${response.results.length} chunks in ${elapsed}ms.`);
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.log("Retrieval diagonistic error:", e);
-            toast.error(e.message || "Failed to run retrieval test.");
+            toast.error(e instanceof Error ? e.message : "Failed to run retrieval test.");
         } finally {
             setIsLoading(false);
         }

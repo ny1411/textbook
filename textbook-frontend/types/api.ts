@@ -10,6 +10,8 @@ export interface SearchRequest {
     user_id: string;
     query: string;
     document_id?: string | null;
+    document_ids?: string[] | null;
+    notebook_id?: string | null;
     top_k?: number;
     use_analysis?: boolean;
 }
@@ -38,6 +40,8 @@ export interface ChatRequest{
     query: string;
     conversation_id?: string | null;
     document_id?: string | null;
+    document_ids?: string[] | null;
+    notebook_id?: string | null;
     top_k?: number;
     use_analysis?: boolean;
 }
