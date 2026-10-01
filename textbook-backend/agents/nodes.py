@@ -1,4 +1,5 @@
 from typing import Dict, Any, List
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from .state import AgentState
@@ -6,6 +7,8 @@ from services.analyzer import analyze_query, QueryAnalysis
 from services.retriever import hybrid_search
 from services.reranker import reranker_with_cross_encoder
 from services.generator import generate_answer
+from services.conversation import relevant_chunks, generate_conversational_answer
+from services.status import is_user_ingesting
 from core.llm import get_llm
 
 class ReflectionGrade(BaseModel):
@@ -33,8 +36,10 @@ llm = get_llm(temperature=0.0, max_tokens=1024)
 evaluator_chain = reflector_prompt | llm.with_structured_output(ReflectionGrade)
 
 
-def planner_node(state: AgentState) -> Dict[str, Any]:
-    analysis = analyze_query(state["query"])
+def planner_node(state: AgentState, config: RunnableConfig) -> Dict[str, Any]:
+    if state.get("rewritten_query") and state.get("sub_queries"):
+        return {"iteration_count": 0, "is_grounded": False}
+    analysis = analyze_query(state["query"], config=config, history=state.get("history", []))
     sub_queries = [state["query"]]
 
     # flatten subqueries and combine
@@ -76,29 +81,32 @@ def retriever_node(state: AgentState) -> Dict[str, Any]:
     final_chunks = reranker_with_cross_encoder(
         query=state.get("rewritten_query") or state["query"],
         candidate_chunks=all_chunks,
-        top_k=5
+        top_k=state.get("top_k", 5)
     )
 
     return {
-        "documents": final_chunks,
+        "documents": relevant_chunks(final_chunks),
         "iteration_count": state.get("iteration_count", 0) + 1,
     }
 
-def generator_node(state: AgentState) -> Dict[str, Any]:
-    result = generate_answer(
-        query=state["query"], 
-        chunks=state.get("documents", [])
-    )
+def generator_node(state: AgentState, config: RunnableConfig) -> Dict[str, Any]:
+    query = state.get("rewritten_query") or state["query"]
+    if not state.get("documents"):
+        if is_user_ingesting(user_id=state["user_id"], document_id=state.get("document_id")):
+            return {"answer": "One or more documents are still being processed and indexed. Please wait a moment and try again.",
+                    "citations": [], "is_grounded": False}
+        return generate_conversational_answer(query, "general_knowledge", state.get("history"), config)
+    result = generate_answer(query=query, chunks=state["documents"], config=config)
 
     return {
         "answer": result["answer"],
         "citations": result["citations"],
     }
 
-def reflection_node(state: AgentState) -> Dict[str, Any]:
+def reflection_node(state: AgentState, config: RunnableConfig) -> Dict[str, Any]:
     if not state.get("documents") or not state.get("answer"):
         return {
-            "is_grounded": True,
+            "is_grounded": False,
             "confidence_score": 0,
             "critique": "No sources available.",
         }
@@ -111,10 +119,10 @@ def reflection_node(state: AgentState) -> Dict[str, Any]:
 
     try:
         grade: ReflectionGrade = evaluator_chain.invoke({
-            "query": state["query"],
+            "query": state.get("rewritten_query") or state["query"],
             "sources": source_text,
             "answer": state.get("answer", "")
-        })
+        }, config=config)
         return {
             "is_grounded": grade.is_grounded,
             "confidence_score": grade.confidence_score,
@@ -126,4 +134,3 @@ def reflection_node(state: AgentState) -> Dict[str, Any]:
             "confidence_score": 75,
             "critique": f"Evaluation Error: {str(e)}"
         }
-    

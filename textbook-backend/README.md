@@ -155,3 +155,24 @@ python evals/run_evals.py
 | `POST` | `/api/search` | Two-stage hybrid search (dense + BM25 RRF + cross-encoder) | Working |
 | `POST` | `/api/chat` | Standard RAG pipeline with inline source citations | Working |
 | `POST` | `/api/agent/chat` | LangGraph agentic self-reflection chat pipeline | Working |
+
+
+### Conversational intent routing
+
+Both `/api/chat` and `/api/agent/chat` classify requests as `casual_chat`,
+`textbook_rag`, or `general_knowledge`. Greetings and explicit requests to answer
+without documents bypass retrieval. Other factual questions search selected sources
+first; when no chunks meet the relevance threshold, the response uses general
+knowledge with `is_grounded: false`, no citations, and a `warning` for the UI.
+Documents still being indexed retain the processing notice.
+
+Send optional `history` as up to 20 `{ "role": "user" | "assistant", "content": "..." }`
+messages preceding the current query (8,000 characters per message). The analyzer
+rewrites follow-ups into standalone retrieval queries. Requests with history bypass
+response caching; stateless requests use a versioned cache namespace.
+
+`CHAT_MIN_RERANK_SCORE` controls the minimum BGE cross-encoder logit accepted by
+chat (default `0.0`). This is a starting threshold and should be calibrated against
+representative source/query pairs; it is not a probability. Search API behavior is
+unchanged. Intent classification always runs for chat; `use_analysis` remains in
+the request schema for compatibility.

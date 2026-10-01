@@ -1,0 +1,34 @@
+"""Shared conversational response and retrieval policy for both chat pipelines."""
+import os
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from core.llm import get_llm
+
+GENERAL_KNOWLEDGE_WARNING = "Answered using general AI knowledge; not found in your uploaded documents"
+
+
+def relevant_chunks(chunks):
+    # BGE cross-encoder scores are logits, not probabilities. Tune on a labeled dataset.
+    threshold = float(os.getenv("CHAT_MIN_RERANK_SCORE", "0.0"))
+    return [chunk for chunk in chunks if chunk.get("rerank_score", float("-inf")) >= threshold]
+
+
+def generate_conversational_answer(query, intent, history=None, config=None):
+    instructions = (
+        "You are Textbook, a friendly assistant that helps users understand uploaded documents. "
+        "Respond naturally to greetings and questions about your capabilities."
+        if intent == "casual_chat" else
+        "You are Textbook, a helpful educational assistant. Answer using general knowledge. "
+        "Be clear about uncertainty. You have no supporting document sources for this answer."
+    )
+    messages = [SystemMessage(content=instructions + " Do not invent document citations or claim to have read uploaded files.")]
+    for message in history or []:
+        cls = HumanMessage if message["role"] == "user" else AIMessage
+        messages.append(cls(content=message["content"]))
+    messages.append(HumanMessage(content=query))
+    response = get_llm(temperature=0.2, max_tokens=2048).invoke(messages, config=config)
+    content = response.content
+    answer = content if isinstance(content, str) else "".join(
+        part.get("text", "") if isinstance(part, dict) else str(part) for part in content
+    )
+    return {"answer": answer, "citations": [], "intent": intent, "is_grounded": False,
+            "warning": GENERAL_KNOWLEDGE_WARNING if intent == "general_knowledge" else None}

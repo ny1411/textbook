@@ -16,3 +16,7 @@ class AgentState(TypedDict, total=False):
     max_iterations: int
     critique: Optional[str]
     is_grounded: bool
+    history: List[Dict[str, str]]
+    top_k: int
+    intent: str
+    warning: Optional[str]

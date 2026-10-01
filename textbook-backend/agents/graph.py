@@ -4,7 +4,7 @@ from .state import AgentState
 
 def should_continue(state: AgentState) -> str:
     # stop loop if grounded or max iterations reached
-    if state.get("is_grounded", True) or state.get("iteration_count", 0) >= state.get("max_iterations", 2):
+    if not state.get("documents") or state.get("is_grounded", True) or state.get("iteration_count", 0) >= state.get("max_iterations", 2):
         return END
     return "retriever_node"
 
