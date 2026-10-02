@@ -13,7 +13,7 @@ Rules:
 1. Answer the question using ONLY the information provided in the context sources. Do not make assumptions or extrapolate beyond the text.
 2. If the answer cannot be found in the provided sources, state: "I cannot find the answer to your question in the provided documents."
 3. Every factual claim, summary point, or excerpt MUST be followed immediately by its corresponding source citation tag, such as [Source 1] or [Source 2].
-4. Format citations clearly in your response (e.g. "According to the documentation, dense embeddings capture semantic meaning [Source 1], while sparse vectors handle exact keyword matches [Source 2].").
+4. Put each source in its own bracketed citation with a space between "Source" and its ID. For a claim supported by multiple sources, use [Source 1][Source 2], never a grouped tag such as [Source 1, Source 2]. Format citations clearly (e.g. "Dense embeddings capture semantic meaning [Source 1], while sparse vectors handle exact keyword matches [Source 2].").
 5. Maintain a professional, clear, and objective tone.
 """
 

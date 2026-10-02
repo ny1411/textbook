@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { createCitationPlugin } from "@/lib/citations";
 import { CitationItem } from "@/types/api";
 import { ChatMessageItem } from "@/types/chat";
 import { AlertTriangle, CheckCircle, FileSpreadsheet, Sparkles, UserRound, Zap } from "lucide-react";
@@ -14,16 +16,41 @@ interface ChatMessageProps {
     onCitationClick?: (citation: CitationItem) => void;
 }
 
+function InlineCitation({ sourceId, citation, onCitationClick }: {
+    sourceId: string;
+    citation?: CitationItem;
+    onCitationClick?: (citation: CitationItem) => void;
+}) {
+    const badge = <CitationBadge sourceId={sourceId} citation={citation} onCitationClick={onCitationClick} />;
+    if (!citation) return badge;
+    return (
+        <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+                <span className="inline-flex align-baseline">{badge}</span>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+                <Tooltip.Content side="top" sideOffset={6}
+                    className="z-50 w-80 max-w-[90vw] rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-xs text-zinc-100 shadow-xl">
+                    <div className="mb-2 font-semibold">
+                        Source {sourceId}
+                        {citation.page_number != null && <span className="ml-2 font-normal text-zinc-400">p. {citation.page_number}</span>}
+                    </div>
+                    <p className="max-h-40 overflow-y-auto whitespace-pre-wrap text-zinc-300">{citation.text}</p>
+                    {citation.document_id && <p className="mt-2 truncate text-zinc-500">Doc: {citation.document_id}</p>}
+                    <Tooltip.Arrow className="fill-zinc-900" />
+                </Tooltip.Content>
+            </Tooltip.Portal>
+        </Tooltip.Root>
+    );
+}
+
 export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
     const isUser = message.role === "user";
 
-    const processedContent = useMemo(() => {
-        if (isUser) return message.content;
-
-        return message.content.replace(
-            /\[(?:Source\s*|source_)?(\d+|[a-zA-Z0-9_-]+)\]/gi,
-            (match, id) => `[cite:${id}](#citation-${id})`);
-    }, [message.content, isUser]);
+    const citationPlugin = useMemo(
+        () => createCitationPlugin(message.citations?.map((citation) => citation.source_id) ?? []),
+        [message.citations],
+    );
 
     return (
         <div
@@ -110,24 +137,29 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                         <p className="whitespace-pre-wrap">{message.content}</p>
                     ) : (
                         <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
+                            <Tooltip.Provider delayDuration={250}>
                             <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
+                                remarkPlugins={[remarkGfm, citationPlugin]}
                                 components={{
 
-                                    a({ href, children, ...props }) {
-                                        if (href?.startsWith("#citation-")) {
-                                            const id = href.replace("#citation-", "");
+                                    cite({ node, children, ...props }) {
+                                        const id = node?.properties["data-source-id"];
+                                        if (typeof id === "string") {
                                             const citation = message.citations?.find(
                                                 (c) => String(c.source_id) === id
                                             );
                                             return (
-                                                <CitationBadge
+                                                <InlineCitation
                                                     sourceId={id}
                                                     citation={citation}
                                                     onCitationClick={onCitationClick}
                                                 />
                                             );
                                         }
+                                        return <cite {...props}>{children}</cite>;
+                                    },
+
+                                    a({ href, children, ...props }) {
                                         return (
                                             <a
                                                 href={href}
@@ -146,8 +178,9 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                                     },
                                 }}
                             >
-                                {processedContent}
+                                {message.content}
                             </ReactMarkdown>
+                            </Tooltip.Provider>
                         </div>
                     )}
                 </div>
