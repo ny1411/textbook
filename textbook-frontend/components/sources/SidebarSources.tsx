@@ -7,11 +7,16 @@ import { SourceViewerModel } from "./SourceViewerModel";
 import { useSourceStore } from "@/stores/useSourcesStore";
 import { SourceDocument } from "@/types/source";
 import { useDocumentPoller } from "@/hooks/useDocumentStatusPoller";
+import { useUserStore } from "@/stores/useUserStore";
+import { useTextbookStore } from "@/stores/useTextbookStore";
+import { SampleTextbookLoader, SampleTextbookStatus } from "./SampleTextbookLoader";
 
 export function SidebarSources() {
     useDocumentPoller();
 
     const sources = useSourceStore((s) => s.source);
+    const userId = useUserStore((s) => s.userId);
+    const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
     const selectedDocumentIds = useSourceStore((s) => s.selectedDocumentIds);
     const removeSource = useSourceStore((s) => s.removeSource);
     const toggleSourceSelection = useSourceStore((s) => s.toggleSourceSelection);
@@ -49,23 +54,29 @@ export function SidebarSources() {
                 {sources.length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-800 rounded-2xl text-zinc-500"><Upload size={20} className="mb-2 text-zinc-600" />
                         <p className="flex text-xs font-medium text-zinc-400">Add sources by dropping files <br /> in chat or clicking + icon</p>
-
+                        <SampleTextbookLoader
+                            key={JSON.stringify([userId, activeNotebookId])}
+                            userId={userId}
+                            notebookId={activeNotebookId}
+                        />
                     </div>
                 ) : (
                     sources.map((source) => (
-                        <SourceCard
-                            key={source.filepath}
-                            source={source}
-                            isSelected={
-                                source.status !== "failed" && (
-                                    selectedDocumentIds === null ||
-                                    (!!source.documentId && selectedDocumentIds.includes(source.documentId))
-                                )
-                            }
-                            onToggle={toggleSourceSelection}
-                            onDelete={removeSource}
-                            onInspect={setInspectSource}
-                        />
+                        <div key={source.filepath}>
+                            <SourceCard
+                                source={source}
+                                isSelected={
+                                    source.status !== "failed" && (
+                                        selectedDocumentIds === null ||
+                                        (!!source.documentId && selectedDocumentIds.includes(source.documentId))
+                                    )
+                                }
+                                onToggle={toggleSourceSelection}
+                                onDelete={removeSource}
+                                onInspect={setInspectSource}
+                            />
+                            <SampleTextbookStatus source={source} />
+                        </div>
                     ))
                 )}
             </div>
