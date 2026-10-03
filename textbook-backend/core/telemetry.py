@@ -20,6 +20,10 @@ def get_langfuse_callback() -> Optional[CallbackHandler]:
     """
     if not is_langfuse_configured():
         logger.debug("Langfuse API keys are not configured. Running without remote telemetry.")
+        return None
+    if os.getenv("LANGFUSE_TRACING_ENABLED", "true").lower() == "false":
+        logger.debug("Remote Langfuse telemetry is disabled.")
+        return None
     return CallbackHandler()
 
 
