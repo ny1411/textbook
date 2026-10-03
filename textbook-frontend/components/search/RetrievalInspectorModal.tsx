@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { relevancePercentage } from "@/lib/relevance";
 import { useState } from "react";
 import {
     SlidersHorizontal,
@@ -199,10 +200,7 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                                     <span>Ranked by Stage 2 Rerank Score</span>
                                 </div>
                                 {results.map((item, index) => {
-                                    const rerankPct =
-                                        item.rerank_score !== null && item.rerank_score !== undefined
-                                            ? Math.round(item.rerank_score * 100)
-                                            : null;
+                                    const rerankPct = relevancePercentage(item.rerank_score);
                                     return (
                                         <div
                                             key={item.id || index}

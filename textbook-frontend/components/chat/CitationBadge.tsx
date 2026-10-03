@@ -1,6 +1,7 @@
 import * as Popover from "@radix-ui/react-popover";
 import { CitationItem } from "@/types/api";
 import { ExternalLink, FileText } from "lucide-react";
+import { relevancePercentage } from "@/lib/relevance";
 
 interface CitationBadgeProps {
     sourceId: string | number;
@@ -23,10 +24,7 @@ export function CitationBadge({
         )
     }
 
-    const scorePercentage =
-        citation.rerank_score ?
-            Math.round(citation.rerank_score * 100)
-            : null;
+    const scorePercentage = relevancePercentage(citation.rerank_score);
 
     return (
         <Popover.Root>
@@ -63,7 +61,7 @@ export function CitationBadge({
                         {scorePercentage !== null && (
                             <span
                                 className="px-1.5 py-0.5 text-[10px] rounded-full font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
-                                title="Cross-encoder relevance score"
+                                title="Normalized cross-encoder relevance; not a calibrated probability"
                             >
                                 {scorePercentage}% match
                             </span>
