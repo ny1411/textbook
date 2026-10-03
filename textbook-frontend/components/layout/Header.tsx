@@ -4,12 +4,14 @@ import {
     PanelRightClose,
     PanelRight,
     PanelLeft,
-    LogIn
+    LogIn,
+    SlidersHorizontal,
 } from "lucide-react";
 import Image from "next/image";
 import logo from "@/public/logo.png"
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 import { AuthModal } from "../auth/AuthModal";
 import { UserMenu } from "../auth/UserMenu";
 
@@ -32,6 +34,7 @@ export function Header({
 
     const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
     const { user, isAuthenticated, signInWithProvider, signOut } = useAuth();
+    const setInspectorOpen = useTextbookStore((s) => s.setInspectorOpen);
 
     const userInitials = user?.name
         ? user?.name.slice(0, 1).toUpperCase()
@@ -69,6 +72,17 @@ export function Header({
 
                 {/* Right Zone */}
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setInspectorOpen(true)}
+                        title="Open Retrieval Inspector"
+                        aria-label="Open Retrieval Inspector"
+                        aria-haspopup="dialog"
+                        className="flex items-center gap-1.5 p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 transition-colors cursor-pointer"
+                    >
+                        <SlidersHorizontal className="size-4" aria-hidden="true" />
+                        <span className="hidden sm:inline text-xs font-medium">Diagnostics</span>
+                    </button>
                     {/* Studio Panel Toggle */}
                     <button
                         onClick={onToggleStudio}
