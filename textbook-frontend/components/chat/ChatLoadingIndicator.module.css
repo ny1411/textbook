@@ -1,0 +1,27 @@
+.blob {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    color: #a5b4fc;
+    background: radial-gradient(circle at 30% 25%, #818cf855, #312e8144 65%);
+}
+
+.metal {
+    position: absolute;
+    inset: 0;
+    animation: thinking-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+    0%, 100% { transform: scale(0.9); }
+    50% { transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .metal { animation: none; }
+}
