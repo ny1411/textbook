@@ -12,8 +12,8 @@ import { useState } from "react";
 export default function Home() {
   const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [isSourceOpen, setIsSourceOpen] = useState(false);
-  const [textbookTitle, setTextbookTitle] = useState("AI Engineering");
-  const [userAvatar, setUserAvatar] = useState("N");
+  const [textbookTitle] = useState("AI Engineering");
+  const [userAvatar] = useState("N");
 
   const { isInspectorOpen, setInspectorOpen } = useTextbookStore();
 

@@ -1,5 +1,5 @@
 import { UserProfile } from "@/stores/useUserStore";
-import { LogOut } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 interface UserMenuProps {
@@ -22,8 +22,11 @@ export function UserMenu({ user, onSignOut, onOpenSettings }: UserMenuProps) {
                 title="Account Settings"
             >
                 {user?.avatarUrl ? (
-                    <img
+                    <Image
                         src={user.avatarUrl}
+                        width={28}
+                        height={28}
+                        unoptimized
                         alt={user?.name || "Avatar"}
                         className="size-full object-cover"
                     />
