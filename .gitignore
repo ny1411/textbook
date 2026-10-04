@@ -10,7 +10,7 @@ skills-lock.json
  
 # Node.js / Next.js (Frontend)
 # Dependencies
-node_modules/
+node_modules
 */node_modules
 npm-debug.log*
 yarn-debug.log*
