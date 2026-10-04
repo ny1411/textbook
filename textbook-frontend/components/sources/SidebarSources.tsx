@@ -52,7 +52,7 @@ export function SidebarSources() {
                     />
                 </label>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            <div data-lenis-prevent className="flex-1 overflow-y-auto space-y-2 pr-1">
                 {sources.length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-800 rounded-2xl text-zinc-500"><Upload size={20} className="mb-2 text-zinc-600" />
                         <p className="flex text-xs font-medium text-zinc-400">Add sources by dropping files <br /> in chat or clicking + icon</p>

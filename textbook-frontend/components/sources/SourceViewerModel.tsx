@@ -17,9 +17,9 @@ export function SourceViewerModel({ source, isOpen, onClose }: SourceViewerModel
         <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <Dialog.Portal>
                 <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 animate-in fade-in duration-200" />
-                <Dialog.Content className="fixed top-1/2 left-1/2
+                <Dialog.Content data-lenis-prevent className="fixed top-1/2 left-1/2
                 -translate-x-1/2 -translate-y-1/2
-                w-full max-w-lg bg-zinc-900 border border-zinc-800
+                w-full max-w-lg max-h-[88dvh] overflow-y-auto bg-zinc-900 border border-zinc-800
                 p-6 rounded-2xl z-50 shadow-2xl"
                     style={{ animationDuration: "200ms" }}
                 >

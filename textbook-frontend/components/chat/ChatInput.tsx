@@ -116,6 +116,7 @@ export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatI
                 {/* Text Area */}
                 <textarea
                     ref={textareaRef}
+                    data-lenis-prevent
                     rows={1}
                     disabled={isLoading || disabled}
                     value={input}

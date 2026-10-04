@@ -40,6 +40,7 @@ export function CitationBadge({
             </Popover.Trigger>
             <Popover.Portal>
                 <Popover.Content
+                    data-lenis-prevent
                     side="top"
                     align="center"
                     sideOffset={6}
@@ -67,7 +68,7 @@ export function CitationBadge({
                             </span>
                         )}
                     </div>
-                    <div className="max-h-40 overflow-y-auto pr-1 text-zinc-300 leading-relaxed text-[11px] bg-zinc-950/60 p-2 rounded-lg border border-zinc-800/80 font-normal">
+                    <div data-lenis-prevent className="max-h-40 overflow-y-auto pr-1 text-zinc-300 leading-relaxed text-[11px] bg-zinc-950/60 p-2 rounded-lg border border-zinc-800/80 font-normal">
                         &ldquo;{citation.text}&ldquo;
                     </div>
 

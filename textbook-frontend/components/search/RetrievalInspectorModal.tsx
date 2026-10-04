@@ -74,6 +74,7 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
             <Dialog.Portal>
                 <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 animate-in fade-in duration-200" />
                 <Dialog.Content
+                    data-lenis-prevent
                     className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-4xl max-h-[88vh] flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl z-50 shadow-2xl overflow-hidden focus:outline-none"
                 >
                     <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/90 shrink-0">
@@ -184,7 +185,7 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                    <div data-lenis-prevent className="flex-1 overflow-y-auto p-6 space-y-3">
                         {results.length === 0 ? (
                             <div className="h-64 flex flex-col items-center justify-center text-center text-zinc-500">
                                 <Layers size={36} className="mb-2 text-zinc-600" />
