@@ -119,7 +119,7 @@ export function StudioPanel() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 select-text">
+            <div data-lenis-prevent className="flex-1 overflow-y-auto p-4 space-y-4 select-text">
                 {/* TAB 1: ACTIVE CITATION */}
                 {activeStudioTab === "citation" && (
                     <div>
@@ -198,6 +198,7 @@ export function StudioPanel() {
                         <form onSubmit={handleCreateNote} className="space-y-2">
                             <textarea
                                 value={newNoteContent}
+                                data-lenis-prevent
                                 onChange={(e) => setNewNoteContent(e.target.value)}
                                 placeholder="Take a note, summarize findings, or jot down thoughts..."
                                 rows={3}
