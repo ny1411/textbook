@@ -262,7 +262,8 @@ Use `[x]` to mark tasks as completed.
 #### Phase 15.7: Verification & End-to-End Polish
 - [ ] Verify full roundtrip with FastAPI backend: PDF upload -> Hybrid Search -> Rerank -> Generation with Citations -> UI Render.
 - [ ] Verify multi-tenant isolation using consistent `userId`.
-- [ ] Validate responsive layout on desktop and tablet viewports.
+- [x] Validate responsive layout on desktop and tablet viewports.
+  - Verified six Chromium desktop/tablet viewports, live resize, restored chat/source scrolling, Studio notes, drawer switching, and populated Diagnostics. See [repeatable responsive verification](verification/issue-7-responsive.md).
 - [x] Run Next.js linting and production build (`npm run build`).
 
 - **Component Directory Inspiration:** [Beautiful UI](https://beautiful-ui-five.vercel.app/), [21st.dev](https://21st.dev), [shadcn ui](https://ui.shadcn.com/), [UI Goodies](https://uigoodies.com/)

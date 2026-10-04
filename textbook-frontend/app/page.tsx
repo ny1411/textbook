@@ -23,8 +23,14 @@ export default function Home() {
         textbookTitle={textbookTitle}
         isStudioOpen={isStudioOpen}
         isSourceOpen={isSourceOpen}
-        onToggleStudio={() => setIsStudioOpen(!isStudioOpen)}
-        onToggleSources={() => setIsSourceOpen(!isSourceOpen)}
+        onToggleStudio={() => {
+          setIsStudioOpen((open) => !open);
+          setIsSourceOpen(false);
+        }}
+        onToggleSources={() => {
+          setIsSourceOpen((open) => !open);
+          setIsStudioOpen(false);
+        }}
         userAvatar={userAvatar}
       />
       <main className="flex-1 flex overflow-hidden">
@@ -35,12 +41,13 @@ export default function Home() {
               setIsSourceOpen(false);
               setIsStudioOpen(false);
             }}
-            className="fixed inset-0 top-12 bg-black/50 z-30 lg:hidden backdrop-blur-xs"
+            className={`fixed inset-0 top-12 bg-black/50 z-30 backdrop-blur-xs ${isStudioOpen ? "xl:hidden" : "lg:hidden"}`}
           />
         )}
 
         {/* Left Panel */}
         <motion.aside
+          aria-label="Sources"
           animate={{ x: isSourceOpen ? 0 : "-100%" }}
           transition={{
             duration: 0.5,
@@ -66,6 +73,7 @@ export default function Home() {
         <AnimatePresence>
           {isStudioOpen && (
             <motion.aside
+              aria-label="Studio"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 384, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
@@ -75,11 +83,11 @@ export default function Home() {
                 ease: [0, 0.71, 0.2, 1.01],
               }}
               className={`
-              fixed lg:static top-12 bottom-0 right-0 z-40
+              fixed xl:static top-12 bottom-0 right-0 z-40 shrink-0 max-w-[100vw]
               bg-zinc-900 border-zinc-700 overflow-y-auto
               ${isStudioOpen
-                  ? "w-80 lg:w-96 translate-x-0 border-l"
-                  : "w-80 translate-x-full lg:w-0 lg:translate-x-0 lg:border-l-0 lg:overflow-hidden"
+                  ? "w-80 xl:w-96 translate-x-0 border-l"
+                  : "w-80 translate-x-full xl:w-0 xl:translate-x-0 xl:border-l-0 xl:overflow-hidden"
                 }
               `}
               data-lenis-prevent
