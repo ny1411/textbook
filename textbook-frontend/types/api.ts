@@ -41,7 +41,8 @@ export interface ChatRequest{
     history?: { role: "user" | "assistant"; content: string }[];
     user_id: string;
     query: string;
-    conversation_id?: string | null;
+    conversation_id: string;
+    request_id?: string;
     document_id?: string | null;
     document_ids?: string[] | null;
     notebook_id?: string | null;
@@ -50,6 +51,11 @@ export interface ChatRequest{
 }
 
 export interface ChatResponse{
+    conversation_id?: string;
+    conversation_title?: string;
+    request_id?: string;
+    message_id?: string;
+    user_message_id?: string;
     intent?: ChatIntent;
     is_grounded?: boolean | null;
     warning?: string | null;

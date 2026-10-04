@@ -15,6 +15,9 @@ export async function apiClient<T>(
 ): Promise<T> {
     const isFormData = options.body instanceof FormData;
     const headers = new Headers(options.headers);
+    const { data, error } = await createClient().auth.getSession();
+    if (error) throw new ApiError(401, "Your session has expired; sign in again");
+    if (data.session) headers.set("Authorization", `Bearer ${data.session.access_token}`);
 
     if(!isFormData && !headers.has("Content-Type")){
         headers.set("Content-Type", "application/json");
@@ -37,3 +40,4 @@ export async function apiClient<T>(
     }
     return response.json() as Promise<T>;
 }
+import { createClient } from "@/lib/supabase/client";

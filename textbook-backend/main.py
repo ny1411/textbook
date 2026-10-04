@@ -3,6 +3,9 @@ from routers import api_router
 from contextlib import asynccontextmanager
 import logging
 from services.indexing import init_connection
+from db.postgres import disconnect_db
+from psycopg import Error as DatabaseError
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +20,16 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         app.state.ready = False
+        await disconnect_db()
 
 app = FastAPI(lifespan=lifespan)
 app.state.ready = False
+
+
+@app.exception_handler(DatabaseError)
+async def database_unavailable(request, error):
+    # Missing migrations/connectivity must never leak SQL or connection secrets.
+    return JSONResponse(status_code=503, content={"detail": "Saved conversations are temporarily unavailable"})
 
 logging.basicConfig(
     level=logging.INFO,

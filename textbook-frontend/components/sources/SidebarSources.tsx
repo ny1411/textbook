@@ -7,17 +7,24 @@ import { SourceViewerModel } from "./SourceViewerModel";
 import { useSourceStore } from "@/stores/useSourcesStore";
 import { SourceDocument } from "@/types/source";
 import { useDocumentPoller } from "@/hooks/useDocumentStatusPoller";
+import { useUserStore } from "@/stores/useUserStore";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 
 export function SidebarSources() {
     useDocumentPoller();
 
-    const sources = useSourceStore((s) => s.source);
+    const allSources = useSourceStore((s) => s.source);
+    const userId = useUserStore((s) => s.userId);
+    const notebookId = useTextbookStore((s) => s.activeNotebookId);
+    const sources = allSources.filter((source) => source.userId === userId && source.notebookId === notebookId);
     const selectedDocumentIds = useSourceStore((s) => s.selectedDocumentIds);
     const removeSource = useSourceStore((s) => s.removeSource);
     const toggleSourceSelection = useSourceStore((s) => s.toggleSourceSelection);
     const selectAllSources = useSourceStore((s) => s.selectAllSources);
     const deselectAllSources = useSourceStore((s) => s.deselectAllSources);
     const [inspectedSource, setInspectSource] = useState<SourceDocument | null>(null);
+    const visibleInspection = inspectedSource?.userId === userId && inspectedSource.notebookId === notebookId
+        ? inspectedSource : null;
 
     const selectableSources = sources.filter((source) => source.documentId && source.status !== "failed");
     const selectedCount = selectedDocumentIds === null
@@ -70,8 +77,8 @@ export function SidebarSources() {
                 )}
             </div>
             <SourceViewerModel
-                source={inspectedSource}
-                isOpen={!!inspectedSource}
+                source={visibleInspection}
+                isOpen={!!visibleInspection}
                 onClose={() => setInspectSource(null)}
             />
         </div>

@@ -1,6 +1,10 @@
 from services.status import is_user_ingesting
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field, field_validator
+from uuid import UUID, uuid4
+from core.auth import AuthUser, require_user, check_user_id
+from db.postgres import get_db
+from services import chat_history as history_store
 from typing import Optional, List, Union, Literal
 import logging
 from services.analyzer import analyze_query
@@ -23,15 +27,26 @@ class HistoryMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     query: str = Field(..., min_length=1, max_length=8000)
     history: List[HistoryMessage] = Field(default_factory=list, max_length=20)
-    conversation_id: Optional[str] = Field(None, description="Optional conversation/session ID to group messages in telemetry.")
+    conversation_id: str = Field(..., description="Owned conversation ID returned by POST /api/conversations.")
+    request_id: str = Field(default_factory=lambda: str(uuid4()))
     document_id: Optional[str] = None
     document_ids: Optional[List[str]] = None
     notebook_id: Optional[str] = None
     top_k: int = Field(5, ge=1, le=100)
     use_analysis: bool = False
+
+    @field_validator("conversation_id", "request_id", "notebook_id", "document_id")
+    @classmethod
+    def uuid_fields(cls, value):
+        return str(UUID(value)) if value is not None else None
+
+    @field_validator("document_ids")
+    @classmethod
+    def uuid_documents(cls, value):
+        return [str(UUID(item)) for item in value] if value is not None else None
 
 class CitationItem(BaseModel):
     source_id: Union[int, str] = Field(..., description="This is the source ID of the citation.")
@@ -49,6 +64,11 @@ class ChatResponse(BaseModel):
     intent: Literal["casual_chat", "general_knowledge", "textbook_rag"] = "textbook_rag"
     is_grounded: Optional[bool] = None
     warning: Optional[str] = None
+    conversation_id: Optional[str] = None
+    conversation_title: Optional[str] = None
+    request_id: Optional[str] = None
+    message_id: Optional[str] = None
+    user_message_id: Optional[str] = None
 
 class AgentChatResponse(ChatResponse):
     confidence_score: Optional[int] = None
@@ -56,8 +76,7 @@ class AgentChatResponse(ChatResponse):
     iteration_count: Optional[int] = None
 
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:    
+async def _linear_answer(request: ChatRequest) -> ChatResponse:
     cached_response = None if request.history else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -169,8 +188,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
-@router.post("/agent/chat", response_model=AgentChatResponse)
-async def agent_chat(request: ChatRequest) -> AgentChatResponse:
+async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
     cached_response = None if request.history else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -259,3 +277,33 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
     except Exception as e:
         logger.error(f"Agentic chat failed for user {request.user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Agentic chat failed: {str(e)}")
+
+
+async def _persistent_chat(request, user, db, pipeline):
+    check_user_id(request.user_id, user)
+    request.user_id = user.id
+    conversation = await history_store.own_conversation(db, user.id, request.conversation_id, request.notebook_id)
+    request.notebook_id = str(conversation["notebookId"])
+    fingerprint = history_store.request_hash(request, pipeline)
+    previous = await history_store.replay(db, request.conversation_id, request.request_id, fingerprint)
+    if previous:
+        return previous
+    # Database history is authoritative, even if a caller forges request.history.
+    request.history = [HistoryMessage(**item) for item in await history_store.canonical_history(db, request.conversation_id)]
+    selected = request.document_ids if request.document_ids is not None else (
+        [request.document_id] if request.document_id else None)
+    request.document_ids = await history_store.resolve_documents(db, user.id, request.notebook_id, selected)
+    if request.document_id:
+        await history_store.resolve_documents(db, user.id, request.notebook_id, [request.document_id])
+    answer = await (_agent_answer(request) if pipeline == "agent" else _linear_answer(request))
+    return await history_store.save_turn(db, user.id, conversation, request, answer.model_dump(), pipeline, fingerprint)
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    return await _persistent_chat(request, user, db, "linear")
+
+
+@router.post("/agent/chat", response_model=AgentChatResponse)
+async def agent_chat(request: ChatRequest, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    return await _persistent_chat(request, user, db, "agent")

@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { useSourceStore } from "./useSourcesStore";
+import { useTextbookStore } from "./useTextbookStore";
 
 const DEFAULT_USER_ID = "default_user";
 
@@ -18,18 +20,24 @@ interface UserState {
 }
 
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, get) => ({
     userId: DEFAULT_USER_ID,
     user: null,
     isAuthenticated: false,
-    setUser: (user) => set({
+    setUser: (user) => {
+        const nextId = user ? user.id : DEFAULT_USER_ID;
+        if (get().userId !== nextId) {
+            useSourceStore.getState().replaceSources([]);
+            useTextbookStore.getState().setActiveCitation(null);
+            const workspace = useTextbookStore.getState();
+            if (workspace.workspaceUserId !== nextId) workspace.setActiveNotebookId("");
+            workspace.setWorkspaceUserId(nextId);
+        }
+        set({
         userId: user ? user.id : DEFAULT_USER_ID,
         user,
         isAuthenticated: !!user,
-    }),
-    clearUser: () => set({
-        userId: DEFAULT_USER_ID,
-        user: null,
-        isAuthenticated: false,
-    })
+        });
+    },
+    clearUser: () => get().setUser(null),
 }))

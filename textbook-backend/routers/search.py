@@ -1,4 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from uuid import UUID
+from core.auth import AuthUser, require_user, check_user_id
+from db.postgres import get_db
+from services.chat_history import own_notebook, resolve_documents
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 import logging
@@ -38,7 +42,21 @@ class SearchResponse(BaseModel):
     results: List[SearchResultItem]
 
 @router.post("/search", response_model=SearchResponse)
-async def search(request: SearchRequest):
+async def search(request: SearchRequest, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    check_user_id(request.user_id, user)
+    try:
+        request.notebook_id = str(UUID(request.notebook_id or ""))
+        if request.document_id:
+            request.document_id = str(UUID(request.document_id))
+        if request.document_ids is not None:
+            request.document_ids = [str(UUID(value)) for value in request.document_ids]
+    except ValueError:
+        raise HTTPException(422, "Choose valid notebook and source IDs") from None
+    await own_notebook(db, user.id, request.notebook_id)
+    requested = request.document_ids if request.document_ids is not None else ([request.document_id] if request.document_id else None)
+    request.document_ids = await resolve_documents(db, user.id, request.notebook_id, requested)
+    if request.document_id:
+        await resolve_documents(db, user.id, request.notebook_id, [request.document_id])
     try:
         search_query = request.query
 
