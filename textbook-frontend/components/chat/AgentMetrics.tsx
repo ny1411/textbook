@@ -25,13 +25,6 @@ export function AgentMetrics({
                     : confidenceScore)
             : null;
 
-    const getScoreColor = (score: number | null) => {
-        if (score === null) return "text-zinc-400 bg-zinc-800 border-zinc-700";
-        if (score >= 80) return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
-        if (score >= 50) return "text-amber-400 bg-amber-500/10 border-amber-500/30";
-        return "text-rose-400 bg-rose-500/10 border-rose-500/30";
-    };
-
     const getGaugeStrokeColor = (score: number | null) => {
         if (score === null) return "#71717a";
         if (score >= 80) return "#10b981";

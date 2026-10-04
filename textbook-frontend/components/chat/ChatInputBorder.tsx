@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
 
 const PulsingBorder = dynamic(() =>
     import("@paper-design/shaders-react").then((mod) => mod.PulsingBorder),
@@ -14,13 +13,7 @@ interface ChatInputBorderProps {
 }
 
 export function ChatInputBorder({ isActive, isAgentMode = false }: ChatInputBorderProps) {
-    const [mounted, setMounted] = useState<boolean>(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted || !isActive) return null;
+    if (!isActive) return null;
 
     const colors = isAgentMode
         ? ["#6366f1", "#a855f7", "#ec4899", "#06b6d4"]
