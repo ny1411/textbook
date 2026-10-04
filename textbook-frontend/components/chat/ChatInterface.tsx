@@ -4,7 +4,8 @@ import { useChat } from "@/hooks/useChat";
 import { CitationItem } from "@/types/api";
 import { useEffect, useRef } from "react";
 import { ChatInput } from "./ChatInput";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
+import { ChatLoadingIndicator } from "./ChatLoadingIndicator";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedQueries } from "./SuggestedQueries";
 import { cn } from "@/lib/utils";
@@ -115,21 +116,7 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
                             />
                         ))}
                         {/* Loading Indicator */}
-                        {isLoading && (
-                            <div className="flex gap-3 max-w-3xl mx-auto mb-6 items-center">
-                                <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                                    <Sparkles size={16} />
-                                </div>
-                                <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs shadow-sm">
-                                    <LoaderCircle size={14} className="animate-spin text-indigo-400" />
-                                    <span>
-                                        {isAgentMode
-                                            ? "Reflecting, searching, and evaluating ground truth..."
-                                            : "Searching document chunks and formulating answer..."}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
+                        {isLoading && <ChatLoadingIndicator isAgentMode={isAgentMode} />}
                     </div>
                 )}
             </div>
