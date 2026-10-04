@@ -263,7 +263,7 @@ Use `[x]` to mark tasks as completed.
 - [ ] Verify full roundtrip with FastAPI backend: PDF upload -> Hybrid Search -> Rerank -> Generation with Citations -> UI Render.
 - [ ] Verify multi-tenant isolation using consistent `userId`.
 - [ ] Validate responsive layout on desktop and tablet viewports.
-- [ ] Run Next.js linting and production build (`npm run build`).
+- [x] Run Next.js linting and production build (`npm run build`).
 
 - **Component Directory Inspiration:** [Beautiful UI](https://beautiful-ui-five.vercel.app/), [21st.dev](https://21st.dev), [shadcn ui](https://ui.shadcn.com/), [UI Goodies](https://uigoodies.com/)
 - **Special Components/Websites Reference:** [Epiminds AI - Awwwards.com](https://www.awwwards.com/sites/epiminds-ai), [Rig AI](https://www.awwwards.com/sites/rig-ai), [Cartesia](https://saaslandingpage.com/cartesia/), [Sonic by Cartesia](https://www.cartesia.ai/sonic), [Hydra DB](https://hydradb.com/), [Aria Networks](https://arianetworks.com/)

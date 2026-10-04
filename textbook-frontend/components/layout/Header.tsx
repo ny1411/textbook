@@ -17,7 +17,7 @@ import { UserMenu } from "../auth/UserMenu";
 
 interface HeaderProps {
     textbookTitle: string;
-    userAvatar?: any;
+    userAvatar?: string;
     isStudioOpen?: boolean;
     isSourceOpen?: boolean;
     onToggleStudio?: () => void;
@@ -27,7 +27,6 @@ interface HeaderProps {
 export function Header({
     textbookTitle = "AI Engineering",
     isStudioOpen = true,
-    isSourceOpen = false,
     onToggleStudio,
     onToggleSources
 }: HeaderProps) {
@@ -35,10 +34,6 @@ export function Header({
     const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
     const { user, isAuthenticated, signInWithProvider, signOut } = useAuth();
     const setInspectorOpen = useTextbookStore((s) => s.setInspectorOpen);
-
-    const userInitials = user?.name
-        ? user?.name.slice(0, 1).toUpperCase()
-        : user?.email?.slice(0, 1).toUpperCase();
 
     return (
         <>
