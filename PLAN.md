@@ -292,7 +292,7 @@ Use `[x]` to mark tasks as completed.
 - [x] **User Authentication & Session Persistence (Supabase Auth):**
   - Implement Login/Signup modal or page using Supabase Auth (`@supabase/ssr` or `@supabase/supabase-js`).
   - Wire actual user UUID into `useUserStore` instead of hardcoded `"default_user"`.
-  - Implement `GET /api/documents?userId=...` so the Sources sidebar automatically fetches and persists existing documents on page reload.
+  - Restore owned sources with authenticated `GET /api/documents?notebook_id=...`; the backend verifies the Supabase session rather than trusting a caller's user ID.
 - [x] **Adaptive Content-Aware Ingestion Pipeline (Upload -> Dynamic Chunking -> Qdrant Indexing):**
   - Ensure `POST /api/upload` not only saves the file to Supabase Storage, but automatically triggers text extraction, chunking, embedding, and upserting into Qdrant so documents are instantly queryable in `/api/chat`.
   - **Dynamic Strategy Selection:** Inspect the uploaded file type and structure to route into the optimal chunking strategy:
@@ -342,6 +342,7 @@ Use `[x]` to mark tasks as completed.
 - [ ] **Conversation & Chat History Persistence:**
   - Persist conversation messages, generated answers, and citations into PostgreSQL (`conversations`, `conversation_messages`, and `message_sources` Prisma tables).
   - Enable multiple notebook threads and past chat history switching.
+  - #19 implementation adds authenticated APIs, atomic saved turns, restored citations/Agent metadata, thread switching, source restoration and retry recovery. See [the history deployment/verification runbook](textbook-backend/docs/chat-history.md). Local SQL/API and browser verification are complete; the database upgrade and real Supabase staging acceptance remain pending before marking this production item complete.
 - [ ] **Streaming Responses (Server-Sent Events / SSE):**
   - Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens with citation badges rendering as they arrive.
 

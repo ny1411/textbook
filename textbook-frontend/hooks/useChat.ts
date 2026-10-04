@@ -1,126 +1,215 @@
 "use client";
-
-import { sendAgentChatMessage, sendChatMessage } from "@/lib/api/chat";
-import { useUserStore } from "@/stores/useUserStore";
-import { CitationItem } from "@/types/api";
-import { ChatMessageItem } from "@/types/chat";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { sendAgentChatMessage, sendChatMessage } from "@/lib/api/chat";
+import { ApiError } from "@/lib/api/client";
+import { createConversation, getConversations, getMessages, type Conversation } from "@/lib/api/conversations";
 import { useSourceStore } from "@/stores/useSourcesStore";
-import { useTextbookStore } from "@/stores/useTextbookStore";
+import type { AgentChatResponse } from "@/types/api";
+import type { ChatMessageItem } from "@/types/chat";
 
-export function useChat() {
+export function useChat(userId: string, notebookId: string) {
     const [messages, setMessages] = useState<ChatMessageItem[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isAgentMode, setIsAgentMode] = useState<boolean>(false);
-    const [selectedMessage, setSelectedMessage] = useState<CitationItem | null>(null);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+    const [isAgentMode, setIsAgentMode] = useState(false);
+    const [nextBefore, setNextBefore] = useState<number | null>(null);
+    const [nextOffset, setNextOffset] = useState<number | null>(null);
+    const [attempt, setAttempt] = useState(0);
+    const [canRetryMessage, setCanRetryMessage] = useState(false);
+    const selectedDocumentIds = useSourceStore((state) => state.selectedDocumentIds);
+    const controller = useRef<AbortController | null>(null);
+    const busy = useRef(true);
+    const navigation = useRef(0);
+    const pending = useRef<{ query: string; mode: boolean; requestId: string; conversationId: string; documentIds: string[] | null } | null>(null);
 
-    const userId = useUserStore((s) => s.userId);
-    const selectedDocumentIds = useSourceStore((s) => s.selectedDocumentIds);
-    const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
-
-    const sendMessage = useCallback(
-        async (queryText: string, overrideAgentMode?: boolean) => {
-            const trimmedQuery = queryText.trim();
-            if (!trimmedQuery || isLoading) return;
-
-            const activeAgentMode = overrideAgentMode ?? isAgentMode;
-            const history = messages
-                .filter((message) => !message.id.startsWith("error-"))
-                .slice(-20)
-                .map(({ role, content }) => ({ role, content: content.slice(0, 8000) }));
-
-            const userMessage: ChatMessageItem = {
-                id: `user-${Date.now()}`,
-                role: "user",
-                content: trimmedQuery,
-                isAgentMode: activeAgentMode,
-                createdAt: new Date(),
-            }
-
-            setMessages((prev) => [...prev, userMessage]);
-            setIsLoading(true);
-
+    useEffect(() => {
+        const abort = new AbortController();
+        controller.current = abort;
+        busy.current = true;
+        const version = ++navigation.current;
+        (async () => {
             try {
-                if (activeAgentMode) {
-                    const response = await sendAgentChatMessage({
-                        user_id: userId,
-                        query: trimmedQuery,
-                        history,
-                        document_ids: selectedDocumentIds ?? undefined,
-                        notebook_id: activeNotebookId,
-                        top_k: 5,
-                    });
-
-                    const assistantMessage: ChatMessageItem = {
-                        id: `assistant-${Date.now()}`,
-                        role: "assistant",
-                        content: response.answer,
-                        appliedQuery: response.applied_query,
-                        intent: response.intent,
-                        warning: response.warning,
-                        citations: response.citations || [],
-                        isAgentMode: true,
-                        agentMetadata: {
-                            confidence_score: response.confidence_score,
-                            is_grounded: response.is_grounded,
-                            critique: response.critique,
-                            iterationCount: response.iteration_count,
-                        },
-                        createdAt: new Date(),
-                    }
-                    setMessages((prev) => [...prev, assistantMessage]);
-                } else {
-                    const response = await sendChatMessage({
-                        user_id: userId,
-                        query: trimmedQuery,
-                        history,
-                        document_ids: selectedDocumentIds ?? undefined,
-                        notebook_id: activeNotebookId,
-                        top_k: 5,
-                    });
-
-                    const assistantMessage: ChatMessageItem = {
-                        id: `assistant-${Date.now()}`,
-                        role: "assistant",
-                        content: response.answer,
-                        appliedQuery: response.applied_query,
-                        intent: response.intent,
-                        warning: response.warning,
-                        citations: response.citations || [],
-                        createdAt: new Date(),
-                    };
-                    setMessages((prev) => [...prev, assistantMessage]);
-                }
-            } catch (error) {
-                console.log("Chat Error:", error);
-                toast.error("Failed to get response.");
-
-                const errorMessage: ChatMessageItem = {
-                    id: `error-${Date.now()}`,
-                    role: "assistant",
-                    content: "Sorry, I ran into an error while processing your request. Please try again.",
-                    createdAt: new Date(),
-                }
-                setMessages((prev) => [...prev, errorMessage]);
+                const threads = await getConversations(notebookId, abort.signal);
+                const first = threads.items[0];
+                const page = first ? await getMessages(first.id, abort.signal) : { items: [], next_before: null };
+                if (abort.signal.aborted || navigation.current !== version) return;
+                setConversations(threads.items);
+                setNextOffset(threads.next_offset);
+                setActiveConversationId(first?.id ?? null);
+                setMessages(page.items);
+                setNextBefore(page.next_before);
+                setHistoryError(null);
+            } catch {
+                if (!abort.signal.aborted) setHistoryError("Could not restore your saved chats.");
             } finally {
-                setIsLoading(false);
+                if (!abort.signal.aborted && navigation.current === version) {
+                    busy.current = false;
+                    setIsHistoryLoading(false);
+                }
             }
-        }, [userId, isLoading, isAgentMode, selectedDocumentIds, activeNotebookId, messages]
-    );
+        })();
+        return () => abort.abort();
+    }, [userId, notebookId, attempt]);
 
-    const clearChat = useCallback(() => {
+    const selectConversation = useCallback(async (id: string, preservePending = false) => {
+        const abort = controller.current;
+        if (busy.current || !abort || abort.signal.aborted) return;
+        busy.current = true;
+        const version = ++navigation.current;
+        const draft = preservePending ? pending.current : null;
+        if (!preservePending) pending.current = null;
+        setCanRetryMessage(!!draft);
+        setActiveConversationId(id);
         setMessages([]);
+        setHistoryError(null);
+        setIsHistoryLoading(true);
+        try {
+            const page = await getMessages(id, abort.signal);
+            if (abort.signal.aborted || navigation.current !== version) return;
+            setMessages(draft ? [...page.items, { id: `pending-${draft.requestId}`, role: "user", content: draft.query,
+                isAgentMode: draft.mode, createdAt: new Date() }] : page.items);
+            setNextBefore(page.next_before);
+        } catch {
+            if (!abort.signal.aborted) setHistoryError("Could not load this chat.");
+        } finally {
+            if (!abort.signal.aborted && navigation.current === version) {
+                busy.current = false;
+                setIsHistoryLoading(false);
+            }
+        }
     }, []);
 
-    return {
-        messages,
-        isLoading,
-        isAgentMode,
-        setIsAgentMode,
-        selectedMessage,
-        setSelectedMessage,
-        sendMessage,
-        clearChat,
-    }
+    const newConversation = useCallback(async () => {
+        const abort = controller.current;
+        if (busy.current || !abort || abort.signal.aborted) return;
+        busy.current = true;
+        setIsHistoryLoading(true);
+        try {
+            const thread = await createConversation(notebookId, abort.signal);
+            if (abort.signal.aborted) return;
+            navigation.current++;
+            setConversations((items) => [thread, ...items]);
+            setActiveConversationId(thread.id);
+            setMessages([]);
+            setNextBefore(null);
+            setHistoryError(null);
+            pending.current = null;
+            setCanRetryMessage(false);
+        } catch {
+            if (!abort.signal.aborted) toast.error("Could not create a chat. Please retry.");
+        } finally {
+            if (!abort.signal.aborted) { busy.current = false; setIsHistoryLoading(false); }
+        }
+    }, [notebookId]);
+
+    const sendMessage = useCallback(async (queryText: string, overrideMode?: boolean, retryId?: string) => {
+        const query = queryText.trim();
+        const abort = controller.current;
+        if (!query || busy.current || historyError || (canRetryMessage && !retryId) || !abort || abort.signal.aborted) return;
+        busy.current = true;
+        const mode = overrideMode ?? isAgentMode;
+        const requestId = retryId ?? crypto.randomUUID();
+        const documentIds = retryId && pending.current?.requestId === retryId
+            ? pending.current.documentIds : selectedDocumentIds?.slice() ?? null;
+        let conversationId = activeConversationId ?? (retryId ? pending.current?.conversationId : null) ?? crypto.randomUUID();
+        pending.current = { query, mode, requestId, conversationId, documentIds };
+        setCanRetryMessage(false);
+        setIsLoading(true);
+        setIsAgentMode(mode);
+        const localId = `pending-${requestId}`;
+        setMessages((items) => [...items.filter((item) => item.id !== localId), {
+            id: localId, role: "user", content: query, isAgentMode: mode, createdAt: new Date(),
+        }]);
+        try {
+            if (!activeConversationId) {
+                const thread = await createConversation(notebookId, abort.signal, conversationId);
+                if (abort.signal.aborted) return;
+                conversationId = thread.id;
+                setActiveConversationId(thread.id);
+                setConversations((items) => [thread, ...items]);
+            }
+            const payload = { user_id: userId, notebook_id: notebookId, conversation_id: conversationId,
+                request_id: requestId, query, document_ids: documentIds ?? undefined, top_k: 5 };
+            const response: AgentChatResponse = await (mode ? sendAgentChatMessage(payload, abort.signal) : sendChatMessage(payload, abort.signal));
+            if (abort.signal.aborted) return;
+            const assistant: ChatMessageItem = {
+                id: response.message_id!, role: "assistant", content: response.answer, citations: response.citations,
+                appliedQuery: response.applied_query, intent: response.intent, warning: response.warning,
+                isAgentMode: mode, createdAt: new Date(),
+                agentMetadata: mode ? { confidence_score: response.confidence_score, is_grounded: response.is_grounded,
+                    critique: response.critique, iterationCount: response.iteration_count } : undefined,
+            };
+            setMessages((items) => [...items.filter((item) => item.id !== assistant.id).map((item) =>
+                item.id === localId ? { ...item, id: response.user_message_id! } : item), assistant]);
+            setConversations((items) => items.map((item) => item.id === conversationId
+                ? { ...item, title: response.conversation_title ?? item.title, updated_at: new Date().toISOString() } : item));
+            pending.current = null;
+        } catch (error) {
+            if (!abort.signal.aborted) {
+                if (error instanceof ApiError && error.status === 409 && conversationId) {
+                    try {
+                        const page = await getMessages(conversationId, abort.signal);
+                        if (abort.signal.aborted) return;
+                        setMessages([...page.items, { id: localId, role: "user", content: query,
+                            isAgentMode: mode, createdAt: new Date() }]);
+                        setNextBefore(page.next_before);
+                    } catch {
+                        if (!abort.signal.aborted) setHistoryError("Could not restore the updated chat. Retry history before sending.");
+                    }
+                }
+                if (abort.signal.aborted) return;
+                setCanRetryMessage(true);
+                toast.error("Could not save the reply. Retry to recover a completed response.");
+            }
+        } finally {
+            if (!abort.signal.aborted) { busy.current = false; setIsLoading(false); }
+        }
+    }, [activeConversationId, historyError, isAgentMode, notebookId, selectedDocumentIds, userId, canRetryMessage]);
+
+    const loadOlder = useCallback(async () => {
+        const abort = controller.current;
+        if (busy.current || !abort || !activeConversationId || nextBefore === null) return;
+        busy.current = true;
+        setIsHistoryLoading(true);
+        try {
+            const page = await getMessages(activeConversationId, abort.signal, nextBefore);
+            if (abort.signal.aborted) return;
+            setMessages((items) => [...page.items, ...items]);
+            setNextBefore(page.next_before);
+        } catch {
+            if (!abort.signal.aborted) toast.error("Could not load older messages. Please retry.");
+        } finally {
+            if (!abort.signal.aborted) { busy.current = false; setIsHistoryLoading(false); }
+        }
+    }, [activeConversationId, nextBefore]);
+
+    const loadMoreConversations = useCallback(async () => {
+        const abort = controller.current;
+        if (busy.current || !abort || nextOffset === null) return;
+        busy.current = true;
+        setIsHistoryLoading(true);
+        try {
+            const page = await getConversations(notebookId, abort.signal, nextOffset);
+            if (abort.signal.aborted) return;
+            setConversations((items) => [...items, ...page.items.filter((item) => !items.some((old) => old.id === item.id))]);
+            setNextOffset(page.next_offset);
+        } catch {
+            if (!abort.signal.aborted) toast.error("Could not load more chats. Please retry.");
+        } finally {
+            if (!abort.signal.aborted) { busy.current = false; setIsHistoryLoading(false); }
+        }
+    }, [notebookId, nextOffset]);
+
+    return { messages, conversations, activeConversationId, isLoading, isHistoryLoading, historyError, isAgentMode,
+        sendMessage, selectConversation, newConversation, loadOlder, loadMoreConversations,
+        hasOlder: nextBefore !== null, hasMoreConversations: nextOffset !== null, canRetryMessage,
+        retryHistory: () => {
+            if (activeConversationId) void selectConversation(activeConversationId, true);
+            else { setIsHistoryLoading(true); setAttempt((value) => value + 1); }
+        },
+        retryMessage: () => { const draft = pending.current; if (draft) void sendMessage(draft.query, draft.mode, draft.requestId); } };
 }

@@ -16,9 +16,10 @@ import { useTextbookStore } from "@/stores/useTextbookStore";
 interface ChatInputProps {
     onSend: (message: string, isAgentMode: boolean) => void;
     isLoading?: boolean;
+    disabled?: boolean;
 }
 
-export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatInputProps) {
     const [input, setInput] = useState("");
     const [isAgentMode, setAgentMode] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -29,12 +30,13 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
     const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
 
     const handleUploadFiles = async (files: File[]) => {
-        if (!files.length) return
+        if (!files.length || disabled) return
         setIsUploading(true);
 
         for (const file of files) {
             try {
                 const request = await uploadDocument(userId, file, activeNotebookId);
+                if (useUserStore.getState().userId !== userId || useTextbookStore.getState().activeNotebookId !== activeNotebookId) continue;
                 addSource({
                     userId: userId,
                     filename: request.filename,
@@ -63,7 +65,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
         maxSize: 50 * 1024 * 1024,
         noClick: true,
         noKeyboard: true,
-        disabled: isUploading,
+        disabled: isUploading || disabled,
     });
 
     useEffect(() => {
@@ -81,7 +83,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
     }
 
     const handleSubmit = () => {
-        if (!input.trim() || isLoading) return;
+        if (!input.trim() || isLoading || disabled) return;
         onSend(input.trim(), isAgentMode);
         setInput("");
         if (textareaRef.current) {
@@ -115,7 +117,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                 <textarea
                     ref={textareaRef}
                     rows={1}
-                    disabled={isLoading}
+                    disabled={isLoading || disabled}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -128,7 +130,8 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                         <button
                             type="button"
                             onClick={open}
-                            disabled={isUploading}
+                            disabled={isUploading || disabled}
+                            aria-label="Upload sources"
                             className="p-2 rounded-full transition-all cursor-pointer text-indigo-400 hover:bg-indigo-500/40 hover:text-indigo-300"
                         >
                             {isUploading ? <LoaderCircle size={20} className="animate-spin" /> : <Plus size={20} />}
@@ -147,7 +150,8 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={!input.trim() || isLoading}
+                        disabled={!input.trim() || isLoading || disabled}
+                        aria-label="Send message"
                         className={`p-2 rounded-full transition-all 
                         ${input.trim() && !isLoading ?
                                 "bg-indigo-500/20 text-indigo-400 cursor-pointer hover:bg-indigo-500/40" :

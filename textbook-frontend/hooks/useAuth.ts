@@ -13,7 +13,11 @@ export function useAuth() {
     const supabase = createClient();
 
     useEffect(() => {
+        let disposed = false;
+        let authVersion = 0;
+        const initialVersion = authVersion;
         supabase.auth.getUser().then(({ data: { user } }) => {
+            if (disposed || authVersion !== initialVersion) return;
             if (user) {
                 setUser({
                     id: user.id,
@@ -31,6 +35,8 @@ export function useAuth() {
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (disposed) return;
+            authVersion++;
             if (session?.user) {
                 const user = session.user;
                 setUser({
@@ -48,9 +54,10 @@ export function useAuth() {
         });
 
         return () => {
+            disposed = true;
             subscription.unsubscribe();
         }
-    }, [setUser, clearUser]);
+    }, [setUser, clearUser, supabase]);
 
     const signInWithProvider = async (provider: "google" | "github") => {
         await supabase.auth.signInWithOAuth({

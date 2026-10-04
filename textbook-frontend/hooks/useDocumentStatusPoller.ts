@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useSourceStore } from "@/stores/useSourcesStore";
+import { apiClient } from "@/lib/api/client";
+import { useUserStore } from "@/stores/useUserStore";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 
 export function useDocumentPoller() {
     const sources = useSourceStore((s) => s.source);
@@ -15,9 +18,9 @@ export function useDocumentPoller() {
         const interval = setInterval(async () => {
             for (const doc of processingDocs) {
                 try {
-                    const res = await fetch(`/api/documents/${doc.documentId}/status`);
-                    if (!res.ok) continue;
-                    const data = await res.json();
+                    const data = await apiClient<{ status: string; error?: string }>(`/api/documents/${doc.documentId}/status`);
+                    if (useUserStore.getState().userId !== doc.userId ||
+                        useTextbookStore.getState().activeNotebookId !== doc.notebookId) continue;
 
                     if (data.status === "ready") {
                         updateSourceStatus(doc.documentId!, "ready");

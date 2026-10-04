@@ -86,6 +86,7 @@ model Conversations{
   notebookId            String @db.Uuid
 
   title                 String?
+  version               Int @default(0)
 
   documents             ConversationDocuments[]
   messages              ConversationMessages[]
@@ -99,6 +100,7 @@ model Conversations{
 
   @@index([userId])
   @@index([notebookId])
+  @@index([userId, notebookId, updatedAt])
   @@map("conversations")
 }
 
@@ -123,6 +125,9 @@ model ConversationMessages{
 
   role                MESSAGEROLES
   message             String?
+  sequence            Int
+  requestId           String? @db.Uuid
+  metadata            Json?
 
   conversation         Conversations            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -131,12 +136,16 @@ model ConversationMessages{
   createdAt           DateTime @default(now())
   
   @@index([conversationId, createdAt])
+  @@unique([conversationId, sequence])
+  @@unique([conversationId, requestId, role])
   @@map("conversation_messages")
 }
 
 model MessageSources{
+  id                  String @id @default(uuid()) @db.Uuid
   messageId           String @db.Uuid
   documentId          String @db.Uuid
+  sourceId            String
 
   pageNumber          Int?
   chunkRef            String?
@@ -145,7 +154,8 @@ model MessageSources{
   message             ConversationMessages     @relation(fields: [messageId], references: [id], onDelete: Cascade)
   document            UploadedDocuments        @relation(fields: [documentId], references: [id], onDelete: Cascade)
     
-  @@id([messageId, documentId])
+  @@unique([messageId, sourceId])
+  @@index([messageId])
   @@index([documentId])
   @@map("message_sources")
 }

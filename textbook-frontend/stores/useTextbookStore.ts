@@ -18,6 +18,8 @@ export interface StudioNote {
 }
 
 interface TextbookStore {
+    workspaceUserId: string | null;
+    setWorkspaceUserId: (userId: string) => void;
     activeNotebookId: string;
     setActiveNotebookId: (notebookId: string) => void;
 
@@ -41,6 +43,8 @@ export const useTextbookStore = create<TextbookStore>()(
     // create persistent storage
     persist(
         (set) => ({
+            workspaceUserId: null,
+            setWorkspaceUserId: (workspaceUserId) => set({ workspaceUserId }),
             activeNotebookId: "00000000-0000-0000-0000-000000000001",
             setActiveNotebookId: (activeNotebookId) => set({ activeNotebookId }),
             activeCitation: null,
@@ -92,6 +96,7 @@ export const useTextbookStore = create<TextbookStore>()(
 
             // store persist notes and studio tab in local storage, not citation selections
             partialize: (state) => ({
+                workspaceUserId: state.workspaceUserId,
                 activeNotebookId: state.activeNotebookId,
                 notes: state.notes,
                 activeStudioTab: state.activeStudioTab,

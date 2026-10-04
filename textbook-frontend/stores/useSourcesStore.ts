@@ -15,10 +15,12 @@ interface SourceState {
     toggleSourceSelection: (documentId: string) => void;
     selectAllSources: () => void;
     deselectAllSources: () => void;
+    replaceSources: (sources: SourceDocument[]) => void;
 }
 
 export const useSourceStore = create<SourceState>((set) => ({
     source: [],
+    replaceSources: (source) => set({ source, selectedDocumentIds: null }),
     selectedDocumentIds: null,
     addSource: (newSource) =>
         set((state) => ({

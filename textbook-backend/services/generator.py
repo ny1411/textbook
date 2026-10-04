@@ -120,7 +120,7 @@ def generate_answer(
 
     except Exception as e:
         logger.error(f"Error generating answer: {str(e)}")
-        answer_text = f"An error occurred while generating the answer: {str(e)}"
+        raise
 
     return {
         "answer": answer_text,
