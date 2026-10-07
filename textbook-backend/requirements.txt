@@ -3,6 +3,7 @@ uvicorn[standard]
 pydantic
 python-dotenv
 python-multipart
+Pillow>=11.3,<13
 prisma
 psycopg[binary,pool]>=3.2,<4
 supabase

@@ -2,12 +2,25 @@ from fastapi import FastAPI, HTTPException
 from routers import api_router
 from contextlib import asynccontextmanager
 import logging
+import asyncio
+from contextlib import suppress
 from services.indexing import init_connection
 from db.postgres import disconnect_db
 from psycopg import Error as DatabaseError
 from fastapi.responses import JSONResponse
+from db.postgres import get_db
+from services.chat_attachments import cleanup_expired
 
 logger = logging.getLogger(__name__)
+
+
+async def image_cleanup_loop():
+    while True:
+        try:
+            await cleanup_expired(await get_db())
+        except Exception:
+            logger.warning("Abandoned image cleanup will retry")
+        await asyncio.sleep(300)
 
 
 @asynccontextmanager
@@ -16,10 +29,14 @@ async def lifespan(app: FastAPI):
     init_connection()
     logger.info("Qdrant collection and payload indexes are ready.")
     app.state.ready = True
+    image_cleanup = asyncio.create_task(image_cleanup_loop())
     try:
         yield
     finally:
         app.state.ready = False
+        image_cleanup.cancel()
+        with suppress(asyncio.CancelledError):
+            await image_cleanup
         await disconnect_db()
 
 app = FastAPI(lifespan=lifespan)

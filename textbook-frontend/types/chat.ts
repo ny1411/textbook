@@ -1,9 +1,10 @@
-import { ChatIntent, CitationItem } from "./api";
+import { ChatAttachment, ChatIntent, CitationItem } from "./api";
 
 export interface ChatMessageItem {
     id: string;
     role: "user" | "assistant";
     content: string;
+    attachments?: ChatAttachment[];
     appliedQuery?: string;
     intent?: ChatIntent;
     warning?: string | null;

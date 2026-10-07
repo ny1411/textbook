@@ -8,6 +8,7 @@ import { ChatMessageItem } from "@/types/chat";
 import { AlertTriangle, CheckCircle, FileSpreadsheet, Sparkles, UserRound, Zap } from "lucide-react";
 import { CitationBadge } from "./CitationBadge";
 import { AgentMetrics } from "./AgentMetrics";
+import { ChatImage } from "./ChatImage";
 
 interface ChatMessageProps {
     message: ChatMessageItem;
@@ -106,6 +107,11 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                         : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-sm shadow-sm w-full"
                         }`}
                 >
+                    {message.attachments && message.attachments.length > 0 && (
+                        <div className={`flex flex-wrap gap-2 ${message.content ? "mb-3" : ""}`}>
+                            {message.attachments.map((attachment) => <ChatImage key={attachment.id} attachment={attachment} />)}
+                        </div>
+                    )}
                     {isUser ? (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                     ) : (

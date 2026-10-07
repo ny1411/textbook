@@ -37,12 +37,22 @@ export interface SearchResultItem {
 
 export type ChatIntent = "casual_chat" | "general_knowledge" | "textbook_rag";
 
+export interface ChatAttachment {
+    id: string;
+    name: string;
+    media_type: string;
+    size: number;
+    url: string;
+    created_at: string;
+}
+
 export interface ChatRequest{
     history?: { role: "user" | "assistant"; content: string }[];
     user_id: string;
     query: string;
     conversation_id: string;
     request_id?: string;
+    attachment_ids?: string[];
     document_id?: string | null;
     document_ids?: string[] | null;
     notebook_id?: string | null;
@@ -51,6 +61,7 @@ export interface ChatRequest{
 }
 
 export interface ChatResponse{
+    attachments?: ChatAttachment[];
     conversation_id?: string;
     conversation_title?: string;
     request_id?: string;

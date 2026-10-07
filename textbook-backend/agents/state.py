@@ -20,3 +20,5 @@ class AgentState(TypedDict, total=False):
     top_k: int
     intent: str
     warning: Optional[str]
+    images: List[Dict[str, Any]]
+    image_observations: List[str]
