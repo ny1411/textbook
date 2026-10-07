@@ -28,6 +28,7 @@ model User{
   artifacts             GeneratedArtifacts[]
   memories              UserMemory[]
   preferences           UserPreferences[]  
+  documentDeletions     DocumentDeletions[]
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -45,6 +46,7 @@ model Notebooks{
   documents             UploadedDocuments[]
   conversations         Conversations[]
   artifacts             GeneratedArtifacts[]
+  documentDeletions     DocumentDeletions[]
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt 
@@ -102,6 +104,22 @@ model Conversations{
   @@index([notebookId])
   @@index([userId, notebookId, updatedAt])
   @@map("conversations")
+}
+
+// Durable cleanup intents survive document deletion to authorize safe retries.
+model DocumentDeletions {
+  documentId            String @id @db.Uuid
+  userId                String @db.Uuid
+  notebookId            String @db.Uuid
+  storagePath           String?
+  requestedAt           DateTime @default(now())
+  completedAt           DateTime?
+
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook              Notebooks @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([userId, notebookId])
+  @@map("document_deletions")
 }
 
 model ConversationDocuments{

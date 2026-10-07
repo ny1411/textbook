@@ -27,7 +27,7 @@ def token(user_id):
 
 
 TOKENS = {token(user): user for user in (USER_A, USER_B)}
-EVENTS, CACHE, OBJECTS = [], {}, {}
+EVENTS, CACHE, OBJECTS, POINTS = [], {}, {}, []
 
 
 def module(name, **attributes):
@@ -57,6 +57,27 @@ class Storage:
     def remove(self, paths):
         for path in paths:
             OBJECTS.pop(path, None)
+
+
+class Vectors:
+    def delete(self, *, collection_name, points_selector, wait):
+        assert collection_name == "textbook_chunks" and wait is True
+        values = {condition.key: condition.match.value for condition in points_selector.filter.must}
+        assert set(values) == {"document_id", "user_id"}
+        POINTS[:] = [point for point in POINTS if not all(point.get(key) == value for key, value in values.items())]
+
+
+def ingest(**kwargs):
+    if kwargs["filename"] == "bad.pdf":
+        return False
+    POINTS.append({key: kwargs[key] for key in ("user_id", "document_id", "notebook_id")})
+    return True
+
+
+def invalidate(user_id, *, strict=False):
+    for key in list(CACHE):
+        if json.loads(key).get("user_id") == user_id:
+            CACHE.pop(key)
 
 
 def analyze(query, config=None, history=None):
@@ -102,15 +123,18 @@ def build_app(db=None):
     routers = module("routers")
     routers.__path__ = [str(BACKEND / "routers")]
     module("db.supabase", supabase_client=SimpleNamespace(auth=SimpleNamespace(get_user=verify), storage=Storage()))
+    module("db.qdrant", client=Vectors())
     module("services.analyzer", analyze_query=analyze)
     module("services.retriever", hybrid_search=retrieve)
     module("services.reranker", reranker_with_cross_encoder=lambda query, candidate_chunks, top_k: candidate_chunks[:top_k])
     module("services.generator", generate_answer=generate)
     from services.relevance import relevant_chunks
     module("services.conversation", generate_conversational_answer=conversational, relevant_chunks=relevant_chunks)
-    module("services.ingestion", process_and_ingest=lambda **kwargs: kwargs["filename"] != "bad.pdf")
-    module("services.status", is_user_ingesting=lambda **kwargs: False, set_document_status=lambda **kwargs: None)
-    module("services.caching", get_cached_response=lambda **kwargs: CACHE.get(cache_key(kwargs)), set_cached_response=cache_set)
+    module("services.ingestion", process_and_ingest=ingest)
+    module("services.status", is_user_ingesting=lambda **kwargs: False, set_document_status=lambda **kwargs: None,
+        clear_document_status=lambda *args: None)
+    module("services.caching", get_cached_response=lambda **kwargs: CACHE.get(cache_key(kwargs)), set_cached_response=cache_set,
+        invalidate_user_cache=invalidate)
     module("core.telemetry", create_langfuse_config=lambda **kwargs: {})
     module("agents.graph", graph=SimpleNamespace(invoke=agent))
     module("agents.state", AgentState=dict)
@@ -159,6 +183,7 @@ async def database(legacy=None):
             if legacy:
                 await legacy(session)
             await connection.execute((BACKEND / "prisma/changes/issue-19-history.sql").read_text())
+            await connection.execute((BACKEND / "prisma/changes/issue-18-document-deletion.sql").read_text())
             yield session
         finally:
             await connection.rollback()

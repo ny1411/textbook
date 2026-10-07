@@ -75,6 +75,27 @@ def test_provider_failure_remains_a_cache_miss(cache_client, monkeypatch):
     assert caching.get_cached_response("unit-user", "query") is None
 
 
+def test_user_invalidation_removes_only_owned_responses(cache_client, monkeypatch):
+    owned = ["cache:unit-user:first", "cache:unit-user:second"]
+    foreign = "cache:other-user:response"
+    cache_client.values.update({key: {"answer": key} for key in [*owned, foreign]})
+    def scan(cursor, *, match, count):
+        assert match == "cache:unit-user:*" and count == 100
+        return (1, owned[:1]) if cursor == 0 else (0, owned[1:])
+    monkeypatch.setattr(cache_client, "scan", scan, raising=False)
+    assert caching.invalidate_user_cache("unit-user", strict=True) == 2
+    assert cache_client.values == {foreign: {"answer": foreign}}
+
+
+def test_deletion_invalidation_propagates_outages_without_changing_best_effort_calls(cache_client, monkeypatch):
+    def unavailable(*args, **kwargs):
+        raise ConnectionError("Synthetic Redis outage")
+    monkeypatch.setattr(cache_client, "scan", unavailable, raising=False)
+    assert caching.invalidate_user_cache("unit-user") == 0
+    with pytest.raises(RuntimeError, match="Cache invalidation unavailable"):
+        caching.invalidate_user_cache("unit-user", strict=True)
+
+
 def test_smoke_check_uses_new_scope_and_cleans_up_only_its_key(cache_client):
     existing_key = "cache:existing-user:existing-response"
     cache_client.values[existing_key] = {"answer": "Keep this response"}

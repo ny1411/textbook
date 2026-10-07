@@ -9,6 +9,12 @@ STATUS_PROCESSING = "processing"
 STATUS_READY = "ready"
 STATUS_FAILED = "failed"
 
+
+def clear_document_status(user_id: str, document_id: str) -> None:
+    if redis:
+        redis.delete(f"doc:status:{document_id}")
+        redis.srem(f"user:{user_id}:processing_docs", document_id)
+
 def set_document_status(
     document_id: str,
     user_id: str,

@@ -7,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 from core.auth import require_user, AuthUser, check_user_id
 from db.postgres import get_db
 from services.chat_history import own_notebook
-from services.documents import record_upload, finish_ingestion
+from services.documents import record_upload, finish_ingestion, lock_document
 from services.ingestion import process_and_ingest
 from services.storage import upload_file_to_supabase
 from services.status import set_document_status
@@ -134,5 +134,12 @@ async def upload_document(
 
 
 async def persist_ingestion(db, **kwargs):
-    success = await run_in_threadpool(process_and_ingest, **kwargs)
-    await finish_ingestion(db, kwargs["user_id"], kwargs["document_id"], success)
+    async with db.transaction() as tx:
+        await lock_document(tx, kwargs["document_id"])
+        rows = await tx.query('SELECT id FROM uploaded_documents d WHERE id = %s::uuid AND "userId" = %s::uuid '
+            'AND "notebookId" = %s::uuid AND NOT EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id)',
+            kwargs["document_id"], kwargs["user_id"], kwargs["notebook_id"])
+        if not rows:
+            return
+        success = await run_in_threadpool(process_and_ingest, **kwargs)
+        await finish_ingestion(tx, kwargs["user_id"], kwargs["document_id"], success)

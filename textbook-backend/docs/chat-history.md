@@ -136,9 +136,11 @@ scope changes. Late source poll/upload/history/reply results cannot update the
 next account's chat or sources. Citations and source inspection are scoped/reset
 on transitions. **Studio notes remain legacy localStorage state and are not
 partitioned by this change; #6 still needs to isolate those notes and audit
-all other persisted UI state.** Full-cycle deletion (#18), sample loader (#22),
-SSE (#17), and image attachment history (#20) must integrate with the new auth,
-metadata and conversation contracts sequentially after this PR merges.
+all other persisted UI state.** Full-cycle deletion (#18) now integrates with
+these ownership, source-selection and conversation contracts; see
+`docs/document-deletion.md` for its additional schema/recovery behavior. Sample
+loader (#22), SSE (#17), and image attachment history (#20) must also integrate
+with these contracts.
 
 ## Local verification
 

@@ -103,7 +103,8 @@ async def canonical_history(db, conversation_id):
 
 
 async def resolve_documents(db, user_id, notebook_id, requested):
-    rows = await db.query('SELECT id FROM uploaded_documents WHERE "userId" = %s::uuid AND "notebookId" = %s::uuid',
+    rows = await db.query('SELECT id FROM uploaded_documents d WHERE "userId" = %s::uuid AND "notebookId" = %s::uuid '
+        'AND NOT EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id)',
         user_id, notebook_id)
     owned = {str(row["id"]) for row in rows}
     if requested is None:
@@ -161,7 +162,8 @@ async def save_turn(db, user_id, conversation, request, payload, pipeline, finge
                 'VALUES (%s::uuid, %s::uuid, %s::"MESSAGEROLES", %s, %s, %s::uuid, %s)',
                 mid, conversation_id, role, content, position, request.request_id, Jsonb(meta))
         for citation in payload.get("citations", []):
-            allowed = await tx.query('SELECT id FROM uploaded_documents WHERE id = %s::uuid AND "userId" = %s::uuid AND "notebookId" = %s::uuid',
+            allowed = await tx.query('SELECT id FROM uploaded_documents d WHERE id = %s::uuid AND "userId" = %s::uuid AND "notebookId" = %s::uuid '
+                'AND NOT EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id)',
                 citation.get("document_id"), user_id, str(conversation["notebookId"]))
             if not allowed:
                 raise HTTPException(502, "The answer referenced an unavailable source; please retry")

@@ -3,7 +3,7 @@ import type { IngestionStatus, SourceDocument } from "@/types/source";
 
 const getSelectableDocumentIds = (sources: SourceDocument[]) =>
     sources.flatMap((source) =>
-        source.documentId && source.status !== "failed" ? [source.documentId] : []
+        source.documentId && source.status !== "failed" && !source.deletionPending ? [source.documentId] : []
     );
 
 interface SourceState {
@@ -11,6 +11,7 @@ interface SourceState {
     selectedDocumentIds: string[] | null;
     addSource: (source: SourceDocument) => void;
     removeSource: (filepath: string) => void;
+    markDeletionPending: (documentId: string) => void;
     updateSourceStatus: (documentId: string, status: IngestionStatus, error?: string) => void;
     toggleSourceSelection: (documentId: string) => void;
     selectAllSources: () => void;
@@ -22,6 +23,11 @@ export const useSourceStore = create<SourceState>((set) => ({
     source: [],
     replaceSources: (source) => set({ source, selectedDocumentIds: null }),
     selectedDocumentIds: null,
+    markDeletionPending: (documentId) => set((state) => ({
+        source: state.source.map((source) => source.documentId === documentId
+            ? { ...source, deletionPending: true, status: "failed" } : source),
+        selectedDocumentIds: state.selectedDocumentIds?.filter((id) => id !== documentId) ?? null,
+    })),
     addSource: (newSource) =>
         set((state) => ({
             source: [newSource, ...state.source],
@@ -50,7 +56,7 @@ export const useSourceStore = create<SourceState>((set) => ({
     updateSourceStatus: ((documentId, status, error) => {
         set((state) => {
             const source = state.source.map((item) =>
-                item.documentId === documentId ? { ...item, status, error } : item
+                item.documentId === documentId && !item.deletionPending ? { ...item, status, error } : item
             );
             const selectedDocumentIds = status === "failed" && state.selectedDocumentIds !== null
                 ? state.selectedDocumentIds.filter((id) => id !== documentId)
