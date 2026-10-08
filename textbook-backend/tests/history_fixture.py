@@ -170,6 +170,7 @@ def build_app(db=None):
     module("services.analyzer", analyze_query=analyze)
     module("services.retriever", hybrid_search=retrieve)
     module("services.reranker", reranker_with_cross_encoder=lambda query, candidate_chunks, top_k: candidate_chunks[:top_k])
+    module("core.llm", get_llm=lambda **kwargs: VisionModel())
     from importlib.util import spec_from_file_location, module_from_spec
     spec = spec_from_file_location("fixture_generator", BACKEND / "services/generator.py")
     formatter = module_from_spec(spec)
@@ -187,7 +188,6 @@ def build_app(db=None):
     module("core.telemetry", create_langfuse_config=lambda **kwargs: {})
     module("agents.graph", graph=SimpleNamespace(invoke=agent))
     module("agents.state", AgentState=dict)
-    module("core.llm", get_llm=lambda **kwargs: VisionModel())
     # Fixtures may run after tests have already imported vision. Replace its
     # provider binding explicitly to avoid accidental real image/provider I/O.
     vision = importlib.import_module("services.vision")

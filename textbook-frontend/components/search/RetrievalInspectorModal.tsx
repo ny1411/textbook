@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { relevancePercentage } from "@/lib/relevance";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     SlidersHorizontal,
     Search,
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { useUserStore } from "@/stores/useUserStore";
 import { performSearch } from "@/lib/api/search";
 import { useSourceStore } from "@/stores/useSourcesStore";
-import { SearchResultItem } from "@/types/api";
+import type { SearchResultItem } from "@/types/api";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 
@@ -34,6 +34,9 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
     const [topK, setTopK] = useState<number>(5);
     const [useAnalysis, setUseAnalysis] = useState<boolean>(true);
 
+    const controller = useRef<AbortController | null>(null);
+    useEffect(() => () => controller.current?.abort(), []);
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [results, setResults] = useState<SearchResultItem[]>([]);
     const [appliedQuery, setAppliedQuery] = useState<string>("");
@@ -43,6 +46,8 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
         e.preventDefault();
         if (!query.trim() || isLoading) return;
 
+        const abort = new AbortController();
+        controller.current = abort;
         setIsLoading(true);
         const startTime = performance.now();
 
@@ -54,7 +59,9 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                 notebook_id: activeNotebookId,
                 top_k: topK,
                 use_analysis: useAnalysis,
-            });
+            }, abort.signal);
+            if (abort.signal.aborted || useUserStore.getState().userId !== userId ||
+                useTextbookStore.getState().activeNotebookId !== activeNotebookId) return;
 
             const elapsed = Math.round(performance.now() - startTime);
             setLatency(elapsed);
@@ -62,10 +69,11 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
             setAppliedQuery(query.trim());
             toast.success(`Retrived ${response.results.length} chunks in ${elapsed}ms.`);
         } catch (e: unknown) {
+            if (abort.signal.aborted) return;
             console.log("Retrieval diagonistic error:", e);
             toast.error(e instanceof Error ? e.message : "Failed to run retrieval test.");
         } finally {
-            setIsLoading(false);
+            if (!abort.signal.aborted) setIsLoading(false);
         }
     };
 
@@ -141,8 +149,9 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                                         className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500/60"
                                     >
                                         <option value="">All Uploaded Documents</option>
-                                        {sources.map((src) => (
-                                            <option key={src.filepath} value={src.filepath}>
+                                        {sources.filter((src) => src.userId === userId && src.notebookId === activeNotebookId).map((src) => (
+                                            <option key={src.documentId ?? src.filepath} value={src.documentId ?? ""}
+                                                disabled={!src.documentId || src.status !== "ready" || src.deletionPending}>
                                                 {src.filename}
                                             </option>
                                         ))}

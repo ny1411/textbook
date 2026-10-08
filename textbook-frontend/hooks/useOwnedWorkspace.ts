@@ -18,7 +18,7 @@ export function useOwnedWorkspace() {
         if (!authenticated) return;
         const controller = new AbortController();
         getNotebooks(controller.signal).then((notebooks) => {
-            if (controller.signal.aborted) return;
+            if (controller.signal.aborted || useUserStore.getState().userId !== userId) return;
             const current = useTextbookStore.getState().activeNotebookId;
             useTextbookStore.getState().setActiveNotebookId(notebooks.find((item) => item.id === current)?.id ?? notebooks[0]?.id ?? "");
             setState({ owner: userId, notebooks });
@@ -36,14 +36,15 @@ export function useOwnedWorkspace() {
         useSourceStore.getState().replaceSources([]);
         useTextbookStore.getState().setActiveCitation(null);
         getSources(notebookId, controller.signal).then((sources) => {
-            if (controller.signal.aborted) return;
+            if (controller.signal.aborted || useUserStore.getState().userId !== userId ||
+                useTextbookStore.getState().activeNotebookId !== notebookId) return;
             useSourceStore.getState().replaceSources(sources);
             setSourceState({ scope });
         }).catch(() => {
             if (!controller.signal.aborted) setSourceState({ scope, error: "Could not restore your sources." });
         });
         return () => controller.abort();
-    }, [authenticated, ownedNotebook, notebookId, scope]);
+    }, [authenticated, ownedNotebook, notebookId, scope, userId]);
 
     const error = state.owner === userId ? state.error : undefined;
     const sourceError = sourceState.scope === scope ? sourceState.error : undefined;

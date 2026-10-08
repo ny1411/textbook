@@ -28,11 +28,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         const nextId = user ? user.id : DEFAULT_USER_ID;
         if (get().userId !== nextId) {
             useSourceStore.getState().replaceSources([]);
-            useTextbookStore.getState().setActiveCitation(null);
-            const workspace = useTextbookStore.getState();
-            if (workspace.workspaceUserId !== nextId) workspace.setActiveNotebookId("");
-            workspace.setWorkspaceUserId(nextId);
         }
+        useTextbookStore.getState().setWorkspaceUserId(user?.id ?? null);
         set({
         userId: user ? user.id : DEFAULT_USER_ID,
         user,
