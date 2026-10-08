@@ -18,11 +18,13 @@ export function useDocumentPoller() {
         const interval = setInterval(async () => {
             for (const doc of processingDocs) {
                 try {
-                    const data = await apiClient<{ status: string; error?: string }>(`/api/documents/${doc.documentId}/status`);
+                    const data = await apiClient<{ status: string; error?: string; deletion_pending?: boolean }>(`/api/documents/${doc.documentId}/status`);
                     if (useUserStore.getState().userId !== doc.userId ||
                         useTextbookStore.getState().activeNotebookId !== doc.notebookId) continue;
 
-                    if (data.status === "ready") {
+                    if (data.deletion_pending) {
+                        useSourceStore.getState().markDeletionPending(doc.documentId!);
+                    } else if (data.status === "ready") {
                         updateSourceStatus(doc.documentId!, "ready");
                         toast.success(`"${doc.filename}" is indexed and ready!`);
                     } else if (data.status === "failed") {

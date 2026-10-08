@@ -8,6 +8,7 @@ export interface SourceDocument {
     notebookId?: string;
     status?: IngestionStatus;
     error?: string;
+    deletionPending?: boolean;
     size?: number;
     type?: string;
     uploadedAt?: Date;

@@ -321,8 +321,9 @@ Use `[x]` to mark tasks as completed.
   - **Problem:** Heavy RAG pipelines (hybrid search + cross-encoder rerank on CPU + LLM call) can take 30-50+ seconds on first run, causing Next.js dev server proxy to abort with `socket hang up` (`ECONNRESET`).
   - **Solution:** Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens via SSE (`StreamingResponse`). Emitting the first token within 1-2 seconds keeps the HTTP socket alive and eliminates proxy timeouts.
 
-- [ ] **Full-Cycle Document Deletion API (`DELETE /api/documents`):**
-  - Create a unified deletion endpoint that atomically cleans up:
+- [x] **Full-Cycle Document Deletion API (`DELETE /api/documents`):**
+  - Verified an authenticated, notebook-scoped endpoint with durable cleanup intent, idempotent retries, ingestion locking, cache invalidation, and sidebar retry UI. See `textbook-backend/docs/document-deletion.md` for migration and local verification.
+  - A recoverable cross-store cleanup removes:
     1. Supabase Storage: delete file bytes from `textbook-documents` bucket.
     2. Qdrant Cloud: delete all vector points matching `document_id` and `user_id`.
     3. PostgreSQL: cascade delete metadata from `uploaded_documents` table via Prisma.

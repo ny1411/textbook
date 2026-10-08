@@ -126,7 +126,7 @@ def set_cached_response(
     except Exception as e:
         logger.warning(f"Cache write failed: {e}")
 
-def invalidate_user_cache(user_id: str) -> int:
+def invalidate_user_cache(user_id: str, *, strict: bool = False) -> int:
     """Safely purge all cached query responses for given user using non-blocking scan"""
     if not redis:
         return 0
@@ -151,4 +151,6 @@ def invalidate_user_cache(user_id: str) -> int:
     
     except Exception as e:
         logger.error(f"Failed to invalidate cache for user {user_id}: {e}")
+        if strict:
+            raise RuntimeError("Cache invalidation unavailable") from None
         return 0

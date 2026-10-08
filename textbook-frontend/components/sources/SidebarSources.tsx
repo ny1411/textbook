@@ -1,7 +1,9 @@
 "use client";
 
 import { Files, Upload } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ApiError } from "@/lib/api/client";
+import { deleteDocument } from "@/lib/api/documents";
 import { SourceCard } from "./SourceCard";
 import { SourceViewerModel } from "./SourceViewerModel";
 import { useSourceStore } from "@/stores/useSourcesStore";
@@ -23,14 +25,45 @@ export function SidebarSources() {
     const selectAllSources = useSourceStore((s) => s.selectAllSources);
     const deselectAllSources = useSourceStore((s) => s.deselectAllSources);
     const [inspectedSource, setInspectSource] = useState<SourceDocument | null>(null);
+    const activeDeletions = useRef(new Set<string>());
+    const [deletingIds, setDeletingIds] = useState<string[]>([]);
+    const [deletionErrors, setDeletionErrors] = useState<Record<string, string>>({});
     const visibleInspection = inspectedSource?.userId === userId && inspectedSource.notebookId === notebookId
         ? inspectedSource : null;
 
-    const selectableSources = sources.filter((source) => source.documentId && source.status !== "failed");
+    const selectableSources = sources.filter((source) => source.documentId && source.status !== "failed" && !source.deletionPending);
     const selectedCount = selectedDocumentIds === null
         ? selectableSources.length
         : selectableSources.filter((source) => selectedDocumentIds.includes(source.documentId!)).length;
     const allSelected = selectableSources.length > 0 && selectedCount === selectableSources.length;
+
+    const removeDocument = async (source: SourceDocument) => {
+        if (!source.documentId || !source.notebookId || activeDeletions.current.has(source.documentId)) return;
+        const documentId = source.documentId;
+        activeDeletions.current.add(documentId);
+        setDeletingIds((ids) => [...ids, documentId]);
+        setDeletionErrors((errors) => ({ ...errors, [documentId]: "" }));
+        try {
+            await deleteDocument(documentId, source.notebookId);
+            if (useUserStore.getState().userId !== source.userId ||
+                useTextbookStore.getState().activeNotebookId !== source.notebookId) return;
+            removeSource(source.filepath);
+            setInspectSource((current) => current?.documentId === documentId ? null : current);
+        } catch (error) {
+            if (useUserStore.getState().userId !== source.userId ||
+                useTextbookStore.getState().activeNotebookId !== source.notebookId) return;
+            // A lost response can follow a committed intent. Keep the source
+            // available to retry, but prevent selecting potentially deleted data.
+            if (!(error instanceof ApiError) || error.status === 503) {
+                useSourceStore.getState().markDeletionPending(documentId);
+            }
+            setDeletionErrors((errors) => ({ ...errors, [documentId]: error instanceof Error
+                ? error.message : "Could not remove source. Retry removal." }));
+        } finally {
+            activeDeletions.current.delete(documentId);
+            setDeletingIds((ids) => ids.filter((id) => id !== documentId));
+        }
+    };
 
     return (
         <div className="h-full flex flex-col p-4">
@@ -64,13 +97,15 @@ export function SidebarSources() {
                             key={source.filepath}
                             source={source}
                             isSelected={
-                                source.status !== "failed" && (
+                                source.status !== "failed" && !source.deletionPending && (
                                     selectedDocumentIds === null ||
                                     (!!source.documentId && selectedDocumentIds.includes(source.documentId))
                                 )
                             }
                             onToggle={toggleSourceSelection}
-                            onDelete={removeSource}
+                            onDelete={removeDocument}
+                            isDeleting={!!source.documentId && deletingIds.includes(source.documentId)}
+                            deletionError={source.documentId ? deletionErrors[source.documentId] : undefined}
                             onInspect={setInspectSource}
                         />
                     ))

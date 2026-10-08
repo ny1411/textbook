@@ -5,11 +5,13 @@ interface SourceCardProps {
     source: SourceDocument;
     isSelected: boolean;
     onToggle: (documentId: string) => void;
-    onDelete: (filepath: string) => void;
+    onDelete: (source: SourceDocument) => void;
+    isDeleting?: boolean;
+    deletionError?: string;
     onInspect: (source: SourceDocument) => void;
 }
 
-export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect }: SourceCardProps) {
+export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect, isDeleting = false, deletionError }: SourceCardProps) {
     const formattedSize = source.size ?
         `${(source.size / 1024).toFixed(0)}KB` : "Unknown Size";
 
@@ -18,7 +20,7 @@ export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect }
             <input
                 type="checkbox"
                 checked={isSelected}
-                disabled={!source.documentId || source.status === "failed"}
+                disabled={!source.documentId || source.status === "failed" || source.deletionPending || isDeleting}
                 onChange={() => source.documentId && onToggle(source.documentId)}
                 aria-label={`Use ${source.filename} in answers`}
                 className="size-4 shrink-0 accent-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
@@ -30,13 +32,11 @@ export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect }
                     {source.filename}
                 </p>
                 <p className="text-xs text-zinc-500">{formattedSize}</p>
+                {source.deletionPending ? <p className="text-xs text-amber-400">Deletion pending · Retry removal</p> : null}
+                {deletionError ? <p role="alert" className="text-xs text-red-400">{deletionError}</p> : null}
             </div>
 
-            {source.status === "processing" ?
-                (<span className="flex items-center gap-1 text-zinc-500 text-xs">
-                    <Loader2 size={12} className="animate-spin" />
-                </span>)
-                :
+            {source.status === "processing" ? <Loader2 size={12} className="animate-spin text-zinc-500" /> : null}
                 <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                     <button
                         onClick={() => onInspect(source)}
@@ -46,12 +46,13 @@ export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect }
                     </button>
                     <button
                         className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
-                        title="Remove source"
-                        onClick={() => onDelete(source.filepath)}>
-                        <Trash2 size={15} className="text-zinc-500" />
+                        title={source.deletionPending ? "Retry removal" : "Remove source"}
+                        aria-label={`${source.deletionPending ? "Retry removal of" : "Remove"} ${source.filename}`}
+                        disabled={isDeleting || !source.documentId || !source.notebookId}
+                        onClick={() => onDelete(source)}>
+                        {isDeleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} className="text-zinc-500" />}
                     </button>
                 </div>
-            }
         </div>
     )
 }
