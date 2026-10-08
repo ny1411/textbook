@@ -70,3 +70,32 @@ missing completion, cancellation, and canonical saved IDs. Rendered validation u
 the real Next proxy and browser with a local API and disposable SQL; remote
 Gemini, Supabase, Qdrant, Redis and telemetry services are not exercised by these
 local tests.
+
+
+### Local acceptance recorded 2026-10-08
+
+With the actual Next.js 16.3 rewrite and its unchanged 120-second proxy timeout,
+synthetic retrieval was delayed for 121 seconds in each mode. Progress, idle
+heartbeats, provider-fixture chunks and canonical SQL persistence passed:
+
+| Route | First progress | Total duration | Ten-second heartbeats | Token events |
+| --- | ---: | ---: | ---: | ---: |
+| `/api/chat` | 0.014 s | 121.111 s | 12 | 4 |
+| `/api/agent/chat` | 0.014 s | 121.118 s | 12 | 4 |
+
+Both completed payloads exactly matched their saved SQL history. Browser checks
+at 1440×900 and 390×844 verified incremental answers/citations, private agent
+attempts, persisted reload, interrupted completion replay, provider error retry,
+notebook switching and visible Stop controls. The image cancellation checks held
+the first provider chunk for an uncommitted Stop, and separately delayed `done`
+after the real SQL commit: the former retained editable text/images and the
+original request ID; the latter restored one saved pair, cleared consumed composer
+text/images, and sent the next question with a fresh ID and no used attachments.
+Authentication/ownership failures retained HTTP 401/403/404 JSON responses before
+SSE opened. The final browser sequence reported no app/runtime/console errors.
+
+The Browser plugin was unavailable; Playwright used system Chromium. Next ran
+with webpack because the verification workspace shares dependencies through a
+symlink outside the worktree, which Turbopack rejects. The long-request evidence
+verifies the real HTTP transport and proxy, with synthetic remote-service seams;
+it does not measure real model cold-start performance or validate a live provider.
