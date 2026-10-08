@@ -356,7 +356,7 @@ Use `[x]` to mark tasks as completed.
     - `general_knowledge` / Fallback: When no chunks pass the retrieval threshold, provide an answer using base LLM knowledge accompanied by an ungrounded warning badge (*"Answered using general AI knowledge; not found in your uploaded documents"*).
   - **Conversational Multi-Turn Contextualization:** Pass chat history into a query contextualizer node (e.g. rewriting *"can you give an example of that?"* -> *"can you give an example of backpropagation?"*) so follow-up questions retrieve relevant chunks.
 
-- [ ] **Chat Text Area Media Inputs & Pasted Screenshots:**
+- [x] **Chat Text Area Media Inputs & Pasted Screenshots:**
   - Allow users to paste copied screenshots or images directly into `ChatInput.tsx`, alongside their text question. Preserve normal text-paste behavior.
   - Support image attachments through clipboard paste, drag-and-drop, and a file picker; show thumbnail previews with remove controls before sending.
   - Accept text-plus-image and image-only messages, with supported image formats, attachment count, and file-size limits validated on both frontend and backend. Display clear upload progress and retryable errors.
@@ -364,6 +364,7 @@ Use `[x]` to mark tasks as completed.
   - Include attachment context in intent routing and follow-up contextualization; distinguish image-based observations from claims supported by retrieved textbook citations.
   - Render attached images in chat history and retain their context for follow-up questions; isolate attachment access by user and notebook and define cleanup for abandoned uploads.
   - **Acceptance:** Copy a screenshot, paste it into the chat text area, add "Explain this", and receive an answer that considers the image. Verify image-only sends, multiple images, removal, unsupported/oversized files, and unchanged text-only chat behavior.
+  - #20 implements private durable attachments, both vision chat pipelines, restored image history and retry/cleanup flows. SQL/API, multimodal message, frontend build and integrated browser checks pass. Apply the image schema upgrade and configure a private Storage bucket before deployment; live Gemini verification was blocked by provider rate limits. See [the image deployment/verification runbook](textbook-backend/docs/chat-images.md).
 
 - [ ] **Modal Wiring & Layout Verification (Inspector Modal Mount):**
   - Wire `RetrievalInspectorModal` into `app/page.tsx` with `useTextbookStore` so clicking `Diagnostics` in `StudioPanel` or the `SlidersHorizontal` icon in `Header` opens the Stage 1 & Stage 2 inspector modal.

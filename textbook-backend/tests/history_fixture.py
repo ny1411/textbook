@@ -49,6 +49,8 @@ def verify(access_token):
 
 
 class Storage:
+    def get_bucket(self, bucket):
+        return SimpleNamespace(public=False)
     def from_(self, bucket):
         return self
     def upload(self, path, data, options):
@@ -57,6 +59,33 @@ class Storage:
     def remove(self, paths):
         for path in paths:
             OBJECTS.pop(path, None)
+    def download(self, path):
+        return OBJECTS[path]
+
+
+VISION_EVENTS = []
+
+
+class VisionModel:
+    def __init__(self, schema=None):
+        self.schema = schema
+    def with_structured_output(self, schema):
+        return VisionModel(schema)
+    def invoke(self, messages, config=None):
+        blocks = messages[-1].content
+        text = blocks[0]["text"]
+        image_inputs = [block for block in blocks if block["type"] == "image_url"]
+        VISION_EVENTS.append({"stage": self.schema.__name__ if self.schema else "answer",
+            "messages": messages, "images": image_inputs, "config": config})
+        if self.schema and self.schema.__name__ == "ImageAnalysis":
+            return self.schema(observations=["visible fixture graph with labelled axes" for _ in image_inputs],
+                search_query="Explain visible fixture graph" if text == "Explain the attached image(s)." else text)
+        if "fail-generation" in text:
+            raise RuntimeError("Synthetic vision generation failure")
+        if self.schema:
+            return self.schema(is_grounded=True, confidence_score=88, critique="Image and textbook claims are labelled separately")
+        return SimpleNamespace(content="The visible fixture graph has labelled axes [Image 1]." +
+            (" This relates to the chapter [Source 1][Source 2]." if "[Source 1]" in text else ""))
 
 
 class Vectors:
@@ -105,6 +134,11 @@ def conversational(query, intent, history=None, config=None):
 
 
 def agent(state, config=None):
+    if state.get("images"):
+        from services.vision import generate_visual_answer
+        return {**generate_visual_answer(state.get("rewritten_query") or state["query"], state["images"],
+            state.get("image_observations", []), state.get("history"), config, chunks=retrieve(**state)),
+            "confidence_score": 88, "critique": "Image and textbook claims are labelled separately", "iteration_count": 1}
     return {**generate(state["query"], retrieve(**state)), "confidence_score": 64, "is_grounded": True,
         "critique": "Supported by the selected sources", "iteration_count": 2, "intent": "textbook_rag"}
 
@@ -127,7 +161,13 @@ def build_app(db=None):
     module("services.analyzer", analyze_query=analyze)
     module("services.retriever", hybrid_search=retrieve)
     module("services.reranker", reranker_with_cross_encoder=lambda query, candidate_chunks, top_k: candidate_chunks[:top_k])
-    module("services.generator", generate_answer=generate)
+    from importlib.util import spec_from_file_location, module_from_spec
+    spec = spec_from_file_location("fixture_generator", BACKEND / "services/generator.py")
+    formatter = module_from_spec(spec)
+    spec.loader.exec_module(formatter)
+    module("services.generator", generate_answer=generate,
+        format_context_with_citations=formatter.format_context_with_citations,
+        order_context_nodes=formatter.order_context_nodes)
     from services.relevance import relevant_chunks
     module("services.conversation", generate_conversational_answer=conversational, relevant_chunks=relevant_chunks)
     module("services.ingestion", process_and_ingest=ingest)
@@ -138,10 +178,15 @@ def build_app(db=None):
     module("core.telemetry", create_langfuse_config=lambda **kwargs: {})
     module("agents.graph", graph=SimpleNamespace(invoke=agent))
     module("agents.state", AgentState=dict)
+    module("core.llm", get_llm=lambda **kwargs: VisionModel())
+    # Fixtures may run after tests have already imported vision. Replace its
+    # provider binding explicitly to avoid accidental real image/provider I/O.
+    vision = importlib.import_module("services.vision")
+    vision.get_llm = lambda **kwargs: VisionModel()
     app = FastAPI()
     app.state.db = db
     app.state.lock = asyncio.Lock()
-    for name in ("conversations", "chat", "documents", "upload", "search"):
+    for name in ("conversations", "chat", "chat_attachments", "documents", "upload", "search"):
         app.include_router(importlib.import_module(f"routers.{name}").router, prefix="/api")
     from db.postgres import get_db
     async def local_db():
@@ -180,6 +225,7 @@ async def database(legacy=None):
         session = Session(connection)
         try:
             await connection.execute((ROOT / "verification/issue-19/baseline.sql").read_text())
+            await connection.execute((BACKEND / "prisma/changes/issue-20-chat-images.sql").read_text())
             if legacy:
                 await legacy(session)
             await connection.execute((BACKEND / "prisma/changes/issue-19-history.sql").read_text())

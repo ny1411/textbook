@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { AgentChatResponse } from "@/types/api";
+import type { AgentChatResponse, ChatAttachment } from "@/types/api";
 import type { ChatMessageItem } from "@/types/chat";
 import type { SourceDocument } from "@/types/source";
 
@@ -10,6 +10,7 @@ interface SavedMessage {
     id: string;
     role: "user" | "assistant";
     content: string;
+    attachments?: ChatAttachment[];
     created_at: string;
     response?: AgentChatResponse | null;
     is_agent_mode: boolean;
@@ -35,6 +36,7 @@ export async function getMessages(id: string, signal?: AbortSignal, before?: num
         `/api/conversations/${encodeURIComponent(id)}/messages${query}`, { signal });
     return { items: page.items.map((message): ChatMessageItem => ({
         id: message.id, role: message.role, content: message.content, createdAt: new Date(message.created_at),
+        attachments: message.attachments,
         appliedQuery: message.response?.applied_query, intent: message.response?.intent,
         warning: message.response?.warning, citations: message.response?.citations,
         isAgentMode: message.is_agent_mode,

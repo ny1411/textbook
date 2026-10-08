@@ -9,10 +9,10 @@ export class ApiError extends Error{
     }
 }
 
-export async function apiClient<T>(
+export async function apiFetch(
     endpoint: string,
     options: RequestInit = {}
-): Promise<T> {
+): Promise<Response> {
     const isFormData = options.body instanceof FormData;
     const headers = new Headers(options.headers);
     const { data, error } = await createClient().auth.getSession();
@@ -38,6 +38,10 @@ export async function apiClient<T>(
         }
         throw new ApiError(response.status, errorDetail);
     }
-    return response.json() as Promise<T>;
+    return response;
+}
+
+export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    return (await apiFetch(endpoint, options)).json() as Promise<T>;
 }
 import { createClient } from "@/lib/supabase/client";

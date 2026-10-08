@@ -1,12 +1,13 @@
 from services.status import is_user_ingesting
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 from uuid import UUID, uuid4
 from core.auth import AuthUser, require_user, check_user_id
 from db.postgres import get_db
 from services import chat_history as history_store
 from typing import Optional, List, Union, Literal
 import logging
+import asyncio
 from services.analyzer import analyze_query
 from services.retriever import hybrid_search
 from services.reranker import reranker_with_cross_encoder
@@ -16,6 +17,8 @@ from agents.graph import graph
 from agents.state import AgentState
 from core.telemetry import create_langfuse_config
 from services.caching import get_cached_response, set_cached_response
+from services import chat_attachments as attachment_store
+from services.vision import observe_images, generate_visual_answer
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,8 @@ class HistoryMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     user_id: Optional[str] = None
-    query: str = Field(..., min_length=1, max_length=8000)
+    query: str = Field("", max_length=8000)
+    attachment_ids: List[str] = Field(default_factory=list, max_length=4)
     history: List[HistoryMessage] = Field(default_factory=list, max_length=20)
     conversation_id: str = Field(..., description="Owned conversation ID returned by POST /api/conversations.")
     request_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -37,6 +41,25 @@ class ChatRequest(BaseModel):
     notebook_id: Optional[str] = None
     top_k: int = Field(5, ge=1, le=100)
     use_analysis: bool = False
+    _images: list = PrivateAttr(default_factory=list)
+    _image_observations: list = PrivateAttr(default_factory=list)
+    _current_observations: list = PrivateAttr(default_factory=list)
+    _attachment_items: list = PrivateAttr(default_factory=list)
+    _image_query: str = PrivateAttr(default="")
+
+    @field_validator("attachment_ids")
+    @classmethod
+    def uuid_attachments(cls, value):
+        normalized = [str(UUID(item)) for item in value]
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("An image can only be attached once per message")
+        return normalized
+
+    @model_validator(mode="after")
+    def text_or_images(self):
+        if not self.query.strip() and not self.attachment_ids:
+            raise ValueError("A message requires text or an image attachment")
+        return self
 
     @field_validator("conversation_id", "request_id", "notebook_id", "document_id")
     @classmethod
@@ -56,6 +79,15 @@ class CitationItem(BaseModel):
     chunk_id: str = Field(..., description="This is the chunk ID where citation must be referred to.")
     rerank_score: Optional[float] = Field(None, description="This is the rerank score of the citation.")
 
+class ImageAttachment(BaseModel):
+    id: str
+    name: str
+    media_type: Literal["image/png", "image/jpeg", "image/webp"]
+    size: int
+    url: str
+    created_at: str
+
+
 class ChatResponse(BaseModel):
     query: str
     answer: str
@@ -69,6 +101,8 @@ class ChatResponse(BaseModel):
     request_id: Optional[str] = None
     message_id: Optional[str] = None
     user_message_id: Optional[str] = None
+    attachments: List[ImageAttachment] = Field(default_factory=list)
+    image_observations: List[str] = Field(default_factory=list)
 
 class AgentChatResponse(ChatResponse):
     confidence_score: Optional[int] = None
@@ -77,7 +111,7 @@ class AgentChatResponse(ChatResponse):
 
 
 async def _linear_answer(request: ChatRequest) -> ChatResponse:
-    cached_response = None if request.history else get_cached_response(
+    cached_response = None if request.history or request._images or request.attachment_ids else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
         document_ids=request.document_ids,
@@ -110,12 +144,15 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
     )
 
     try:
-        query_to_use = request.query
+        query_to_use = request._image_query or request.query
         history = [message.model_dump() for message in request.history]
-        analysis = analyze_query(request.query, config=telemetry_config, history=history)
+        analysis = analyze_query(query_to_use, config=telemetry_config, history=history)
         if analysis and analysis.rewritten_query:
             query_to_use = analysis.rewritten_query
         if analysis and analysis.intent in ("casual_chat", "general_knowledge"):
+            if request._images and (analysis.intent != "casual_chat" or request.attachment_ids):
+                return ChatResponse(query=request.query, applied_query=query_to_use,
+                    **generate_visual_answer(query_to_use, request._images, request._image_observations, history, telemetry_config))
             return ChatResponse(query=request.query, applied_query=query_to_use,
                 **generate_conversational_answer(query_to_use, analysis.intent, history, telemetry_config))
         
@@ -138,7 +175,7 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
 
         reranked_chunks = relevant_chunks(reranked_chunks)
         ingestion_active = is_user_ingesting(user_id=request.user_id, document_id=request.document_id)
-        if len(reranked_chunks) == 0 and ingestion_active:
+        if len(reranked_chunks) == 0 and ingestion_active and not request._images:
             return ChatResponse(
                 query=request.query,
                 applied_query=query_to_use,
@@ -146,6 +183,11 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
                 citations=[],
                 is_grounded=False,
             )
+
+        if request._images:
+            return ChatResponse(query=request.query, applied_query=query_to_use,
+                **generate_visual_answer(query_to_use, request._images, request._image_observations,
+                    history, telemetry_config, chunks=reranked_chunks))
 
         if not reranked_chunks:
             return ChatResponse(query=request.query, applied_query=query_to_use,
@@ -166,7 +208,7 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
             is_grounded=True,
         )
 
-        if len(reranked_chunks) > 0 and not ingestion_active and not request.history:
+        if len(reranked_chunks) > 0 and not ingestion_active and not request.history and not request._images:
             set_cached_response(
                 user_id=request.user_id,
                 document_id=request.document_id,
@@ -184,12 +226,12 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
         return result
 
     except Exception as e:
-        logger.error(f"Search failed for user {request.user_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        logger.error("Chat generation failed (%s)", type(e).__name__)
+        raise HTTPException(status_code=500, detail="Could not generate an answer; retry your message") from None
 
 
 async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
-    cached_response = None if request.history else get_cached_response(
+    cached_response = None if request.history or request._images or request.attachment_ids else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
         document_ids=request.document_ids,
@@ -223,9 +265,12 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
 
     try:
         history = [message.model_dump() for message in request.history]
-        analysis = analyze_query(request.query, config=telemetry_config, history=history)
-        query_to_use = analysis.rewritten_query if analysis and analysis.rewritten_query else request.query
+        analysis = analyze_query(request._image_query or request.query, config=telemetry_config, history=history)
+        query_to_use = analysis.rewritten_query if analysis and analysis.rewritten_query else request._image_query or request.query
         if analysis and analysis.intent in ("casual_chat", "general_knowledge"):
+            if request._images and (analysis.intent != "casual_chat" or request.attachment_ids):
+                return AgentChatResponse(query=request.query, applied_query=query_to_use, iteration_count=0,
+                    **generate_visual_answer(query_to_use, request._images, request._image_observations, history, telemetry_config))
             return AgentChatResponse(query=request.query, applied_query=query_to_use, iteration_count=0,
                 **generate_conversational_answer(query_to_use, analysis.intent, history, telemetry_config))
         initial_state: AgentState = {
@@ -239,6 +284,8 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
             "sub_queries": [query_to_use, *(analysis.sub_queries if analysis else [])],
             "history": history,
             "top_k": request.top_k,
+            "images": request._images,
+            "image_observations": request._image_observations,
         }
 
         result: AgentState = graph.invoke(initial_state, config=telemetry_config)
@@ -257,7 +304,7 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
         )
 
         ingestion_active = is_user_ingesting(user_id=request.user_id, document_id=request.document_id)
-        if len(result.citations) > 0 and not ingestion_active and not request.history:
+        if len(result.citations) > 0 and not ingestion_active and not request.history and not request._images:
             set_cached_response(
                 user_id=request.user_id,
                 document_id=request.document_id,
@@ -275,8 +322,8 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
         return result
 
     except Exception as e:
-        logger.error(f"Agentic chat failed for user {request.user_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Agentic chat failed: {str(e)}")
+        logger.error("Agent generation failed (%s)", type(e).__name__)
+        raise HTTPException(status_code=500, detail="Could not generate an answer; retry your message") from None
 
 
 async def _persistent_chat(request, user, db, pipeline):
@@ -295,8 +342,22 @@ async def _persistent_chat(request, user, db, pipeline):
     request.document_ids = await history_store.resolve_documents(db, user.id, request.notebook_id, selected)
     if request.document_id:
         await history_store.resolve_documents(db, user.id, request.notebook_id, [request.document_id])
+    request._attachment_items, request._images = await attachment_store.resolve(db, user.id, conversation, request.attachment_ids)
+    if request._images:
+        try:
+            observation = await asyncio.to_thread(observe_images, request.query, request._images,
+                [item.model_dump() for item in request.history])
+        except Exception:
+            raise HTTPException(502, "The image could not be understood; retry your message") from None
+        request._image_query = observation.search_query
+        request._image_observations = observation.observations
+        request._current_observations = observation.observations
+    else:
+        request._images, request._image_observations = await attachment_store.previous_images(db, user.id, conversation)
     answer = await (_agent_answer(request) if pipeline == "agent" else _linear_answer(request))
-    return await history_store.save_turn(db, user.id, conversation, request, answer.model_dump(), pipeline, fingerprint)
+    payload = {**answer.model_dump(), "attachments": request._attachment_items,
+               "image_observations": request._image_observations if request._images else []}
+    return await history_store.save_turn(db, user.id, conversation, request, payload, pipeline, fingerprint)
 
 
 @router.post("/chat", response_model=ChatResponse)

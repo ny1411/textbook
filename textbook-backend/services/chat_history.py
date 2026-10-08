@@ -88,6 +88,7 @@ async def messages(db, user_id, conversation_id, limit=100, before=None):
                 "chunk_id": source["chunkRef"] or "", "text": source["citationText"] or "", "rerank_score": None})
     return {"items": [{"id": str(row["id"]), "role": "user" if row["role"] == "USER" else "assistant",
         "content": row["message"] or "", "created_at": timestamp(row["createdAt"]),
+        "attachments": (row["metadata"] or {}).get("attachments", []) if row["role"] == "USER" else [],
         "response": (row["metadata"] or {}).get("response") or (
             {"query": "", "answer": row["message"] or "", "applied_query": "", "citations": legacy[str(row["id"])]}
             if str(row["id"]) in legacy else None),
@@ -96,10 +97,20 @@ async def messages(db, user_id, conversation_id, limit=100, before=None):
 
 
 async def canonical_history(db, conversation_id):
-    rows = await db.query('SELECT role, message FROM conversation_messages WHERE "conversationId" = %s::uuid '
+    rows = await db.query('SELECT role, message, metadata FROM conversation_messages WHERE "conversationId" = %s::uuid '
         'AND role IN (\'USER\', \'LLM\') ORDER BY sequence DESC LIMIT 20', conversation_id)
-    return [{"role": "user" if row["role"] == "USER" else "assistant", "content": row["message"][:8000]}
-            for row in reversed(rows) if row["message"]]
+    history = []
+    for row in reversed(rows):
+        content = row["message"] or ""
+        observations = (row["metadata"] or {}).get("image_observations", []) if row["role"] == "USER" else []
+        if observations:
+            attachments = (row["metadata"] or {}).get("attachments", [])
+            content += "\nHistorical image observations (visual evidence, not textbook citations):\n" + "\n".join(
+                f'Historical attachment {attachments[index - 1]["id"] if index <= len(attachments) else index}: {text}'
+                for index, text in enumerate(observations, 1))
+        if content:
+            history.append({"role": "user" if row["role"] == "USER" else "assistant", "content": content[:8000]})
+    return history
 
 
 async def resolve_documents(db, user_id, notebook_id, requested):
@@ -117,6 +128,10 @@ async def resolve_documents(db, user_id, notebook_id, requested):
 def request_hash(request, pipeline):
     data = {key: getattr(request, key) for key in ("query", "top_k", "use_analysis", "document_ids", "document_id")}
     data["pipeline"] = pipeline
+    # Attachment order matters to prompts such as 'compare the first two images'.
+    attachments = list(getattr(request, "attachment_ids", []))
+    if attachments:
+        data["attachment_ids"] = attachments
     # Normalize selection order, while retaining explicit empty vs all-sources.
     if data["document_ids"] is not None:
         data["document_ids"] = sorted(set(data["document_ids"]))
@@ -142,7 +157,7 @@ async def save_turn(db, user_id, conversation, request, payload, pipeline, finge
         updated = await tx.query('UPDATE conversations SET version = version + 1, "updatedAt" = NOW(), '
             'title = CASE WHEN version = 0 THEN %s ELSE title END '
             'WHERE id = %s::uuid AND "userId" = %s::uuid AND version = %s RETURNING *',
-            conversation_title(request.query), conversation_id, user_id, conversation["version"])
+            conversation_title(request.query or ("Image discussion" if getattr(request, "attachment_ids", []) else "")), conversation_id, user_id, conversation["version"])
         if not updated:
             repeated = await replay(tx, conversation_id, request.request_id, fingerprint)
             if repeated:
@@ -154,13 +169,18 @@ async def save_turn(db, user_id, conversation, request, payload, pipeline, finge
             "conversation_title": updated[0]["title"]}
         sequence = conversation["version"] * 2
         for role, content, mid, position, meta in (
-            ("USER", request.query, user_message_id, sequence, {"pipeline": pipeline}),
+            ("USER", request.query, user_message_id, sequence, {"pipeline": pipeline,
+                "attachments": payload.get("attachments", []),
+                "image_observations": getattr(request, "_current_observations", [])}),
             ("LLM", payload["answer"], message_id, sequence + 1,
              {"pipeline": pipeline, "request_hash": fingerprint, "response": response}),
         ):
             await tx.execute('INSERT INTO conversation_messages (id, "conversationId", role, message, sequence, "requestId", metadata) '
                 'VALUES (%s::uuid, %s::uuid, %s::"MESSAGEROLES", %s, %s, %s::uuid, %s)',
                 mid, conversation_id, role, content, position, request.request_id, Jsonb(meta))
+        if getattr(request, "attachment_ids", []):
+            from services.chat_attachments import attach_to_message
+            await attach_to_message(tx, user_id, conversation, request.attachment_ids, user_message_id)
         for citation in payload.get("citations", []):
             allowed = await tx.query('SELECT id FROM uploaded_documents d WHERE id = %s::uuid AND "userId" = %s::uuid AND "notebookId" = %s::uuid '
                 'AND NOT EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id)',

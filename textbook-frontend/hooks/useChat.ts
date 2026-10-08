@@ -5,7 +5,7 @@ import { sendAgentChatMessage, sendChatMessage } from "@/lib/api/chat";
 import { ApiError } from "@/lib/api/client";
 import { createConversation, getConversations, getMessages, type Conversation } from "@/lib/api/conversations";
 import { useSourceStore } from "@/stores/useSourcesStore";
-import type { AgentChatResponse } from "@/types/api";
+import type { AgentChatResponse, ChatAttachment } from "@/types/api";
 import type { ChatMessageItem } from "@/types/chat";
 
 export function useChat(userId: string, notebookId: string) {
@@ -24,7 +24,8 @@ export function useChat(userId: string, notebookId: string) {
     const controller = useRef<AbortController | null>(null);
     const busy = useRef(true);
     const navigation = useRef(0);
-    const pending = useRef<{ query: string; mode: boolean; requestId: string; conversationId: string; documentIds: string[] | null } | null>(null);
+    const pending = useRef<{ query: string; mode: boolean; requestId: string; conversationId: string; documentIds: string[] | null; attachments: ChatAttachment[] } | null>(null);
+    const draftConversationId = useRef<string | null>(null);
 
     useEffect(() => {
         const abort = new AbortController();
@@ -62,6 +63,7 @@ export function useChat(userId: string, notebookId: string) {
         const version = ++navigation.current;
         const draft = preservePending ? pending.current : null;
         if (!preservePending) pending.current = null;
+        draftConversationId.current = null;
         setCanRetryMessage(!!draft);
         setActiveConversationId(id);
         setMessages([]);
@@ -71,7 +73,7 @@ export function useChat(userId: string, notebookId: string) {
             const page = await getMessages(id, abort.signal);
             if (abort.signal.aborted || navigation.current !== version) return;
             setMessages(draft ? [...page.items, { id: `pending-${draft.requestId}`, role: "user", content: draft.query,
-                isAgentMode: draft.mode, createdAt: new Date() }] : page.items);
+                attachments: draft.attachments, isAgentMode: draft.mode, createdAt: new Date() }] : page.items);
             setNextBefore(page.next_before);
         } catch {
             if (!abort.signal.aborted) setHistoryError("Could not load this chat.");
@@ -98,6 +100,7 @@ export function useChat(userId: string, notebookId: string) {
             setNextBefore(null);
             setHistoryError(null);
             pending.current = null;
+            draftConversationId.current = null;
             setCanRetryMessage(false);
         } catch {
             if (!abort.signal.aborted) toast.error("Could not create a chat. Please retry.");
@@ -106,26 +109,45 @@ export function useChat(userId: string, notebookId: string) {
         }
     }, [notebookId]);
 
-    const sendMessage = useCallback(async (queryText: string, overrideMode?: boolean, retryId?: string) => {
+    const ensureConversation = useCallback(async () => {
+        if (activeConversationId) return activeConversationId;
+        const abort = controller.current;
+        if (busy.current || historyError || !abort || abort.signal.aborted) throw new Error("Your chat is not ready. Please retry.");
+        busy.current = true;
+        draftConversationId.current ??= crypto.randomUUID();
+        try {
+            const thread = await createConversation(notebookId, abort.signal, draftConversationId.current);
+            if (abort.signal.aborted) throw new DOMException("Chat cancelled", "AbortError");
+            setActiveConversationId(thread.id);
+            setConversations((items) => [thread, ...items.filter((item) => item.id !== thread.id)]);
+            return thread.id;
+        } finally {
+            if (!abort.signal.aborted) busy.current = false;
+        }
+    }, [activeConversationId, historyError, notebookId]);
+
+    const sendMessage = useCallback(async (queryText: string, overrideMode?: boolean,
+        imageAttachments: ChatAttachment[] = [], uploadedConversationId?: string, retryId?: string) => {
         const query = queryText.trim();
         const abort = controller.current;
-        if (!query || busy.current || historyError || (canRetryMessage && !retryId) || !abort || abort.signal.aborted) return;
+        const attachments = retryId && pending.current?.requestId === retryId ? pending.current.attachments : imageAttachments;
+        if ((!query && attachments.length === 0) || busy.current || historyError || (canRetryMessage && !retryId) || !abort || abort.signal.aborted) return false;
         busy.current = true;
         const mode = overrideMode ?? isAgentMode;
         const requestId = retryId ?? crypto.randomUUID();
         const documentIds = retryId && pending.current?.requestId === retryId
             ? pending.current.documentIds : selectedDocumentIds?.slice() ?? null;
-        let conversationId = activeConversationId ?? (retryId ? pending.current?.conversationId : null) ?? crypto.randomUUID();
-        pending.current = { query, mode, requestId, conversationId, documentIds };
+        let conversationId = uploadedConversationId ?? activeConversationId ?? (retryId ? pending.current?.conversationId : null) ?? crypto.randomUUID();
+        pending.current = { query, mode, requestId, conversationId, documentIds, attachments };
         setCanRetryMessage(false);
         setIsLoading(true);
         setIsAgentMode(mode);
         const localId = `pending-${requestId}`;
         setMessages((items) => [...items.filter((item) => item.id !== localId), {
-            id: localId, role: "user", content: query, isAgentMode: mode, createdAt: new Date(),
+            id: localId, role: "user", content: query, attachments, isAgentMode: mode, createdAt: new Date(),
         }]);
         try {
-            if (!activeConversationId) {
+            if (!activeConversationId && !uploadedConversationId) {
                 const thread = await createConversation(notebookId, abort.signal, conversationId);
                 if (abort.signal.aborted) return;
                 conversationId = thread.id;
@@ -133,7 +155,8 @@ export function useChat(userId: string, notebookId: string) {
                 setConversations((items) => [thread, ...items]);
             }
             const payload = { user_id: userId, notebook_id: notebookId, conversation_id: conversationId,
-                request_id: requestId, query, document_ids: documentIds ?? undefined, top_k: 5 };
+                request_id: requestId, query, attachment_ids: attachments.map((image) => image.id),
+                document_ids: documentIds ?? undefined, top_k: 5 };
             const response: AgentChatResponse = await (mode ? sendAgentChatMessage(payload, abort.signal) : sendChatMessage(payload, abort.signal));
             if (abort.signal.aborted) return;
             const assistant: ChatMessageItem = {
@@ -144,7 +167,7 @@ export function useChat(userId: string, notebookId: string) {
                     critique: response.critique, iterationCount: response.iteration_count } : undefined,
             };
             setMessages((items) => [...items.filter((item) => item.id !== assistant.id).map((item) =>
-                item.id === localId ? { ...item, id: response.user_message_id! } : item), assistant]);
+                item.id === localId ? { ...item, id: response.user_message_id!, attachments: response.attachments ?? attachments } : item), assistant]);
             setConversations((items) => items.map((item) => item.id === conversationId
                 ? { ...item, title: response.conversation_title ?? item.title, updated_at: new Date().toISOString() } : item));
             pending.current = null;
@@ -155,7 +178,7 @@ export function useChat(userId: string, notebookId: string) {
                         const page = await getMessages(conversationId, abort.signal);
                         if (abort.signal.aborted) return;
                         setMessages([...page.items, { id: localId, role: "user", content: query,
-                            isAgentMode: mode, createdAt: new Date() }]);
+                            attachments, isAgentMode: mode, createdAt: new Date() }]);
                         setNextBefore(page.next_before);
                     } catch {
                         if (!abort.signal.aborted) setHistoryError("Could not restore the updated chat. Retry history before sending.");
@@ -168,6 +191,7 @@ export function useChat(userId: string, notebookId: string) {
         } finally {
             if (!abort.signal.aborted) { busy.current = false; setIsLoading(false); }
         }
+        return !abort.signal.aborted;
     }, [activeConversationId, historyError, isAgentMode, notebookId, selectedDocumentIds, userId, canRetryMessage]);
 
     const loadOlder = useCallback(async () => {
@@ -205,11 +229,11 @@ export function useChat(userId: string, notebookId: string) {
     }, [notebookId, nextOffset]);
 
     return { messages, conversations, activeConversationId, isLoading, isHistoryLoading, historyError, isAgentMode,
-        sendMessage, selectConversation, newConversation, loadOlder, loadMoreConversations,
+        sendMessage, ensureConversation, selectConversation, newConversation, loadOlder, loadMoreConversations,
         hasOlder: nextBefore !== null, hasMoreConversations: nextOffset !== null, canRetryMessage,
         retryHistory: () => {
             if (activeConversationId) void selectConversation(activeConversationId, true);
             else { setIsHistoryLoading(true); setAttempt((value) => value + 1); }
         },
-        retryMessage: () => { const draft = pending.current; if (draft) void sendMessage(draft.query, draft.mode, draft.requestId); } };
+        retryMessage: () => { const draft = pending.current; if (draft) void sendMessage(draft.query, draft.mode, draft.attachments, draft.conversationId, draft.requestId); } };
 }
