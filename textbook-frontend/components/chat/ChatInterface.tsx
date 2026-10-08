@@ -11,6 +11,7 @@ import { SuggestedQueries } from "./SuggestedQueries";
 import { cn } from "@/lib/utils";
 import { useOwnedWorkspace } from "@/hooks/useOwnedWorkspace";
 import { useTextbookStore } from "@/stores/useTextbookStore";
+import { useVoicePlayback } from "@/components/voice/VoicePlaybackProvider";
 
 interface ChatInterfaceProps {
     onCitationClick?: (citation: CitationItem) => void;
@@ -56,6 +57,8 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
     const { messages, isLoading, isAgentMode, sendMessage } = chat;
     const [isUploadingImages, setIsUploadingImages] = useState(false);
     const [composerVersion, setComposerVersion] = useState(0);
+    const { stop: stopPlayback } = useVoicePlayback();
+    useEffect(() => () => stopPlayback(), [stopPlayback]);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const firstMessage = useRef<string | undefined>(undefined);
@@ -78,6 +81,7 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
                     <select aria-label="Saved chats" value={chat.activeConversationId ?? ""}
                         disabled={isLoading || isUploadingImages || chat.isHistoryLoading}
                         onChange={(event) => {
+                            stopPlayback();
                             useTextbookStore.getState().setActiveCitation(null);
                             void chat.selectConversation(event.target.value);
                             setComposerVersion((value) => value + 1);
@@ -86,7 +90,7 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
                         {chat.conversations.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
                     </select>
                 </label>
-                <button type="button" onClick={() => { useTextbookStore.getState().setActiveCitation(null); void chat.newConversation(); setComposerVersion((value) => value + 1); }}
+                <button type="button" onClick={() => { stopPlayback(); useTextbookStore.getState().setActiveCitation(null); void chat.newConversation(); setComposerVersion((value) => value + 1); }}
                     disabled={isLoading || isUploadingImages || chat.isHistoryLoading} className="text-indigo-300 disabled:opacity-40">New chat</button>
                 {chat.hasMoreConversations && <button type="button" onClick={chat.loadMoreConversations}
                     disabled={isLoading || isUploadingImages || chat.isHistoryLoading} className="text-indigo-300">More chats</button>}

@@ -5,6 +5,7 @@ import { StudioNote, useTextbookStore } from "@/stores/useTextbookStore";
 import { useState } from "react";
 import { toast } from "sonner";
 import { relevancePercentage } from "@/lib/relevance";
+import { ReadAloud } from "@/components/voice/ReadAloud";
 import {
     BookOpen,
     FileText,
@@ -259,6 +260,7 @@ export function StudioPanel() {
                                         <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
                                             {note.content}
                                         </p>
+                                        <ReadAloud id={`note-${note.id}`} text={note.content} title={note.title || "Studio note"} />
                                         <div className="flex items-center justify-between pt-1 border-t border-zinc-850 text-[10px] text-zinc-500">
                                             <span>{new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             {note.sourceRef && (

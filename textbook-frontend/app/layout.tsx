@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ReactLenis } from "lenis/react";
+import { VoicePlaybackProvider } from "@/components/voice/VoicePlaybackProvider";
 import "lenis/dist/lenis.css";
 import "./globals.css";
 
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="h-full flex flex-col overflow-hidden font-sans">
         <ReactLenis root>
-          {children}
+          <VoicePlaybackProvider>{children}</VoicePlaybackProvider>
         </ReactLenis>
       </body>
     </html>

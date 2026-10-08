@@ -7,6 +7,7 @@ import { CitationItem } from "@/types/api";
 import { ChatMessageItem } from "@/types/chat";
 import { AlertTriangle, CheckCircle, FileSpreadsheet, Sparkles, UserRound, Zap } from "lucide-react";
 import { CitationBadge } from "./CitationBadge";
+import { ReadAloud } from "@/components/voice/ReadAloud";
 import { AgentMetrics } from "./AgentMetrics";
 import { ChatImage } from "./ChatImage";
 
@@ -157,6 +158,8 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                         </div>
                     )}
                 </div>
+
+                {!isUser && <ReadAloud id={`message-${message.id}`} text={message.content} title="Assistant reply" />}
 
                 {!isUser && message.warning && (
                     <div role="note" className="mt-2 flex items-center gap-1.5 text-xs text-amber-400">
