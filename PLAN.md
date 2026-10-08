@@ -254,7 +254,7 @@ Use `[x]` to mark tasks as completed.
 ### Phase 15.6: Better UX
 - [x] Prevent lenis to hijak internal scroll areas like scrollable chatbox, scrollable source viewer, etc. Add lenis `data-lenis-prevent` on internal scroll containers, so chat scroll works smoothly.
 - [ ] Add **MeshGradint** to background of central hero section, use [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient).
-- [ ] Add **MeshGradint** on audio playback card, use animated shader as a living waveform blob visualizer from [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`
+- [x] Add **MeshGradint** on audio playback card, use animated shader as a living waveform blob visualizer from [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`
 - [ ] Add **Heatmap** effect during image generation using [Shader Paper Design Heatmap](https://shaders.paper.design/heatmap).
 - [x] Add **LiquidMetal** blob pulse effect when agent is in reflecting/thinking mode. Use [Shader Paper Design Liquid Metal](https://shaders.paper.design/liquid-metal).
 - [x] Add **PulsatingBorder** effect to chat input container when agent is generating responses. Use [Shader Paper Design Pulsating Border](https://shaders.paper.design/pulsing-border).
@@ -377,15 +377,16 @@ Use `[x]` to mark tasks as completed.
   - Export Studio notes to `.md` / Markdown and PDF.
   - Implement two-speaker Audio Overview generation (podcast conversation discussing uploaded sources) powered by ElevenLabs or Edge-TTS.
 
-- [ ] **Voice Interaction Mode (Speech-to-Text & Text-to-Speech):**
-  - **User Voice Recording (Speech-to-Text / STT):**
-    - Add interactive microphone button to `ChatInput.tsx` with recording timer and live audio waveform blob visualizer.
-    - Capture audio via browser `MediaRecorder` API and transcribe either via Web Speech API or backend endpoint `POST /api/voice/transcribe` (powered by OpenAI Whisper or local `faster-whisper`).
-    - Automatically populate transcript into chat input with optional auto-send trigger ("hands-free voice mode").
-  - **LLM Voice Playback (Text-to-Speech / TTS):**
-    - Add "Read Aloud / Listen" speaker button to `ChatMessage.tsx` assistant bubbles and Studio note summaries.
-    - Stream high-quality synthesized speech via `POST /api/voice/synthesize` (using Edge-TTS, ElevenLabs, or OpenAI `tts-1`) or client-side Web Speech API.
-    - Embed interactive audio player card with playback controls (Play/Pause, speed toggle: 1x, 1.25x, 1.5x, 2x, seek bar) and reactive living waveform visualization (using Paper Design MeshGradient shader).
+- [x] **Voice Interaction Mode (Speech-to-Text & Text-to-Speech):**
+  - [x] **User Voice Recording (Speech-to-Text / STT):**
+    - [x] Add interactive microphone button to `ChatInput.tsx` with recording timer and live audio waveform blob visualizer.
+    - [x] Capture audio via browser `MediaRecorder` API and transcribe with the browser Web Speech API.
+    - [x] Automatically populate transcript into chat input with optional auto-send trigger ("hands-free voice mode").
+  - [x] **LLM Voice Playback (Text-to-Speech / TTS):**
+    - [x] Add "Read Aloud / Listen" speaker button to `ChatMessage.tsx` assistant bubbles and Studio note summaries.
+    - [x] Generate private, seekable WAV speech through `POST /api/voice/synthesize` using Gemini native TTS.
+    - [x] Embed interactive audio player card with playback controls (Play/Pause, speed toggle: 1x, 1.25x, 1.5x, 2x, seek bar) and reactive living waveform visualization (using Paper Design MeshGradient shader).
+  - **Implementation/runbook:** Gemini generates a completed WAV asset before playback; longer passages play in explicit parts of at most 4,000 characters. The original Edge-TTS, ElevenLabs, and OpenAI examples remain provider alternatives. Deployment uses `GOOGLE_API_KEY` with enabled Gemini TTS quota, plus optional `VOICE_TTS_MODEL` and `VOICE_TTS_VOICE`; see the [voice runbook](textbook-backend/docs/voice.md) for limits, cancellation, failure handling, and verification. Browser capture and seekable playback passed local verification with actual audio; live vendor STT and a successful live Gemini TTS response remain unverified because the configured TTS request returned a quota error.
 
 - [ ] **AI Concept & Diagram Image Generation with Heatmap Loading Animation:**
   - **Diagram & Illustration Generation:**

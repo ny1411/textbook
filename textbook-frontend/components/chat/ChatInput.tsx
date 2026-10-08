@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, ImagePlus, LoaderCircle, Plus, RotateCcw, Upload, X } from "lucide-react";
+import { ArrowUp, ImagePlus, LoaderCircle, Mic, Plus, RotateCcw, Square, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { ChatInputBorder } from "./ChatInputBorder";
@@ -13,6 +13,9 @@ import { useSourceStore } from "@/stores/useSourcesStore";
 import { ACCEPTED_TYPES } from "@/types/source";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import type { ChatAttachment } from "@/types/api";
+import { useVoiceRecording } from "@/hooks/useVoiceRecording";
+import { useVoicePlayback } from "@/components/voice/VoicePlaybackProvider";
+import { AudioPlaybackCard } from "@/components/voice/AudioPlaybackCard";
 
 interface PendingImage {
     id: string;
@@ -39,6 +42,9 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
     const [isUploadingImages, setIsUploadingImages] = useState(false);
     const [images, setImages] = useState<PendingImage[]>([]);
     const [attachmentError, setAttachmentError] = useState<string | null>(null);
+    const [autoSendVoice, setAutoSendVoice] = useState(false);
+    const [startingText, setStartingText] = useState("");
+    const playback = useVoicePlayback();
     const imagesRef = useRef<PendingImage[]>([]);
     const submittedIds = useRef(new Set<string>());
     const uploadController = useRef<AbortController | null>(null);
@@ -48,7 +54,8 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
     const userId = useUserStore((s) => s.userId);
     const addSource = useSourceStore((s) => s.addSource);
     const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
-    const blocked = disabled || isLoading || isUploadingImages;
+    const baseBlocked = disabled || isLoading || isUploadingImages;
+    const blocked = baseBlocked;
 
     function updateImages(next: PendingImage[]) {
         imagesRef.current = next;
@@ -166,8 +173,13 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
         }
     }
 
-    async function handleSubmit(retryImageId?: string) {
-        if (busy.current || blocked || (!input.trim() && imagesRef.current.length === 0)) return;
+    async function handleSubmit(retryImageId?: string, transcriptOverride?: string) {
+        const query = (transcriptOverride ?? input).trim();
+        if (busy.current || baseBlocked || (!query && imagesRef.current.length === 0)) return;
+        if (query.length > 8000) {
+            setAttachmentError("Messages support up to 8,000 characters. Shorten your draft before sending.");
+            return;
+        }
         busy.current = true;
         setIsUploadingImages(true);
         onBusyChange(true);
@@ -187,7 +199,7 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
             }
             if (retryImageId || controller.signal.aborted) return;
             for (const attachment of attachments) submittedIds.current.add(attachment.id);
-            const accepted = await onSend(input.trim(), isAgentMode, attachments, conversationId);
+            const accepted = await onSend(query, isAgentMode, attachments, conversationId);
             if (accepted) {
                 setInput("");
                 for (const image of imagesRef.current) URL.revokeObjectURL(image.preview);
@@ -203,7 +215,14 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
         }
     }
 
-    const canSend = (input.trim().length > 0 || images.length > 0) && !blocked;
+    const { status: voiceStatus, elapsed: voiceElapsed, transcript: voiceTranscript, error: voiceError, recording: voiceRecording, waveformRef, start: startVoice, stop: stopVoice, cancel: cancelVoice, active: voiceActive } = useVoiceRecording((transcript, allowAutoSend) => {
+        const merged = [startingText.trimEnd(), transcript].filter(Boolean).join("\n");
+        setInput(merged);
+        if (autoSendVoice && allowAutoSend) void handleSubmit(undefined, merged);
+    });
+    const voiceBlocked = blocked || voiceActive;
+    const recordingId = `recording-${userId}-${activeNotebookId}`;
+    const canSend = (input.trim().length > 0 || images.length > 0) && !voiceBlocked;
     return (
         <div className="p-4 shrink-0 bg-gradient-to-t from-zinc-900 via-zinc-900/50 to-transparent">
             <div {...getRootProps()} className="relative max-w-3xl mx-auto rounded-2xl border border-zinc-800 bg-zinc-900/70 p-3 shadow-xl focus-within:border-zinc-700 transition-all">
@@ -219,33 +238,59 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                         <div className="relative h-18 w-full">
                             <Image unoptimized fill src={image.preview} alt={`Preview of ${image.file.name}`} sizes="100px" className="rounded object-contain" />
                         </div>
-                        <button type="button" aria-label={`Remove ${image.file.name}`} disabled={blocked} onClick={() => removeImage(image.id)}
+                        <button type="button" aria-label={`Remove ${image.file.name}`} disabled={voiceBlocked} onClick={() => removeImage(image.id)}
                             className="absolute right-0 top-0 rounded-full bg-zinc-900 p-1 text-zinc-200 hover:bg-zinc-700 disabled:opacity-40"><X size={13} /></button>
                         <p className="truncate pt-1 text-[10px] text-zinc-300" title={image.file.name}>{image.file.name}</p>
                         {image.status === "uploading" ? <div className="text-[10px] text-indigo-300" role="status">
                             <progress aria-label={`Uploading ${image.file.name}`} value={image.progress} max={100} className="h-1 w-full accent-indigo-400" />
                             {image.progress < 99 ? `Uploading ${image.progress}%` : "Finishing upload…"}
-                        </div> : image.status === "error" ? <button type="button" disabled={blocked} onClick={() => void handleSubmit(image.id)}
+                        </div> : image.status === "error" ? <button type="button" disabled={voiceBlocked} onClick={() => void handleSubmit(image.id)}
                             className="flex items-center gap-1 text-[10px] text-amber-300" title={image.error}><RotateCcw size={10} /> Retry upload</button>
                             : <p className="text-[10px] text-zinc-500">{image.status === "uploaded" ? "Uploaded" : "Ready to send"}</p>}
                     </div>)}
                 </div>}
                 {attachmentError && <p role="alert" className="mb-2 px-2 text-xs text-amber-300">{attachmentError}</p>}
-                <textarea ref={textareaRef} data-lenis-prevent rows={1} disabled={blocked} value={input}
+                {voiceActive && <div className="mb-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                        <span className="size-2 shrink-0 rounded-full bg-rose-400 motion-safe:animate-pulse" />
+                        <p role="status" className="shrink-0 text-xs text-zinc-300">{voiceStatus === "requesting" ? "Allow microphone access…" : voiceStatus === "stopping" ? "Finishing transcript…" : "Recording"}</p>
+                        <span aria-label="Recording duration" className="shrink-0 text-xs tabular-nums text-indigo-300">{Math.floor(voiceElapsed / 60)}:{String(voiceElapsed % 60).padStart(2, "0")}</span>
+                        <canvas ref={waveformRef} width={280} height={30} aria-hidden="true" data-live-waveform className="h-7 min-w-0 flex-1" />
+                        <button type="button" aria-label="Cancel voice recording" onClick={cancelVoice} className="shrink-0 rounded p-1.5 text-zinc-400 hover:text-zinc-100"><X size={15} /></button>
+                    </div>
+                    {voiceTranscript && <p className="mt-2 max-h-16 overflow-y-auto text-xs text-zinc-300">{voiceTranscript}</p>}
+                    <label className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
+                        <input type="checkbox" checked={autoSendVoice} onChange={(event) => setAutoSendVoice(event.target.checked)} className="accent-indigo-400" />
+                        Send when I stop recording
+                    </label>
+                </div>}
+                {voiceError && <p role="alert" className="mb-2 px-2 text-xs text-amber-300">{voiceError}</p>}
+                <textarea ref={textareaRef} data-lenis-prevent rows={1} disabled={voiceBlocked} value={input}
                     onChange={(event) => setInput(event.target.value)} onPaste={handlePaste}
                     onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void handleSubmit(); } }}
                     placeholder={isAgentMode ? "Ask with Agentic Reasoning" : "Ask any question"}
                     className="relative w-full resize-none bg-transparent outline-none text-md px-2 text-zinc-100 placeholder:text-zinc-500 leading-relaxed max-h-[180px] overflow-y-auto selection:bg-indigo-600/10 selection:text-indigo-400" />
                 <div className="flex items-center justify-between pt-2 mt-2">
                     <div className="flex items-center gap-1">
-                        <button type="button" onClick={sourcePicker.open} disabled={isUploadingSources || blocked} aria-label="Upload sources"
+                        <button type="button" onClick={sourcePicker.open} disabled={isUploadingSources || voiceBlocked} aria-label="Upload sources"
                             className="p-2 rounded-full transition-all cursor-pointer text-indigo-400 hover:bg-indigo-500/40 hover:text-indigo-300 disabled:opacity-40">
                             {isUploadingSources ? <LoaderCircle size={20} className="animate-spin" /> : <Plus size={20} />}
                         </button>
-                        <button type="button" onClick={() => imagePickerRef.current?.click()} disabled={blocked || images.length >= MAX_CHAT_IMAGES}
+                        <button type="button" onClick={() => imagePickerRef.current?.click()} disabled={voiceBlocked || images.length >= MAX_CHAT_IMAGES}
                             aria-label="Attach images" title="Attach up to 4 images (PNG, JPEG, WebP), 10 MB each"
                             className="p-2 rounded-full text-indigo-400 hover:bg-indigo-500/40 disabled:opacity-40"><ImagePlus size={20} /></button>
-                        <button type="button" onClick={() => setAgentMode(!isAgentMode)} disabled={blocked}
+                        <button type="button" disabled={baseBlocked || voiceStatus === "stopping"}
+                            aria-label={voiceStatus === "recording" ? "Stop voice recording" : voiceStatus === "requesting" ? "Cancel voice recording" : "Start voice input"}
+                            aria-pressed={voiceActive} title="Dictate a question (up to 2 minutes)"
+                            onClick={() => {
+                                if (voiceStatus === "recording") stopVoice();
+                                else if (voiceStatus === "requesting") cancelVoice();
+                                else { setStartingText(input); playback.stop(); void startVoice(); }
+                            }}
+                            className={`rounded-full p-2 transition-colors disabled:opacity-40 ${voiceActive ? "bg-rose-500/20 text-rose-300" : "text-indigo-400 hover:bg-indigo-500/40"}`}>
+                            {voiceStatus === "recording" ? <Square size={18} /> : voiceStatus === "requesting" ? <LoaderCircle size={20} className="animate-spin" /> : <Mic size={20} />}
+                        </button>
+                        <button type="button" onClick={() => setAgentMode(!isAgentMode)} disabled={voiceBlocked}
                             className={`flex text-sm items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all cursor-pointer ${isAgentMode ? "text-indigo-400 bg-indigo-500/20" : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"}`}>
                             <span>{isAgentMode ? "Agentic mode" : "Fast mode"}</span>
                         </button>
@@ -255,6 +300,11 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                         {isUploadingImages ? <LoaderCircle size={20} className="animate-spin" /> : <ArrowUp size={20} />}
                     </button>
                 </div>
+                {voiceRecording && !voiceActive && <button type="button" onClick={() => {
+                    if (playback.source?.id === recordingId) playback.stop();
+                    else playback.start({ id: recordingId, title: "Your voice recording", recording: voiceRecording! });
+                }} className="mt-2 px-2 text-xs text-indigo-300 underline">Review voice recording</button>}
+                {playback.source?.id === recordingId && <AudioPlaybackCard key={recordingId} source={playback.source} />}
             </div>
             <p className="text-xs text-center text-zinc-500/50 mt-2">Textbook may generate incorrect information. Always verify with citated sources.</p>
         </div>

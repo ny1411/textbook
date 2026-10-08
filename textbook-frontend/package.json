@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "verify:voice-text": "node verification/voice-text.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
