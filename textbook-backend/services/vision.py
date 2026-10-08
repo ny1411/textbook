@@ -62,6 +62,8 @@ def generate_visual_answer(query, images, observations, history=None, config=Non
         "These image numbers refer only to the currently supplied image blocks, in order. "
         "Older attachments in history are historical observations, not these numbered image blocks. "
         "Only textbook-supported claims may use [Source N], with exactly the provided source numbers. "
+        "Use a separate bracketed tag for each textbook source, such as [Source 1][Source 2]; "
+        "never combine sources inside one pair of brackets. "
         "Image observations and general knowledge are not textbook citations. "
         "Explain uncertainty, unreadable labels, and unsupported inferences. Never invent sources. "
         "Do not claim the full answer is grounded in textbooks when it depends on an image."

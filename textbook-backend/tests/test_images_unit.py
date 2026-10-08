@@ -90,6 +90,8 @@ def test_visual_answer_receives_images_and_keeps_textbook_citations_separate(mon
     assert "[Image 1] A graph with increasing y values" in text
     assert "[Source 1]" in text and chunks[0]["payload"]["text"] in text
     assert captured["messages"][1].content == "Earlier mechanics question"
+    assert "[Source 1][Source 2]" in captured["messages"][0].content
+    assert "never combine sources" in captured["messages"][0].content
     assert answer["answer"] == "The graph rises [Image 1]. The textbook explains the force [Source 1]."
     assert len(answer["citations"]) == 1
     assert answer["citations"][0]["document_id"] == document

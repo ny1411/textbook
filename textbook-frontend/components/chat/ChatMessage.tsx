@@ -9,6 +9,7 @@ import { AlertTriangle, CheckCircle, FileSpreadsheet, Sparkles, UserRound, Zap }
 import { CitationBadge } from "./CitationBadge";
 import { AgentMetrics } from "./AgentMetrics";
 import { ChatImage } from "./ChatImage";
+import { remarkCitations } from "@/lib/remark-citations";
 
 interface ChatMessageProps {
     message: ChatMessageItem;
@@ -18,13 +19,10 @@ interface ChatMessageProps {
 export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
     const isUser = message.role === "user";
 
-    const processedContent = useMemo(() => {
-        if (isUser) return message.content;
-
-        return message.content.replace(
-            /\[(?:Source\s*|source_)?(\d+|[a-zA-Z0-9_-]+)\]/gi,
-            (match, id) => `[cite:${id}](#citation-${id})`);
-    }, [message.content, isUser]);
+    const citationsById = useMemo(() => new Map(
+        message.citations?.map((citation) => [String(citation.source_id), citation])
+    ), [message.citations]);
+    const citationOptions = useMemo(() => ({ sourceIds: [...citationsById.keys()] }), [citationsById]);
 
     return (
         <div
@@ -117,15 +115,13 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                     ) : (
                         <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
                             <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
+                                remarkPlugins={[remarkGfm, [remarkCitations, citationOptions]]}
                                 components={{
 
-                                    a({ href, children, ...props }) {
-                                        if (href?.startsWith("#citation-")) {
-                                            const id = href.replace("#citation-", "");
-                                            const citation = message.citations?.find(
-                                                (c) => String(c.source_id) === id
-                                            );
+                                    a({ node, href, children, ...props }) {
+                                        const id = node?.properties["data-citation-source"];
+                                        if (typeof id === "string") {
+                                            const citation = citationsById.get(id);
                                             return (
                                                 <CitationBadge
                                                     sourceId={id}
@@ -152,7 +148,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                                     },
                                 }}
                             >
-                                {processedContent}
+                                {message.content}
                             </ReactMarkdown>
                         </div>
                     )}
