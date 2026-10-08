@@ -6,6 +6,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { relevancePercentage } from "@/lib/relevance";
 import { ReadAloud } from "@/components/voice/ReadAloud";
+import { AudioOverview } from "@/components/studio/AudioOverview";
+import { NotesExport } from "@/components/studio/NotesExport";
+import { useUserStore } from "@/stores/useUserStore";
 import {
     BookOpen,
     FileText,
@@ -28,7 +31,9 @@ export function StudioPanel() {
         addNote,
         deleteNote,
         setInspectorOpen,
+        activeNotebookId,
     } = useTextbookStore();
+    const userId = useUserStore((state) => state.userId);
 
     const [newNoteContent, setNewNoteContent] = useState<string>("");
     const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
@@ -195,7 +200,8 @@ export function StudioPanel() {
                 {/* TAB 2: STUDIO NOTES */}
                 {activeStudioTab === "notes" && (
                     <div className="space-y-4">
-
+                        <AudioOverview />
+                        <NotesExport key={`${userId}:${activeNotebookId}`} notes={notes} />
                         <form onSubmit={handleCreateNote} className="space-y-2">
                             <textarea
                                 value={newNoteContent}

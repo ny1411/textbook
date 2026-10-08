@@ -373,9 +373,10 @@ Use `[x]` to mark tasks as completed.
   - When a user has not uploaded any documents, offer a 1-click "Load Sample AI Engineering Textbook" button so users can immediately test search, citations, and studio notes without having to find and upload a PDF first.
   - #22 adds an original CC0 sample, owned durable loading and retries, duplicate prevention, ready source selection, sample-specific prompts, and mobile-visible onboarding. API/SQL, parser/chunker, frontend and integrated browser flows are verified. Apply the sample metadata migration before rollout; see [the sample loader runbook](textbook-backend/docs/sample-textbook.md).
 
-- [ ] **Studio Notes Export & Audio Overview (NotebookLM Podcast):**
+- [x] **Studio Notes Export & Audio Overview (NotebookLM Podcast):**
   - Export Studio notes to `.md` / Markdown and PDF.
-  - Implement two-speaker Audio Overview generation (podcast conversation discussing uploaded sources) powered by ElevenLabs or Edge-TTS.
+  - Implement two-speaker Audio Overview generation (podcast conversation discussing uploaded sources). #23 uses configured Gemini transcript and multi-speaker TTS with distinct Kore/Puck voices instead of adding ElevenLabs or Edge-TTS.
+  - Owned SQL/API, source-bound transcripts, real Markdown/PDF exports and seekable/downloadable WAV playback pass local verification with a synthetic provider transport, including cancellation and desktop/mobile workspace transitions. Live Gemini transcript/TTS calls returned quota `429`; successful live speech remains unverified. See [the Studio runbook](textbook-backend/docs/studio.md) for configuration, export fonts and limits.
 
 - [x] **Voice Interaction Mode (Speech-to-Text & Text-to-Speech):**
   - [x] **User Voice Recording (Speech-to-Text / STT):**
