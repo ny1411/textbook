@@ -312,7 +312,7 @@ Use `[x]` to mark tasks as completed.
   - **Problem:** `BAAI/bge-reranker-base` outputs raw unnormalized logits (e.g. `-4.2`, `-1.5`, `0.3`). The frontend displays `Math.round(rerank_score * 100)% match`, causing negative or near-zero raw logits to show as `0% match`.
   - **Sigmoid Activation:** In `services/reranker.py`, pass cross-encoder scores through the Sigmoid function $\sigma(x) = \frac{1}{1 + e^{-x}}$ to map logits to normalized probabilities $[0.0, 1.0]$ so citation match percentages accurately reflect relevance (e.g. 85% match).
 
-- [ ] **Robust Multi-Source Citation Parsing & Prompt Formatting:**
+- [x] **Robust Multi-Source Citation Parsing & Prompt Formatting:**
   - **Problem:** In `ChatMessage.tsx`, the citation regex `/\[(?:Source\s*|source_)?(\d+|[a-zA-Z0-9_-]+)\]/gi` only matches single IDs like `[Source 1]`. When the LLM groups citations (e.g., `[Source 1, Source 2, Source 3]`), they fail to match and remain unstyled raw text.
   - **Regex & Component Parser:** Update `ChatMessage.tsx` to recognize comma-separated and grouped source references and split them into individual interactive `<CitationBadge />` elements with hover previews.
   - **Prompt Guideline:** Update `services/generator.py` prompt instructions to explicitly request single bracketed citations (e.g. `[Source 1][Source 2]`) for consistency.

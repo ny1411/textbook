@@ -2,6 +2,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { CitationItem } from "@/types/api";
 import { ExternalLink, FileText } from "lucide-react";
 import { relevancePercentage } from "@/lib/relevance";
+import { useEffect, useRef, useState } from "react";
 
 interface CitationBadgeProps {
     sourceId: string | number;
@@ -12,6 +13,26 @@ interface CitationBadgeProps {
 export function CitationBadge({
     sourceId, citation, onCitationClick,
 }: CitationBadgeProps) {
+    const [open, setOpen] = useState(false);
+    const pinned = useRef(false);
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    function cancelClose() {
+        clearTimeout(closeTimer.current);
+    }
+
+    function preview() {
+        cancelClose();
+        setOpen(true);
+    }
+
+    function scheduleClose() {
+        cancelClose();
+        if (!pinned.current) closeTimer.current = setTimeout(() => setOpen(false), 200);
+    }
+
+    useEffect(() => () => clearTimeout(closeTimer.current), []);
+
     if (!citation) {
         return (
             <span
@@ -27,10 +48,25 @@ export function CitationBadge({
     const scorePercentage = relevancePercentage(citation.rerank_score);
 
     return (
-        <Popover.Root>
+        <Popover.Root open={open} onOpenChange={(next) => {
+            cancelClose();
+            pinned.current = next;
+            setOpen(next);
+        }}>
             <Popover.Trigger asChild>
                 <button
                     type="button"
+                    onMouseEnter={preview}
+                    onMouseLeave={scheduleClose}
+                    onFocus={preview}
+                    onBlur={scheduleClose}
+                    onClick={(event) => {
+                        // A hover-open preview should stay open when its trigger is clicked.
+                        event.preventDefault();
+                        cancelClose();
+                        pinned.current = !pinned.current;
+                        setOpen(pinned.current);
+                    }}
                     className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 text-xs font-semibold rounded-md 
                     bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/30 hover:text-indigo-300 
                     border border-indigo-500/30 transition-all cursor-pointer select-none align-baseline"
@@ -40,6 +76,15 @@ export function CitationBadge({
             </Popover.Trigger>
             <Popover.Portal>
                 <Popover.Content
+                    aria-label={`Source ${sourceId} preview`}
+                    onMouseEnter={preview}
+                    onMouseLeave={scheduleClose}
+                    onFocusCapture={preview}
+                    onBlurCapture={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) scheduleClose();
+                    }}
+                    onOpenAutoFocus={(event) => event.preventDefault()}
+                    onCloseAutoFocus={(event) => event.preventDefault()}
                     data-lenis-prevent
                     side="top"
                     align="center"
@@ -79,7 +124,11 @@ export function CitationBadge({
                         {onCitationClick && (
                             <button
                                 type="button"
-                                onClick={() => onCitationClick(citation)} // <-- add onClick
+                                onClick={() => {
+                                    pinned.current = false;
+                                    setOpen(false);
+                                    onCitationClick(citation);
+                                }}
                                 className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer"
                             >
                                 <span>View Source</span>
