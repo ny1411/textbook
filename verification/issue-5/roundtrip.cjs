@@ -77,7 +77,20 @@ async function main() {
         requireCheck(chatResponse.ok(), 'generation:request-failed');
         const chatRequest = chatResponse.request().postDataJSON();
         requireCheck(chatRequest.document_ids?.length === 1 && chatRequest.document_ids[0] === uploaded.document_id, 'generation:wrong-ui-source-selection');
-        const answer = await chatResponse.json();
+        const contentType = chatResponse.headers()['content-type'] || '';
+        const answer = contentType.includes('text/event-stream')
+            ? await (async () => {
+                const { consumeChatEventStream } = await import('../../textbook-frontend/lib/api/event-stream.mjs');
+                // Playwright buffers the response body; parse the same protocol
+                // as the browser and require the canonical persisted done event.
+                const responseBody = await chatResponse.body();
+                const stream = new ReadableStream({ start(controller) {
+                    controller.enqueue(new Uint8Array(responseBody));
+                    controller.close();
+                } });
+                return consumeChatEventStream(stream, () => {});
+            })()
+            : await chatResponse.json();
         validateAnswer(answer, uploaded.document_id, fixture.subject, search);
         report.citations = answer.citations.length;
         report.conversation_id = answer.conversation_id;

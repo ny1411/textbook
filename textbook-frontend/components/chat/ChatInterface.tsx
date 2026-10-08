@@ -18,6 +18,24 @@ interface ChatInterfaceProps {
     onCitationClick?: (citation: CitationItem) => void;
 }
 
+const streamStatusLabels: Record<string, string> = {
+    accepted: "Preparing your question…",
+    preparing: "Preparing your question…",
+    loading_history: "Loading the conversation…",
+    observing_images: "Reading your attached images…",
+    analyzing: "Understanding your question…",
+    classifying: "Understanding your question…",
+    retrieving: "Searching your sources…",
+    reranking: "Finding the most relevant passages…",
+    reviewing_sources: "Reviewing your sources…",
+    drafting: "Preparing an answer from your sources…",
+    searching: "Searching your sources…",
+    generating: "Writing your reply…",
+    reflecting: "Checking the answer against your sources…",
+    evaluating: "Checking the answer against your sources…",
+    saving: "Saving your reply…",
+};
+
 export default function ChatInterface({ onCitationClick }: ChatInterfaceProps) {
     const workspace = useOwnedWorkspace();
     return (
@@ -125,7 +143,13 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
                             />
                         ))}
                         {/* Loading Indicator */}
-                        {isLoading && <ChatLoadingIndicator isAgentMode={isAgentMode} />}
+                        {isLoading && !messages.some((message) => message.id.startsWith("streaming-")) && (
+                            <ChatLoadingIndicator isAgentMode={isAgentMode} />
+                        )}
+                        {isLoading && <div className="flex items-center justify-between gap-3 mb-4 text-xs text-zinc-400">
+                            <p role="status" aria-live="polite">{streamStatusLabels[chat.streamStatus ?? ""] ?? "Preparing your reply…"}</p>
+                            <button type="button" onClick={chat.cancelMessage} className="shrink-0 text-indigo-300 hover:text-indigo-200">Stop response</button>
+                        </div>}
                     </div>
                 )}
             </div>

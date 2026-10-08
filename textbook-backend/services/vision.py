@@ -5,6 +5,7 @@ import os
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from pydantic import BaseModel, Field
 from core.llm import get_llm
+from services.chat_stream import model_answer
 
 IMAGE_WARNING = "Image observations come from your attachments; only [Source N] citations refer to uploaded textbooks."
 
@@ -51,7 +52,7 @@ def visual_context(observations):
     return "\n".join(f"[Image {index}] {text}" for index, text in enumerate(observations, 1))
 
 
-def generate_visual_answer(query, images, observations, history=None, config=None, chunks=None):
+def generate_visual_answer(query, images, observations, history=None, config=None, chunks=None, emit=None):
     # Import lazily to preserve the existing text-only prompt and test seams.
     from services.generator import format_context_with_citations, order_context_nodes
     context, citations = format_context_with_citations(order_context_nodes(chunks or []))
@@ -71,8 +72,9 @@ def generate_visual_answer(query, images, observations, history=None, config=Non
     messages = [SystemMessage(content=instructions), *history_messages(history), HumanMessage(content=[
         {"type": "text", "text": f"Question: {query}\n\nImage observations:\n{visual_context(observations)}\n\nTextbook sources:\n{context or '(none)'}"},
         *image_blocks(images)])]
-    response = vision_llm(temperature=.2, max_tokens=2048).invoke(messages, config=config)
-    answer = response.content if isinstance(response.content, str) else "".join(
-        part.get("text", "") if isinstance(part, dict) else str(part) for part in response.content)
+    if emit:
+        emit("citations", {"citations": citations, "is_grounded": False,
+            "intent": "textbook_rag" if citations else "general_knowledge", "warning": IMAGE_WARNING})
+    answer = model_answer(vision_llm(temperature=.2, max_tokens=2048), messages, config, emit)
     return {"answer": answer, "citations": citations, "is_grounded": False,
             "intent": "textbook_rag" if citations else "general_knowledge", "warning": IMAGE_WARNING}

@@ -2,6 +2,7 @@ from typing import List, Dict, Tuple, Any, Optional
 import logging
 from langchain_core.prompts import ChatPromptTemplate
 from core.llm import get_llm
+from services.chat_stream import model_answer
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,7 @@ def generate_answer(
     chunks: List[Dict[str, Any]], 
     temperature: float = 0.2,
     config: Optional[Dict[str, Any]] = None,
+    emit=None,
 ) -> Dict[str, Any]:
     if not chunks:
         return {
@@ -97,30 +99,10 @@ def generate_answer(
     # load LLM with lower temperature for factual precision
     llm = get_llm(temperature=temperature, max_tokens=2048)
 
-    # invoke LLM chain
-    chain = rag_prompt | llm
-    try:
-        response = chain.invoke({
-            "context": context_str,
-            "query": query,
-        }, config=config)
-        answer_text = response.content if hasattr(response, "content") else str(response)
-
-        # extract and join text from all content blocks provided by LLM
-        if hasattr(response, "content"):
-            if isinstance(response.content, list):
-                answer_text = "".join(
-                    part.get("text", "") if isinstance(part, dict) else str(part)
-                    for part in response.content
-                )
-            else:
-                answer_text = str(response.content)
-        else:
-            answer_text = str(response)
-
-    except Exception as e:
-        logger.error(f"Error generating answer: {str(e)}")
-        raise
+    if emit:
+        emit("citations", {"citations": citations, "intent": "textbook_rag", "is_grounded": True})
+    answer_text = model_answer(rag_prompt | llm,
+        {"context": context_str, "query": query}, config, emit)
 
     return {
         "answer": answer_text,

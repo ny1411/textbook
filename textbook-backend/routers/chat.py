@@ -1,5 +1,6 @@
 from services.status import is_user_ingesting
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from services.chat_stream import chat_stream
 from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 from uuid import UUID, uuid4
 from core.auth import AuthUser, require_user, check_user_id
@@ -110,7 +111,10 @@ class AgentChatResponse(ChatResponse):
     iteration_count: Optional[int] = None
 
 
-async def _linear_answer(request: ChatRequest) -> ChatResponse:
+def _linear_answer_sync(request: ChatRequest, emit=None) -> ChatResponse:
+    generation_options = {"emit": emit} if emit else {}
+    if emit:
+        emit("status", {"stage": "analyzing"})
     cached_response = None if request.history or request._images or request.attachment_ids else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -152,10 +156,12 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
         if analysis and analysis.intent in ("casual_chat", "general_knowledge"):
             if request._images and (analysis.intent != "casual_chat" or request.attachment_ids):
                 return ChatResponse(query=request.query, applied_query=query_to_use,
-                    **generate_visual_answer(query_to_use, request._images, request._image_observations, history, telemetry_config))
+                    **generate_visual_answer(query_to_use, request._images, request._image_observations, history, telemetry_config, **generation_options))
             return ChatResponse(query=request.query, applied_query=query_to_use,
-                **generate_conversational_answer(query_to_use, analysis.intent, history, telemetry_config))
+                **generate_conversational_answer(query_to_use, analysis.intent, history, telemetry_config, **generation_options))
         
+        if emit:
+            emit("status", {"stage": "retrieving"})
         # Run hybrid search (dense + sparse)
         search_response = hybrid_search(
             user_id=request.user_id,
@@ -166,6 +172,8 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
             notebook_id=request.notebook_id,
         )
 
+        if emit:
+            emit("status", {"stage": "reranking"})
         # Rerank chunks using Cross-Encoder
         reranked_chunks = reranker_with_cross_encoder(
             query=query_to_use,
@@ -187,17 +195,18 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
         if request._images:
             return ChatResponse(query=request.query, applied_query=query_to_use,
                 **generate_visual_answer(query_to_use, request._images, request._image_observations,
-                    history, telemetry_config, chunks=reranked_chunks))
+                    history, telemetry_config, chunks=reranked_chunks, **generation_options))
 
         if not reranked_chunks:
             return ChatResponse(query=request.query, applied_query=query_to_use,
-                **generate_conversational_answer(query_to_use, "general_knowledge", history, telemetry_config))
+                **generate_conversational_answer(query_to_use, "general_knowledge", history, telemetry_config, **generation_options))
 
         # Generate grounded answer with citations
         generation_result = generate_answer(
             query=query_to_use,
             chunks=reranked_chunks,
-            config=telemetry_config
+            config=telemetry_config,
+            **generation_options,
         )
 
         result = ChatResponse(
@@ -208,6 +217,8 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
             is_grounded=True,
         )
 
+        if emit:
+            emit("status", {"stage": "saving"})
         if len(reranked_chunks) > 0 and not ingestion_active and not request.history and not request._images:
             set_cached_response(
                 user_id=request.user_id,
@@ -230,7 +241,10 @@ async def _linear_answer(request: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=500, detail="Could not generate an answer; retry your message") from None
 
 
-async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
+def _agent_answer_sync(request: ChatRequest, emit=None) -> AgentChatResponse:
+    generation_options = {"emit": emit} if emit else {}
+    if emit:
+        emit("status", {"stage": "analyzing"})
     cached_response = None if request.history or request._images or request.attachment_ids else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -270,9 +284,9 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
         if analysis and analysis.intent in ("casual_chat", "general_knowledge"):
             if request._images and (analysis.intent != "casual_chat" or request.attachment_ids):
                 return AgentChatResponse(query=request.query, applied_query=query_to_use, iteration_count=0,
-                    **generate_visual_answer(query_to_use, request._images, request._image_observations, history, telemetry_config))
+                    **generate_visual_answer(query_to_use, request._images, request._image_observations, history, telemetry_config, **generation_options))
             return AgentChatResponse(query=request.query, applied_query=query_to_use, iteration_count=0,
-                **generate_conversational_answer(query_to_use, analysis.intent, history, telemetry_config))
+                **generate_conversational_answer(query_to_use, analysis.intent, history, telemetry_config, **generation_options))
         initial_state: AgentState = {
             "user_id": request.user_id,
             "query": request.query,
@@ -288,7 +302,47 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
             "image_observations": request._image_observations,
         }
 
-        result: AgentState = graph.invoke(initial_state, config=telemetry_config)
+        if emit:
+            # Drafts and rejected attempts remain private. Stream only the final
+            # composition from the evidence selected by the existing graph.
+            emit("status", {"stage": "reviewing_sources"})
+            result = dict(initial_state)
+            for update in graph.stream(initial_state, config=telemetry_config, stream_mode="updates"):
+                for node, values in update.items():
+                    result.update(values)
+                    emit("status", {"stage": {
+                        "planner_node": "retrieving", "retriever_node": "drafting",
+                        "generator_node": "reflecting", "reflection_node": "reviewing_sources",
+                    }.get(node, "reviewing_sources")})
+            selected = result.get("documents", [])
+            query_to_use = result.get("rewritten_query") or query_to_use
+            def final_emit(name, data):
+                # Source metadata can render with tokens; the grounding grade
+                # remains unknown until this exact answer passes reflection.
+                emit(name, {**data, "is_grounded": None} if name == "citations" and selected and not request._images else data)
+            if request._images:
+                final_answer = generate_visual_answer(query_to_use, request._images,
+                    request._image_observations, history, telemetry_config, chunks=selected, emit=final_emit)
+            elif selected:
+                final_answer = generate_answer(query_to_use, selected, config=telemetry_config, emit=final_emit)
+            elif result.get("intent") == "general_knowledge":
+                final_answer = generate_conversational_answer(query_to_use, "general_knowledge",
+                    history, telemetry_config, emit=emit)
+            else:
+                # Deterministic ingestion notices don't invoke another model.
+                final_answer = {"answer": result.get("answer", "No answer could be generated."),
+                    "citations": result.get("citations", [])}
+            result.update(final_answer)
+            if selected or request._images:
+                from agents.nodes import reflection_node
+                emit("status", {"stage": "reflecting"})
+                final_config = {**(telemetry_config or {}), "configurable": {
+                    **(telemetry_config or {}).get("configurable", {}), "strict_reflection": True}}
+                # This grade describes exactly the visible, persisted answer.
+                # Never retry generation after exposing that answer to a client.
+                result.update(reflection_node(result, final_config))
+        else:
+            result: AgentState = graph.invoke(initial_state, config=telemetry_config)
 
         result = AgentChatResponse(
             query=request.query,
@@ -304,6 +358,8 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
         )
 
         ingestion_active = is_user_ingesting(user_id=request.user_id, document_id=request.document_id)
+        if emit:
+            emit("status", {"stage": "saving"})
         if len(result.citations) > 0 and not ingestion_active and not request.history and not request._images:
             set_cached_response(
                 user_id=request.user_id,
@@ -326,7 +382,15 @@ async def _agent_answer(request: ChatRequest) -> AgentChatResponse:
         raise HTTPException(status_code=500, detail="Could not generate an answer; retry your message") from None
 
 
-async def _persistent_chat(request, user, db, pipeline):
+async def _linear_answer(request: ChatRequest, emit=None) -> ChatResponse:
+    return await asyncio.to_thread(_linear_answer_sync, request, emit)
+
+
+async def _agent_answer(request: ChatRequest, emit=None) -> AgentChatResponse:
+    return await asyncio.to_thread(_agent_answer_sync, request, emit)
+
+
+async def _prepare_chat(request, user, db, pipeline):
     check_user_id(request.user_id, user)
     request.user_id = user.id
     conversation = await history_store.own_conversation(db, user.id, request.conversation_id, request.notebook_id)
@@ -334,16 +398,34 @@ async def _persistent_chat(request, user, db, pipeline):
     fingerprint = history_store.request_hash(request, pipeline)
     previous = await history_store.replay(db, request.conversation_id, request.request_id, fingerprint)
     if previous:
-        return previous
-    # Database history is authoritative, even if a caller forges request.history.
-    request.history = [HistoryMessage(**item) for item in await history_store.canonical_history(db, request.conversation_id)]
+        return conversation, fingerprint, previous
     selected = request.document_ids if request.document_ids is not None else (
         [request.document_id] if request.document_id else None)
-    request.document_ids = await history_store.resolve_documents(db, user.id, request.notebook_id, selected)
+    documents = await history_store.resolve_documents(db, user.id, request.notebook_id, selected)
     if request.document_id:
         await history_store.resolve_documents(db, user.id, request.notebook_id, [request.document_id])
+    for attachment_id in request.attachment_ids:
+        row = await attachment_store.owned_attachment(db, user.id, attachment_id)
+        if str(row["conversationId"]) != str(conversation["id"]) or str(row["notebookId"]) != request.notebook_id:
+            raise HTTPException(404, "Image attachment not found in this conversation")
+        if row["state"] != "pending":
+            raise HTTPException(409, "This image is already attached to a saved message")
+    request.document_ids = documents
+    return conversation, fingerprint, None
+
+
+async def _persistent_chat(request, user, db, pipeline, emit=None, prepared=None):
+    conversation, fingerprint, previous = prepared or await _prepare_chat(request, user, db, pipeline)
+    if previous:
+        return previous
+    if emit:
+        emit("status", {"stage": "loading_history"})
+    # Database history is authoritative, even if a caller forges request.history.
+    request.history = [HistoryMessage(**item) for item in await history_store.canonical_history(db, request.conversation_id)]
     request._attachment_items, request._images = await attachment_store.resolve(db, user.id, conversation, request.attachment_ids)
     if request._images:
+        if emit:
+            emit("status", {"stage": "observing_images"})
         try:
             observation = await asyncio.to_thread(observe_images, request.query, request._images,
                 [item.model_dump() for item in request.history])
@@ -354,17 +436,29 @@ async def _persistent_chat(request, user, db, pipeline):
         request._current_observations = observation.observations
     else:
         request._images, request._image_observations = await attachment_store.previous_images(db, user.id, conversation)
-    answer = await (_agent_answer(request) if pipeline == "agent" else _linear_answer(request))
+    answer = await (_agent_answer(request, emit) if pipeline == "agent" else _linear_answer(request, emit))
+    if emit:
+        emit("status", {"stage": "saving"})
     payload = {**answer.model_dump(), "attachments": request._attachment_items,
                "image_observations": request._image_observations if request._images else []}
     return await history_store.save_turn(db, user.id, conversation, request, payload, pipeline, fingerprint)
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest, user: AuthUser = Depends(require_user), db=Depends(get_db)):
-    return await _persistent_chat(request, user, db, "linear")
+async def chat(request: ChatRequest, http_request: Request, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    return await _chat_response(request, http_request, user, db, "linear")
 
 
 @router.post("/agent/chat", response_model=AgentChatResponse)
-async def agent_chat(request: ChatRequest, user: AuthUser = Depends(require_user), db=Depends(get_db)):
-    return await _persistent_chat(request, user, db, "agent")
+async def agent_chat(request: ChatRequest, http_request: Request, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    return await _chat_response(request, http_request, user, db, "agent")
+
+
+async def _chat_response(request, http_request, user, db, pipeline):
+    # Reject unauthenticated, foreign scopes and fingerprint conflicts with the
+    # usual HTTP status before any progress events or provider calls.
+    prepared = await _prepare_chat(request, user, db, pipeline)
+    if "text/event-stream" in http_request.headers.get("accept", "").lower():
+        return chat_stream(http_request, lambda emit:
+            _persistent_chat(request, user, db, pipeline, emit, prepared))
+    return await _persistent_chat(request, user, db, pipeline, prepared=prepared)

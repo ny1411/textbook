@@ -125,6 +125,8 @@ def reflection_node(state: AgentState, config: RunnableConfig) -> Dict[str, Any]
             return {"is_grounded": False, "confidence_score": grade.confidence_score,
                     "critique": grade.critique + " Image observations are separate from textbook citations."}
         except Exception:
+            if (config or {}).get("configurable", {}).get("strict_reflection"):
+                raise
             return {"is_grounded": False, "confidence_score": None,
                     "critique": "Image observations are separate from textbook citations; visual reflection was unavailable."}
     if not state.get("documents") or not state.get("answer"):
@@ -152,6 +154,8 @@ def reflection_node(state: AgentState, config: RunnableConfig) -> Dict[str, Any]
             "critique": grade.critique
         }
     except Exception as e:
+        if (config or {}).get("configurable", {}).get("strict_reflection"):
+            raise
         return {
             "is_grounded": True,
             "confidence_score": 75,
