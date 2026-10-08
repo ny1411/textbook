@@ -66,7 +66,12 @@ export default function Home() {
 
         {/* Center Panel */}
         <section className="flex-1 min-w-0 flex flex-col h-full relative" data-lenis-prevent>
-          <ChatInterface />
+          <ChatInterface onCitationClick={(citation) => {
+            useTextbookStore.getState().setActiveCitation(citation);
+            useTextbookStore.getState().setActiveStudioTab("citation");
+            setIsStudioOpen(true);
+            setIsSourceOpen(false);
+          }} />
         </section>
 
         {/* Right Panel */}

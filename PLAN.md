@@ -369,8 +369,9 @@ Use `[x]` to mark tasks as completed.
 - [ ] **Modal Wiring & Layout Verification (Inspector Modal Mount):**
   - Wire `RetrievalInspectorModal` into `app/page.tsx` with `useTextbookStore` so clicking `Diagnostics` in `StudioPanel` or the `SlidersHorizontal` icon in `Header` opens the Stage 1 & Stage 2 inspector modal.
 
-- [ ] **Zero-State Onboarding & Sample Textbook Loader:**
+- [x] **Zero-State Onboarding & Sample Textbook Loader:**
   - When a user has not uploaded any documents, offer a 1-click "Load Sample AI Engineering Textbook" button so users can immediately test search, citations, and studio notes without having to find and upload a PDF first.
+  - #22 adds an original CC0 sample, owned durable loading and retries, duplicate prevention, ready source selection, sample-specific prompts, and mobile-visible onboarding. API/SQL, parser/chunker, frontend and integrated browser flows are verified. Apply the sample metadata migration before rollout; see [the sample loader runbook](textbook-backend/docs/sample-textbook.md).
 
 - [ ] **Studio Notes Export & Audio Overview (NotebookLM Podcast):**
   - Export Studio notes to `.md` / Markdown and PDF.

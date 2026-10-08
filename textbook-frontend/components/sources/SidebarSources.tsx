@@ -31,7 +31,8 @@ export function SidebarSources() {
     const visibleInspection = inspectedSource?.userId === userId && inspectedSource.notebookId === notebookId
         ? inspectedSource : null;
 
-    const selectableSources = sources.filter((source) => source.documentId && source.status !== "failed" && !source.deletionPending);
+    const selectableSources = sources.filter((source) => source.documentId && source.status !== "failed" && !source.deletionPending &&
+        (!source.sampleKey || source.status === "ready"));
     const selectedCount = selectedDocumentIds === null
         ? selectableSources.length
         : selectableSources.filter((source) => selectedDocumentIds.includes(source.documentId!)).length;
@@ -97,7 +98,7 @@ export function SidebarSources() {
                             key={source.filepath}
                             source={source}
                             isSelected={
-                                source.status !== "failed" && !source.deletionPending && (
+                                source.status !== "failed" && !source.deletionPending && (!source.sampleKey || source.status === "ready") && (
                                     selectedDocumentIds === null ||
                                     (!!source.documentId && selectedDocumentIds.includes(source.documentId))
                                 )

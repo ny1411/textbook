@@ -99,7 +99,10 @@ class Vectors:
 def ingest(**kwargs):
     if kwargs["filename"] == "bad.pdf":
         return False
-    POINTS.append({key: kwargs[key] for key in ("user_id", "document_id", "notebook_id")})
+    point = {key: kwargs[key] for key in ("user_id", "document_id", "notebook_id")}
+    if kwargs["filename"] == "AI Engineering Sample Textbook.txt":
+        point["sample_text"] = kwargs["file_bytes"].decode("utf-8")
+    POINTS.append(point)
     return True
 
 
@@ -115,8 +118,14 @@ def analyze(query, config=None, history=None):
 
 
 def retrieve(**kwargs):
-    return [{"id": f"chunk-{page}", "rerank_score": .8, "payload": {"document_id": kwargs["document_ids"][0],
-        "page_number": page, "text": f"Verified fixture passage {page}"}} for page in (1, 2)] if kwargs["document_ids"] else []
+    if not kwargs["document_ids"]:
+        return []
+    document_id = kwargs["document_ids"][0]
+    point = next((item for item in POINTS if item.get("document_id") == document_id and item.get("user_id") == kwargs["user_id"]), {})
+    text = point.get("sample_text")
+    excerpts = [text[text.index(start):].split("\n\n", 1)[0] for start in ("Dense retrieval represents", "Sparse retrieval uses")] if text else []
+    return [{"id": f"chunk-{page}", "rrf_score": .03, "rerank_score": .8, "payload": {"document_id": document_id,
+        "page_number": page, "text": excerpts[page - 1] if excerpts else f"Verified fixture passage {page}"}} for page in (1, 2)]
 
 
 def generate(query, chunks, config=None):
@@ -230,6 +239,7 @@ async def database(legacy=None):
                 await legacy(session)
             await connection.execute((BACKEND / "prisma/changes/issue-19-history.sql").read_text())
             await connection.execute((BACKEND / "prisma/changes/issue-18-document-deletion.sql").read_text())
+            await connection.execute((BACKEND / "prisma/changes/issue-22-sample-textbook.sql").read_text())
             yield session
         finally:
             await connection.rollback()

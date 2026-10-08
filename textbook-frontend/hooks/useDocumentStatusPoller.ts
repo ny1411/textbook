@@ -11,7 +11,7 @@ export function useDocumentPoller() {
 
     useEffect(() => {
         const processingDocs = sources.filter(
-            (s) => s.status === "processing" && s.documentId
+            (s) => s.status === "processing" && s.documentId && !s.sampleKey
         );
         if (processingDocs.length === 0) return;
 
