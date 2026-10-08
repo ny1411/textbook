@@ -18,11 +18,17 @@ async def list_documents(db, user_id, notebook_id, limit, offset):
     rows = await db.query('SELECT d.*, EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id) AS "deletionPending" '
         'FROM uploaded_documents d WHERE "userId" = %s::uuid AND "notebookId" = %s::uuid '
         'ORDER BY "createdAt" DESC, id DESC LIMIT %s OFFSET %s', user_id, notebook_id, limit + 1, offset)
-    return {"items": [{"userId": user_id, "filename": row["name"] or "Document", "filepath": row["storageUrl"],
+    return {"items": [document_item(row, user_id, notebook_id) for row in rows[:limit]],
+        "next_offset": offset + limit if len(rows) > limit else None}
+
+
+def document_item(row, user_id, notebook_id):
+    return {"userId": user_id, "filename": row["name"] or "Document", "filepath": row["storageUrl"],
         "documentId": str(row["id"]), "notebookId": notebook_id, "status": "failed" if row["deletionPending"] else STATUS[row["status"]],
         "deletionPending": row["deletionPending"],
+        "sampleKey": row.get("sampleKey"),
         "size": int(row["fileSize"] or 0), "type": row["fileType"], "uploadedAt": timestamp(row["createdAt"]),
-        "pageCount": row["pageCount"]} for row in rows[:limit]], "next_offset": offset + limit if len(rows) > limit else None}
+        "pageCount": row["pageCount"]}
 
 
 async def lock_document(tx, document_id):

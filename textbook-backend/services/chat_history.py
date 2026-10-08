@@ -115,6 +115,7 @@ async def canonical_history(db, conversation_id):
 
 async def resolve_documents(db, user_id, notebook_id, requested):
     rows = await db.query('SELECT id FROM uploaded_documents d WHERE "userId" = %s::uuid AND "notebookId" = %s::uuid '
+        'AND (d."sampleKey" IS NULL OR d.status = \'COMPLETED\') '
         'AND NOT EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id)',
         user_id, notebook_id)
     owned = {str(row["id"]) for row in rows}
@@ -183,6 +184,7 @@ async def save_turn(db, user_id, conversation, request, payload, pipeline, finge
             await attach_to_message(tx, user_id, conversation, request.attachment_ids, user_message_id)
         for citation in payload.get("citations", []):
             allowed = await tx.query('SELECT id FROM uploaded_documents d WHERE id = %s::uuid AND "userId" = %s::uuid AND "notebookId" = %s::uuid '
+                'AND (d."sampleKey" IS NULL OR d.status = \'COMPLETED\') '
                 'AND NOT EXISTS (SELECT 1 FROM document_deletions x WHERE x."documentId" = d.id)',
                 citation.get("document_id"), user_id, str(conversation["notebookId"]))
             if not allowed:

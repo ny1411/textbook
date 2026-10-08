@@ -9,6 +9,7 @@ export interface SourceDocument {
     status?: IngestionStatus;
     error?: string;
     deletionPending?: boolean;
+    sampleKey?: string | null;
     size?: number;
     type?: string;
     uploadedAt?: Date;

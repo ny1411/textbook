@@ -69,6 +69,7 @@ model UploadedDocuments{
   
   status                STATUS @default(UPLOADED)
   pageCount             Int?
+  sampleKey             String?
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   notebook              Notebooks              @relation(fields: [notebookId], references: [id], onDelete: Cascade)
@@ -81,6 +82,7 @@ model UploadedDocuments{
 
   @@index([userId])
   @@index([notebookId])
+  @@unique([userId, notebookId, sampleKey])
   @@map("uploaded_documents")
 }
 

@@ -20,7 +20,8 @@ export function SourceCard({ source, isSelected, onToggle, onDelete, onInspect, 
             <input
                 type="checkbox"
                 checked={isSelected}
-                disabled={!source.documentId || source.status === "failed" || source.deletionPending || isDeleting}
+                disabled={!source.documentId || source.status === "failed" || source.deletionPending || isDeleting ||
+                    (!!source.sampleKey && source.status !== "ready")}
                 onChange={() => source.documentId && onToggle(source.documentId)}
                 aria-label={`Use ${source.filename} in answers`}
                 className="size-4 shrink-0 accent-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"

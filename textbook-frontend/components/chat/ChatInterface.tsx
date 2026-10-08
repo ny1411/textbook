@@ -8,6 +8,7 @@ import { LoaderCircle } from "lucide-react";
 import { ChatLoadingIndicator } from "./ChatLoadingIndicator";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedQueries } from "./SuggestedQueries";
+import { SampleTextbookLoader } from "@/components/sources/SampleTextbookLoader";
 import { cn } from "@/lib/utils";
 import { useOwnedWorkspace } from "@/hooks/useOwnedWorkspace";
 import { useTextbookStore } from "@/stores/useTextbookStore";
@@ -64,7 +65,7 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
         if (scrollRef.current) {
             const previous = firstMessage.current;
             if (previous === messages[0]?.id || !messages.some((item) => item.id === previous)) {
-                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                scrollRef.current.scrollTop = messages.length === 0 ? 0 : scrollRef.current.scrollHeight;
             }
             firstMessage.current = messages[0]?.id;
         }
@@ -101,6 +102,7 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
                 className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth"
                 data-lenis-prevent
             >
+                <SampleTextbookLoader userId={userId} notebookId={notebookId} />
                 {chat.hasOlder && <button type="button" onClick={chat.loadOlder} disabled={isLoading || isUploadingImages || chat.isHistoryLoading}
                     className="block mx-auto mb-4 text-xs text-indigo-300">Load older messages</button>}
                 {messages.length === 0 ? (

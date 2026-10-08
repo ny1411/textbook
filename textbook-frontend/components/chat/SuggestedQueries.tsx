@@ -2,6 +2,9 @@
 
 import { BookOpen, CircleAlert, GitCompare, Sparkles } from "lucide-react";
 import { HeroMeshGradient } from "./HeroMeshGradient";
+import { useSourceStore } from "@/stores/useSourcesStore";
+import { useUserStore } from "@/stores/useUserStore";
+import { useTextbookStore } from "@/stores/useTextbookStore";
 
 interface SuggestedQueriesProps {
     onSelectQuery: (query: string) => void;
@@ -24,6 +27,15 @@ const SUGGESTED_QUERIES = [
 ];
 
 export function SuggestedQueries({ onSelectQuery }: SuggestedQueriesProps) {
+    const userId = useUserStore((state) => state.userId);
+    const notebookId = useTextbookStore((state) => state.activeNotebookId);
+    const sampleReady = useSourceStore((state) => state.source.some((source) => source.userId === userId &&
+        source.notebookId === notebookId && source.sampleKey === "ai-engineering-v1" && source.status === "ready" && !source.deletionPending));
+    const queries = sampleReady ? [
+        { icon: BookOpen, label: "Explore hybrid search", query: "How do dense and sparse retrieval complement each other in hybrid search?" },
+        { icon: GitCompare, label: "Calculate retrieval quality", query: "If three of four relevant passages appear in five results, what are Recall@5 and Precision@5?" },
+        { icon: CircleAlert, label: "Check citation support", query: "Why does a citation badge alone not prove that an answer is grounded?" },
+    ] : SUGGESTED_QUERIES;
     return (
         <div className="relative isolate w-full max-w-2xl mx-auto flex flex-col items-center justify-center overflow-hidden rounded-3xl p-6 text-center animate-in fade-in duration-300">
             <HeroMeshGradient />
@@ -34,10 +46,10 @@ export function SuggestedQueries({ onSelectQuery }: SuggestedQueriesProps) {
                 Want to explore further?
             </h2>
             <p className="text-sm text-zinc-400 mt-1.5 max-w-md">
-                Ask questions from your uploaded documents.
+                {sampleReady ? "Your sample is ready. Try a question, inspect a citation, and save a Studio note." : "Ask questions from your uploaded documents."}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-8 w-full">
-                {SUGGESTED_QUERIES.map((chip, idx) => {
+                {queries.map((chip, idx) => {
                     const Icon = chip.icon;
                     return (
                         <button

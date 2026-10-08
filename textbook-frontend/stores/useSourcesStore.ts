@@ -3,13 +3,16 @@ import type { IngestionStatus, SourceDocument } from "@/types/source";
 
 const getSelectableDocumentIds = (sources: SourceDocument[]) =>
     sources.flatMap((source) =>
-        source.documentId && source.status !== "failed" && !source.deletionPending ? [source.documentId] : []
+        source.documentId && source.status !== "failed" && !source.deletionPending &&
+            (!source.sampleKey || source.status === "ready") ? [source.documentId] : []
     );
 
 interface SourceState {
     source: SourceDocument[];
     selectedDocumentIds: string[] | null;
     addSource: (source: SourceDocument) => void;
+    upsertSource: (source: SourceDocument) => void;
+    selectSource: (documentId: string) => void;
     removeSource: (filepath: string) => void;
     markDeletionPending: (documentId: string) => void;
     updateSourceStatus: (documentId: string, status: IngestionStatus, error?: string) => void;
@@ -23,6 +26,13 @@ export const useSourceStore = create<SourceState>((set) => ({
     source: [],
     replaceSources: (source) => set({ source, selectedDocumentIds: null }),
     selectedDocumentIds: null,
+    upsertSource: (source) => set((state) => ({
+        source: [source, ...state.source.filter((item) => item.documentId !== source.documentId || item.userId !== source.userId)],
+    })),
+    selectSource: (documentId) => set((state) => ({
+        selectedDocumentIds: state.selectedDocumentIds === null ? null
+            : [...new Set([...state.selectedDocumentIds, documentId])],
+    })),
     markDeletionPending: (documentId) => set((state) => ({
         source: state.source.map((source) => source.documentId === documentId
             ? { ...source, deletionPending: true, status: "failed" } : source),

@@ -1,0 +1,13 @@
+The original AI Engineering sample textbook in this directory is dedicated to
+the public domain under CC0 1.0 Universal (SPDX: CC0-1.0).
+
+To the extent possible under law, the Textbook project contributors waive all
+copyright and related or neighboring rights to this sample text. It may be
+copied, modified, and redistributed, including commercially, without permission.
+The sample is provided without warranty.
+
+The full CC0 dedication and fallback license are available at:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+This dedication applies only to the sample text, not to the rest of this
+repository or to third-party materials.

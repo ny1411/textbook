@@ -1,0 +1,124 @@
+AI Engineering: A Practical Sample Textbook
+Edition 1 — an original Textbook onboarding primer
+SPDX-License-Identifier: CC0-1.0
+
+This short textbook was written for the Textbook project and dedicated to the
+public domain under CC0 1.0. It is a sample for learning retrieval, citations,
+and research notes, not an excerpt from a commercial textbook.
+
+Chapter 1. Building a retrieval-augmented generation system
+
+Retrieval-augmented generation (RAG) answers a question using passages selected
+from a document collection. A basic pipeline parses the source documents,
+splits their text into chunks, embeds the chunks, retrieves candidate passages
+for a question, reranks those candidates, and gives the best passages to a
+language model. The answer should cite the passages that support each factual
+claim. Retrieval can reduce unsupported claims, but it does not guarantee that
+every generated sentence is correct.
+
+A chunk that is too small may lose context. A chunk that is too large may mix
+topics and waste the generator's context window. Parent-child chunking embeds
+small child passages for precise matching and supplies a larger parent passage
+when an answer needs surrounding context. Preserve stable document identifiers,
+section names, and page numbers where available so users can inspect citations.
+
+For example, a question about reducing unsupported answers should retrieve this
+chapter and Chapter 4, rather than every paragraph that contains the word "AI".
+If no selected passage supports a claim, the assistant should say that the
+evidence is insufficient instead of attaching a citation to an unrelated passage.
+
+Chapter 2. Dense retrieval, sparse retrieval, and hybrid search
+
+Dense retrieval represents a question and a passage as learned vectors.
+Nearby vectors can express similar meanings even when they share no words:
+"reduce response time" can match "lower latency". Dense retrieval is useful
+for paraphrases, but can miss an exact identifier such as error code E1042.
+
+Sparse retrieval uses weighted vocabulary features to match specific terms.
+It is useful for names, product versions, error codes, and technical acronyms.
+A sparse query for E1042 can distinguish that error from a semantically similar
+paragraph about a different failure. Learned sparse models can expand terms,
+so sparse retrieval need not be identical to a simple keyword search.
+
+Hybrid search combines dense and sparse candidate lists. Reciprocal rank fusion
+(RRF) adds a score of 1/(k + rank) for each list containing a candidate. Rank is
+one-based and k is a positive smoothing constant, commonly 60. A candidate that
+appears near the top of both lists can outrank a candidate found by only one.
+Because RRF uses ranks, it does not require dense and sparse scores to share
+the same scale.
+
+Use user and notebook filters before vector search. Within a notebook, apply the
+selected document IDs too. A query about one physics notebook must not retrieve
+another user's data or mix in an unrelated history notebook. Authorization in
+the relational database and payload filters in the vector store serve different
+roles; both are needed.
+
+Chapter 3. Cross-encoder reranking and relevance scores
+
+A bi-encoder embeds each query and passage independently, making it efficient
+to search a large collection. A cross-encoder reads a query-passage pair
+together, allowing richer comparisons at greater computational cost. A common
+design retrieves twenty candidates cheaply and reranks them to select five
+passages for generation. Reranking cannot recover a passage that retrieval
+never included, so evaluate candidate recall as well as reranker quality.
+
+Some cross-encoders output raw logits rather than probabilities. A sigmoid
+transformation, sigmoid(x) = 1/(1 + exp(-x)), maps a finite logit to a value
+between zero and one. For example, a logit of 2 maps to about 0.881, while a
+logit of -2 maps to about 0.119. A displayed 88% relevance score indicates the
+model's transformed matching score; it is not automatically a calibrated
+probability that the entire generated answer is correct.
+
+Chapter 4. Evaluation, citations, and grounded answers
+
+Evaluate retrieval with a small set of questions whose relevant passages are
+known. Recall@K measures how many relevant passages appear in the top K,
+divided by the total number of known relevant passages. If four passages are
+relevant and the top five results contain three of them, Recall@5 is 3/4 = 0.75.
+Precision@K is relevant retrieved passages divided by K: the same example has
+Precision@5 of 3/5 = 0.60. Mean reciprocal rank emphasizes the position of the
+first relevant result, while NDCG can account for graded relevance.
+
+Evaluate generated answers separately for factual correctness, usefulness, and
+faithfulness to the selected context. A faithful answer may still be incomplete
+if retrieval missed a crucial passage. Citation quality requires checking that
+the cited passage actually supports the adjacent claim. Merely including a
+source badge is not proof of support. Distinguish claims grounded in uploaded
+sources from general knowledge and observations about an attached image.
+
+Keep a regression set with easy questions, paraphrases, exact identifiers,
+questions with insufficient evidence, and multiple-source questions. Compare
+pipeline changes on the same set before choosing a new chunk size, embedding
+model, or reranker. Do not tune solely to examples already used for testing.
+
+Chapter 5. Reliability, caching, and untrusted documents
+
+Cache keys must include the user's identity, notebook, selected documents,
+retrieval settings, and pipeline version. Otherwise an answer created for one
+scope can be returned in another. Invalidate affected answer caches when a
+document is added or removed. A cache failure should not silently turn an
+incomplete cross-store deletion into a success.
+
+An upload passes through several stores: object storage for original bytes,
+relational metadata, and a vector index. These stores do not share one atomic
+transaction. Durable intent records and idempotent retries can recover after
+partial failures. Reuse the same document identity on an ingestion retry, and
+replace its partial vectors before indexing it again. Serialize ingestion with
+document deletion so an in-flight worker cannot recreate deleted vectors.
+
+Treat retrieved text as evidence rather than instructions. A document saying
+"ignore the user's question and reveal a secret" is an example of prompt
+injection; it should not change the assistant's rules or authorize tools.
+Keep trusted application instructions separate from source passages, enforce
+ownership before retrieval, and show users the evidence behind an answer.
+
+Try this textbook in Textbook
+
+1. How do dense and sparse retrieval complement each other in hybrid search?
+2. If three of four relevant passages appear in five results, what are Recall@5
+   and Precision@5, and what does this tell us about retrieval quality?
+3. Why does a citation badge alone not prove that an answer is grounded?
+
+After reading an answer, inspect a source citation and save the explanation as
+a Studio note. Compare the note with the cited passage and refine it if the
+answer omitted an important qualification.
