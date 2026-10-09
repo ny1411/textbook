@@ -15,7 +15,7 @@ export default function Home() {
   const [textbookTitle] = useState("AI Engineering");
   const [userAvatar] = useState("N");
 
-  const { isInspectorOpen, setInspectorOpen } = useTextbookStore();
+  const { isInspectorOpen, setInspectorOpen, workspaceUserId, activeNotebookId } = useTextbookStore();
 
   return (
     <div className="h-dvh w-screen flex flex-col overflow-hidden bg-zinc-900 text-zinc-100 antialiased">
@@ -97,12 +97,13 @@ export default function Home() {
               `}
               data-lenis-prevent
             >
-              <StudioPanel />
+              <StudioPanel key={`${workspaceUserId}:${activeNotebookId}`} />
             </motion.aside>
           )}
         </AnimatePresence>
       </main>
       <RetrievalInspectorModal
+        key={`${workspaceUserId}:${activeNotebookId}`}
         isOpen={isInspectorOpen}
         onClose={() => setInspectorOpen(false)}
       />
