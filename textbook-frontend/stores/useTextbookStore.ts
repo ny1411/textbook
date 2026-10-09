@@ -6,9 +6,21 @@ export interface StudioNote {
     id: string;
     title?: string;
     content: string;
+    // Server-loaded figures are combined with private text notes for display/export.
+    // Image bytes and ephemeral URLs must never enter persisted note storage.
+    figure?: {
+        id: string;
+        model: string;
+        mediaType: "image/png";
+        width: number;
+        height: number;
+        prompt: string;
+    };
     sourceRef?: {
         sourceId?: string | number;
         documentId?: string | null;
+        documentName?: string;
+        contextType?: "document" | "saved_citation";
         pageNumber?: number | null;
         excerpt?: string | null;
         url?: string | null;
