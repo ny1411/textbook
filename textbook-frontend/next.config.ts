@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
+import { getBackendUrl } from "./config/deployment.mjs";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+const BACKEND_URL = getBackendUrl();
 
 const nextConfig: NextConfig = {
   // Leave room for multipart fields around the 10 MiB chat image limit.
