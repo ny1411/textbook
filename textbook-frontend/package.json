@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:citations": "node --test tests/citations.test.mjs"
+    "test:citations": "node --test tests/citations.test.mjs",
+    "test:stream": "node --test tests/event-stream.test.mjs"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.80",

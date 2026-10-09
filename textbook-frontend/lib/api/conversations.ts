@@ -44,7 +44,10 @@ export async function getMessages(id: string, signal?: AbortSignal, before?: num
             confidence_score: message.response?.confidence_score, is_grounded: message.response?.is_grounded,
             critique: message.response?.critique, iterationCount: message.response?.iteration_count,
         } : undefined,
-    })), next_before: page.next_before };
+    })), next_before: page.next_before,
+        completedRequestIds: page.items.flatMap((message) => message.role === "assistant" && message.response?.request_id
+            ? [message.response.request_id] : []),
+    };
 }
 
 export async function getSources(notebookId: string, signal?: AbortSignal) {

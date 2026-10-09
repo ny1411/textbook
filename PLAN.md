@@ -317,9 +317,9 @@ Use `[x]` to mark tasks as completed.
   - **Regex & Component Parser:** Update `ChatMessage.tsx` to recognize comma-separated and grouped source references and split them into individual interactive `<CitationBadge />` elements with hover previews.
   - **Prompt Guideline:** Update `services/generator.py` prompt instructions to explicitly request single bracketed citations (e.g. `[Source 1][Source 2]`) for consistency.
 
-- [ ] **Streaming Responses (Server-Sent Events / SSE) & Socket Timeout Prevention:**
+- [x] **Streaming Responses (Server-Sent Events / SSE) & Socket Timeout Prevention:**
   - **Problem:** Heavy RAG pipelines (hybrid search + cross-encoder rerank on CPU + LLM call) can take 30-50+ seconds on first run, causing Next.js dev server proxy to abort with `socket hang up` (`ECONNRESET`).
-  - **Solution:** Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens via SSE (`StreamingResponse`). Emitting the first token within 1-2 seconds keeps the HTTP socket alive and eliminates proxy timeouts.
+  - **Solution:** Both endpoints negotiate SSE while retaining JSON compatibility. Immediate progress events and ten-second idle heartbeats keep the Next.js proxy active during cold retrieval; actual provider chunks stream once generation starts. See `textbook-backend/docs/chat-streaming.md` for protocol, cancellation and verification limits.
 
 - [x] **Full-Cycle Document Deletion API (`DELETE /api/documents`):**
   - Verified an authenticated, notebook-scoped endpoint with durable cleanup intent, idempotent retries, ingestion locking, cache invalidation, and sidebar retry UI. See `textbook-backend/docs/document-deletion.md` for migration and local verification.
@@ -345,8 +345,8 @@ Use `[x]` to mark tasks as completed.
   - Persist conversation messages, generated answers, and citations into PostgreSQL (`conversations`, `conversation_messages`, and `message_sources` Prisma tables).
   - Enable multiple notebook threads and past chat history switching.
   - #19 implementation adds authenticated APIs, atomic saved turns, restored citations/Agent metadata, thread switching, source restoration and retry recovery. See [the history deployment/verification runbook](textbook-backend/docs/chat-history.md). Local SQL/API and browser verification are complete; the database upgrade and real Supabase staging acceptance remain pending before marking this production item complete.
-- [ ] **Streaming Responses (Server-Sent Events / SSE):**
-  - Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens with citation badges rendering as they arrive.
+- [x] **Streaming Responses (Server-Sent Events / SSE):**
+  - Implemented authenticated SSE for both modes with incremental citations, private agent drafts, canonical saved completion, Stop, image retention/recovery and same-request retry. Local SQL/API and rendered checks are documented in `textbook-backend/docs/chat-streaming.md`; remote provider/service verification remains separate.
 
 - [x] **Intent Routing & Dual-Mode Conversational Chat (Casual Chat vs RAG vs General Knowledge):**
   - **Problem:** Currently, *every* query is blindly sent to Qdrant vector search and Cross-Encoder rerank. If the user greets ("hello", "who are you?") or asks general questions not in their uploaded PDF, the system hits a dead-end wall: *"No relevant documents found to answer your question."*
