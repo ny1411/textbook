@@ -2,12 +2,15 @@
 
 import { cn } from "@/lib/utils";
 import { StudioNote, useTextbookStore } from "@/stores/useTextbookStore";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { relevancePercentage } from "@/lib/relevance";
 import { ReadAloud } from "@/components/voice/ReadAloud";
 import { AudioOverview } from "@/components/studio/AudioOverview";
 import { NotesExport } from "@/components/studio/NotesExport";
+import { ConceptDiagram } from "@/components/studio/ConceptDiagram";
+import { FigureNote } from "@/components/studio/FigureNote";
+import { deleteFigure, figureAsNote, listFigures, type ConceptFigure } from "@/lib/api/image";
 import { useUserStore } from "@/stores/useUserStore";
 import {
     BookOpen,
@@ -22,6 +25,13 @@ import {
 } from "lucide-react";
 
 export function StudioPanel() {
+    const userId = useUserStore((state) => state.userId);
+    const authenticated = useUserStore((state) => state.isAuthenticated);
+    const notebookId = useTextbookStore((state) => state.activeNotebookId);
+    return <StudioPanelSession key={`${authenticated}:${userId}:${notebookId}`} />;
+}
+
+function StudioPanelSession() {
     const {
         activeCitation,
         setActiveCitation,
@@ -34,6 +44,52 @@ export function StudioPanel() {
         activeNotebookId,
     } = useTextbookStore();
     const userId = useUserStore((state) => state.userId);
+    const authenticated = useUserStore((state) => state.isAuthenticated);
+    const [figures, setFigures] = useState<ConceptFigure[]>([]);
+    const [figureLoadError, setFigureLoadError] = useState(false);
+    const [figuresLoading, setFiguresLoading] = useState(authenticated && !!activeNotebookId);
+    const [figureLoadAttempt, setFigureLoadAttempt] = useState(0);
+    const deletedFigures = useRef(new Set<string>());
+    const currentWorkspace = () => useUserStore.getState().isAuthenticated
+        && useUserStore.getState().userId === userId
+        && useTextbookStore.getState().activeNotebookId === activeNotebookId;
+
+    useEffect(() => {
+        if (!authenticated || !activeNotebookId) return;
+        const controller = new AbortController();
+        void listFigures(activeNotebookId, controller.signal).then((loaded) => {
+            if (controller.signal.aborted || !currentWorkspace()) return;
+            setFigures((current) => [...new Map([...loaded, ...current]
+                .filter((figure) => !deletedFigures.current.has(figure.id)).map((figure) => [figure.id, figure])).values()]);
+            setFigureLoadError(false);
+        }).catch(() => {
+            if (!controller.signal.aborted && currentWorkspace()) setFigureLoadError(true);
+        }).finally(() => {
+            if (!controller.signal.aborted && currentWorkspace()) setFiguresLoading(false);
+        });
+        return () => controller.abort();
+    // Account/notebook changes remount the entire panel; retries refetch this scope.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authenticated, userId, activeNotebookId, figureLoadAttempt]);
+
+    const figureById = new Map(figures.map((figure) => [`figure-${figure.id}`, figure]));
+    const combinedNotes = useMemo(() => [...notes, ...figures.map(figureAsNote)]
+        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)), [notes, figures]);
+
+    function handleSavedFigure(figure: ConceptFigure) {
+        if (!currentWorkspace()) return;
+        setFigures((current) => [figure, ...current.filter((item) => item.id !== figure.id)]);
+        setActiveStudioTab("notes");
+        toast.success("Figure saved into Studio Notes.");
+    }
+
+    async function handleDeleteFigure(figure: ConceptFigure) {
+        await deleteFigure(figure);
+        if (!currentWorkspace()) return;
+        deletedFigures.current.add(figure.id);
+        setFigures((current) => current.filter((item) => item.id !== figure.id));
+        toast.info("Figure deleted.");
+    }
 
     const [newNoteContent, setNewNoteContent] = useState<string>("");
     const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
@@ -120,7 +176,7 @@ export function StudioPanel() {
                         )}
                     >
                         <StickyNote size={13} />
-                        <span>Notes ({notes.length})</span>
+                        <span>Notes ({combinedNotes.length})</span>
                     </button>
                 </div>
             </div>
@@ -185,6 +241,7 @@ export function StudioPanel() {
                                         Clear
                                     </button>
                                 </div>
+                                <ConceptDiagram citation={activeCitation} onSaved={handleSavedFigure} />
                             </div>
                         ) : (
                             <div className="h-64 flex flex-col items-center justify-center text-center p-4 rounded-xl border border-dashed border-zinc-800 text-zinc-500">
@@ -201,7 +258,13 @@ export function StudioPanel() {
                 {activeStudioTab === "notes" && (
                     <div className="space-y-4">
                         <AudioOverview />
-                        <NotesExport key={`${userId}:${activeNotebookId}`} notes={notes} />
+                        <ConceptDiagram onSaved={handleSavedFigure} />
+                        <NotesExport key={`${userId}:${activeNotebookId}`} notes={combinedNotes} />
+                        {figures.length > 0 && <p className="text-[11px] leading-relaxed text-zinc-500">Figure exports include captions and source details. Download each PNG separately.</p>}
+                        {figuresLoading && <p role="status" className="text-[11px] text-zinc-400">Loading saved figures…</p>}
+                        {figureLoadError && <div className="space-y-1 text-[11px]"><p role="alert" className="text-amber-300">Saved figures could not be loaded.</p>
+                            <button type="button" onClick={() => { setFigureLoadError(false); setFiguresLoading(true); setFigureLoadAttempt((value) => value + 1); }}
+                                className="text-indigo-300 hover:text-indigo-200">Retry saved figures</button></div>}
                         <form onSubmit={handleCreateNote} className="space-y-2">
                             <textarea
                                 value={newNoteContent}
@@ -224,13 +287,15 @@ export function StudioPanel() {
                         </form>
 
                         <div className="space-y-2.5">
-                            {notes.length === 0 ? (
+                            {combinedNotes.length === 0 ? (
                                 <div className="h-44 flex flex-col items-center justify-center text-center p-4 rounded-xl border border-dashed border-zinc-800 text-zinc-500">
                                     <StickyNote size={24} className="mb-2 text-zinc-600" />
                                     <p className="text-xs font-medium text-zinc-400">Your notes are empty</p>
                                 </div>
                             ) : (
-                                notes.map((note) => (
+                                combinedNotes.map((note) => figureById.has(note.id) ? (
+                                    <FigureNote key={note.id} figure={figureById.get(note.id)!} onDelete={handleDeleteFigure} />
+                                ) : (
                                     <div
                                         key={note.id}
                                         className="group relative p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700/80 transition-all space-y-2"

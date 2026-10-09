@@ -10,16 +10,18 @@ from psycopg import Error as DatabaseError
 from fastapi.responses import JSONResponse
 from db.postgres import get_db
 from services.chat_attachments import cleanup_expired
+from services.concept_images import cleanup_expired as cleanup_concept_figures
 
 logger = logging.getLogger(__name__)
 
 
 async def image_cleanup_loop():
     while True:
-        try:
-            await cleanup_expired(await get_db())
-        except Exception:
-            logger.warning("Abandoned image cleanup will retry")
+        for cleanup in (cleanup_expired, cleanup_concept_figures):
+            try:
+                await cleanup(await get_db())
+            except Exception:
+                logger.warning("Abandoned image cleanup will retry")
         await asyncio.sleep(300)
 
 

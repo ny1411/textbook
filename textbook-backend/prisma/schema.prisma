@@ -25,6 +25,8 @@ model User{
   notebooks             Notebooks[]
   conversations         Conversations[]
   documents             UploadedDocuments[]
+  conceptFigures        ConceptFigures[]
+  conceptFigureAttempts ConceptFigureAttempts[]
   chatAttachments       ChatAttachments[]
   artifacts             GeneratedArtifacts[]
   memories              UserMemory[]
@@ -45,6 +47,7 @@ model Notebooks{
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   documents             UploadedDocuments[]
+  conceptFigures        ConceptFigures[]
   chatAttachments       ChatAttachments[]
   conversations         Conversations[]
   artifacts             GeneratedArtifacts[]
@@ -53,6 +56,7 @@ model Notebooks{
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt 
 
+  @@unique([id, userId])
   @@index([userId])
   @@map("notebooks")
 }
@@ -284,4 +288,43 @@ enum DOCUMENTTYPE{
   CSV
   EXCEL
   PRESENTATION
+}
+
+// Private, durable generated diagrams; source is a deletion-safe snapshot.
+model ConceptFigures {
+  id             String @id @db.Uuid
+  userId         String @db.Uuid
+  notebookId     String @db.Uuid
+  prompt         String
+  caption        String
+  mediaType      String @default("image/png")
+  width          Int?
+  height         Int?
+  size           Int @default(0)
+  digest         String?
+  model          String
+  source         Json?
+  storagePath    String @unique
+  state          String
+  expiresAt      DateTime? @db.Timestamptz(6)
+  uploadedAt     DateTime? @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebook       Notebooks @relation(fields: [notebookId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@index([userId, notebookId])
+  @@index([expiresAt])
+  @@map("concept_figures")
+}
+
+model ConceptFigureAttempts {
+  id             String @id @db.Uuid
+  userId         String @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("concept_figure_attempts")
 }

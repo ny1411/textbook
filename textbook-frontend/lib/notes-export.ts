@@ -20,9 +20,21 @@ function sourceLines(source: StudioNote["sourceRef"]): string[] {
     return [
         source.sourceId != null ? `Source: [${source.sourceId}]` : "",
         source.documentId ? `Document: ${source.documentId}` : "",
+        source.documentName ? `Document name: ${source.documentName}` : "",
+        source.contextType ? `Context: ${source.contextType === "saved_citation" ? "Verified saved citation" : "Document context"}` : "",
         source.pageNumber != null ? `Page: ${source.pageNumber}` : "",
         source.url ? `URL: ${source.url}` : "",
     ].filter(Boolean);
+}
+
+function figureLines(figure: StudioNote["figure"]): string[] {
+    return figure ? [
+        "AI-generated concept diagram",
+        `Figure ID: ${figure.id}`,
+        `Model: ${figure.model}`,
+        `Image: ${figure.mediaType}, ${figure.width} × ${figure.height}`,
+        `Generation prompt: ${figure.prompt}`,
+    ] : [];
 }
 
 export function notesAsMarkdown(
@@ -35,7 +47,7 @@ export function notesAsMarkdown(
             `Created: ${dateLabel(note.createdAt)}`,
             `Updated: ${dateLabel(note.updatedAt)}`,
         ];
-        const source = sourceLines(note.sourceRef);
+        const source = [...figureLines(note.figure), ...sourceLines(note.sourceRef)];
         const excerpt = note.sourceRef?.excerpt
             ? `\n\nSource excerpt:\n\n${note.sourceRef.excerpt.split(/\r?\n/).map((line) => `> ${line}`).join("\n")}`
             : "";
@@ -78,7 +90,7 @@ function documentDefinition(
             { text: `Created: ${dateLabel(note.createdAt)}\nUpdated: ${dateLabel(note.updatedAt)}`, fontSize: 8, color: "#64748b", margin: [0, 0, 0, 9] },
             ...noteContent(note.content),
         );
-        const source = sourceLines(note.sourceRef);
+        const source = [...figureLines(note.figure), ...sourceLines(note.sourceRef)];
         if (source.length) content.push({ text: unicodeText(source.join("\n")), fontSize: 9, color: "#475569", margin: [0, 8, 0, 5] });
         if (note.sourceRef?.excerpt) content.push({
             text: unicodeText(`Source excerpt: ${note.sourceRef.excerpt}`),
