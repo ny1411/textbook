@@ -255,7 +255,7 @@ Use `[x]` to mark tasks as completed.
 - [x] Prevent lenis to hijak internal scroll areas like scrollable chatbox, scrollable source viewer, etc. Add lenis `data-lenis-prevent` on internal scroll containers, so chat scroll works smoothly.
 - [ ] Add **MeshGradint** to background of central hero section, use [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient).
 - [x] Add **MeshGradint** on audio playback card, use animated shader as a living waveform blob visualizer from [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`
-- [ ] Add **Heatmap** effect during image generation using [Shader Paper Design Heatmap](https://shaders.paper.design/heatmap).
+- [x] Add **Heatmap** effect during image generation using [Shader Paper Design Heatmap](https://shaders.paper.design/heatmap).
 - [x] Add **LiquidMetal** blob pulse effect when agent is in reflecting/thinking mode. Use [Shader Paper Design Liquid Metal](https://shaders.paper.design/liquid-metal).
 - [x] Add **PulsatingBorder** effect to chat input container when agent is generating responses. Use [Shader Paper Design Pulsating Border](https://shaders.paper.design/pulsing-border).
 
@@ -389,7 +389,7 @@ Use `[x]` to mark tasks as completed.
     - [x] Embed interactive audio player card with playback controls (Play/Pause, speed toggle: 1x, 1.25x, 1.5x, 2x, seek bar) and reactive living waveform visualization (using Paper Design MeshGradient shader).
   - **Implementation/runbook:** Gemini generates a completed WAV asset before playback; longer passages play in explicit parts of at most 4,000 characters. The original Edge-TTS, ElevenLabs, and OpenAI examples remain provider alternatives. Deployment uses `GOOGLE_API_KEY` with enabled Gemini TTS quota, plus optional `VOICE_TTS_MODEL` and `VOICE_TTS_VOICE`; see the [voice runbook](textbook-backend/docs/voice.md) for limits, cancellation, failure handling, and verification. Browser capture and seekable playback passed local verification with actual audio; live vendor STT and a successful live Gemini TTS response remain unverified because the configured TTS request returned a quota error.
 
-- [ ] **AI Concept & Diagram Image Generation with Heatmap Loading Animation:**
+- [x] **AI Concept & Diagram Image Generation with Heatmap Loading Animation:**
   - **Diagram & Illustration Generation:**
     - Enable visual concept explanations (e.g., *"Generate a diagram of the Transformer attention mechanism"*, *"Visualize neural network layers"*, or an "Illustrate Concept" button on citations).
     - Backend endpoint `POST /api/image/generate` synthesizing technical illustrations and diagrams (via Flux, Imagen, or DALL-E 3).
@@ -399,3 +399,5 @@ Use `[x]` to mark tasks as completed.
   - **Image Card & Studio Integration:**
     - Seamless crossfade transition from the dynamic heatmap shader into the generated illustration.
     - Interactive controls: full-screen lightbox preview, download image, copy to clipboard, and 1-click **"Save Figure to Studio Notes"** with caption and source document reference.
+
+  - **Verified implementation/runbook:** Authenticated Imagen generation streams real work boundaries into an actual Heatmap, then crossfades a private PNG with preview/download/clipboard and durable caption/source figure notes. Desktop/mobile homepage, save/reload, cancellation, account/notebook isolation, and existing exports/read-aloud passed fixture-backed verification. Markdown/PDF include caption/provenance; PNGs download separately. Deployment requires the issue-25 SQL migration, a private figure bucket, and enabled Imagen quota. The bounded live Imagen request returned quota 429, so successful live generation remains unverified; production never substitutes a synthetic figure. See [concept figure runbook](textbook-backend/docs/concept-figures.md).
