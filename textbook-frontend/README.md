@@ -38,8 +38,13 @@ textbook-frontend/
 
 ### 2. Install dependencies
 ```bash
-npm install
+npm ci
+cp .env.example .env.local
 ```
+
+Set the two public Supabase values in `.env.local` from the intended project's
+API settings. The anon/publishable key is browser configuration; the backend's
+secret/service-role key must never be used here.
 
 ### 3. Run development server
 ```bash
@@ -52,4 +57,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 
 ## Backend connection
 
-The frontend connects to the FastAPI backend at `http://localhost:8000/api`. Ensure the backend server is running when making API calls.
+The browser calls same-origin `/api` routes. `next.config.ts` rewrites them to
+`${BACKEND_URL}/api`; the local default is `http://127.0.0.1:8000`. Set
+`BACKEND_URL` to the backend origin without `/api`, a query, or credentials.
+Changing it requires rebuilding the frontend.
+
+For Vercel project settings, environment variables, OAuth callbacks, and release
+verification, see [deployment.md](deployment.md). A live, verified deployment is
+still required to complete issue #9.
