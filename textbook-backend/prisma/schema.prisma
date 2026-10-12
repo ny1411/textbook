@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-py"
+  provider = "python -m prisma"
 }
 
 datasource db {
@@ -69,7 +69,7 @@ model UploadedDocuments{
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   notebook              Notebooks              @relation(fields: [notebookId], references: [id], onDelete: Cascade)
 
-  conversations         Conversations[]
+  conversations         ConversationDocuments[]
   messageSources        MessageSources[]
 
   createdAt             DateTime @default(now())
@@ -86,6 +86,9 @@ model Conversations{
   notebookId            String @db.Uuid
 
   title                 String?
+  titleIsManual         Boolean @default(false)
+  titleGenerated        Boolean @default(false)
+  nextSequence          Int @default(0)
 
   documents             ConversationDocuments[]
   messages              ConversationMessages[]
@@ -99,6 +102,7 @@ model Conversations{
 
   @@index([userId])
   @@index([notebookId])
+  @@index([userId, notebookId, updatedAt])
   @@map("conversations")
 }
 
@@ -123,6 +127,25 @@ model ConversationMessages{
 
   role                MESSAGEROLES
   message             String?
+  requestId           String @db.Uuid
+  sequence            Int
+  status              MESSAGESTATUS @default(COMPLETED)
+  requestFingerprint  String?
+  processingToken     String? @db.Uuid
+  leaseExpiresAt      DateTime?
+  query               String?
+  appliedQuery        String?
+  intent              String?
+  isGrounded          Boolean?
+  warning             String?
+  isAgentMode         Boolean @default(false)
+  confidenceScore     Int?
+  critique            String?
+  iterationCount      Int?
+  selectedDocumentIds String[]
+  allDocuments        Boolean @default(true)
+  topK                Int @default(5)
+  useAnalysis         Boolean @default(false)
 
   conversation         Conversations            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -131,21 +154,29 @@ model ConversationMessages{
   createdAt           DateTime @default(now())
   
   @@index([conversationId, createdAt])
+  @@unique([conversationId, sequence])
+  @@unique([conversationId, requestId, role])
   @@map("conversation_messages")
 }
 
 model MessageSources{
+  id                  String @id @default(uuid()) @db.Uuid
   messageId           String @db.Uuid
-  documentId          String @db.Uuid
+  documentId          String? @db.Uuid
+  originalDocumentId  String?
+  documentName        String?
+  sourceId            String
+  position            Int
+  rerankScore         Float?
 
   pageNumber          Int?
   chunkRef            String?
   citationText        String?
 
   message             ConversationMessages     @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  document            UploadedDocuments        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document            UploadedDocuments?       @relation(fields: [documentId], references: [id], onDelete: SetNull)
     
-  @@id([messageId, documentId])
+  @@unique([messageId, position])
   @@index([documentId])
   @@map("message_sources")
 }
@@ -214,6 +245,12 @@ enum MESSAGEROLES{
   USER
   LLM
   SYSTEM
+}
+
+enum MESSAGESTATUS {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 enum DOCUMENTTYPE{

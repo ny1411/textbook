@@ -64,6 +64,7 @@ def format_context_with_citations(chunks: List[Dict[str, Any]]) -> Tuple[str, Li
         citations.append({
             "source_id": i,
             "document_id": doc_id,
+            "document_name": payload.get("filename"),
             "page_number": page_num,
             "chunk_id": str(chunk_id),
             "text": text.strip(),
@@ -120,7 +121,7 @@ def generate_answer(
 
     except Exception as e:
         logger.error(f"Error generating answer: {str(e)}")
-        answer_text = f"An error occurred while generating the answer: {str(e)}"
+        raise
 
     return {
         "answer": answer_text,

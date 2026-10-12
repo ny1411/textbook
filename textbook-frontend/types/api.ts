@@ -38,6 +38,7 @@ export interface SearchResultItem {
 export type ChatIntent = "casual_chat" | "general_knowledge" | "textbook_rag";
 
 export interface ChatRequest{
+    request_id?: string;
     history?: { role: "user" | "assistant"; content: string }[];
     user_id: string;
     query: string;
@@ -50,6 +51,9 @@ export interface ChatRequest{
 }
 
 export interface ChatResponse{
+    conversation_id?: string;
+    message_id?: string;
+    request_id?: string;
     intent?: ChatIntent;
     is_grounded?: boolean | null;
     warning?: string | null;
@@ -67,6 +71,8 @@ export interface AgentChatResponse extends ChatResponse {
 }
 
 export interface CitationItem{
+    document_name?: string | null;
+    source_unavailable?: boolean;
     source_id: number | string;
     document_id?: string | null;
     page_number?: number | null;

@@ -1,5 +1,7 @@
 # Textbook backend: AI document research assistant
 
+Conversation persistence and migration instructions: [CHAT_HISTORY.md](CHAT_HISTORY.md).
+
 The FastAPI backend for Textbook, an AI document research assistant modeled after Google NotebookLM. Built with FastAPI, LangGraph, Prisma, PostgreSQL via Supabase, Qdrant Cloud, and Google Gemini.
 
 ---

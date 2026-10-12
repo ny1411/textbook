@@ -2,10 +2,14 @@ import os
 import uuid
 import logging
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from services.ingestion import process_and_ingest
 from services.storage import upload_file_to_supabase
 from services.status import set_document_status
+from core.auth import require_user, AuthenticatedUser
+from db.prisma_client import get_database
+from services.chat_history import owned_notebook
+from starlette.concurrency import run_in_threadpool
 
 # setup a logger
 logger = logging.getLogger(__name__)
@@ -35,6 +39,13 @@ ALLOWED_FILE_EXTENSIONS = {
 # Prefixes for categories we allow entirely
 ALLOWED_PREFIXES = ("image/", "audio/")
 
+
+async def ingest_uploaded_document(**kwargs):
+    success = await run_in_threadpool(process_and_ingest, **kwargs)
+    db = await get_database()
+    await db.uploadeddocuments.update_many(where={"id": kwargs["document_id"], "userId": kwargs["user_id"]},
+                                           data={"status": "COMPLETED" if success else "FAILED"})
+
 # define the Endpoint
 @router.post("/upload")
 async def upload_document(
@@ -42,23 +53,35 @@ async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     notebookId: Optional[str] = None,
+    user: AuthenticatedUser = Depends(require_user),
+    db=Depends(get_database),
 ):
     """
     `file: UploadFile` tells FastAPI that we expect a file to be sent in the request.
     """
 
-    extension = os.path.splitext(file.filename)[1].lower()
+    userId = user.id
+    if not notebookId:
+        raise HTTPException(422, "A notebook is required for uploads.")
+    try:
+        notebookId = str(uuid.UUID(notebookId))
+    except ValueError:
+        raise HTTPException(422, "Notebook ID must be a UUID.")
+    await owned_notebook(db, notebookId, userId)
+    extension = os.path.splitext(file.filename or "")[1].lower()
 
     # Check if the content type starts with an allowed prefix OR is exactly in the allowed set
     is_valid_type = (
         extension in ALLOWED_FILE_EXTENSIONS or
         file.content_type in ALLOWED_CONTENT_TYPES or 
-        file.content_type.startswith(ALLOWED_PREFIXES)
+        (file.content_type or "").startswith(ALLOWED_PREFIXES)
     )
     
     if not is_valid_type:
         raise HTTPException(status_code=400, detail="Unsupported file type.")
 
+    document_id = str(uuid.uuid4())
+    metadata_created = False
     try:
         # read file content
         file_content = await file.read()
@@ -67,7 +90,12 @@ async def upload_document(
         file_name = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
         file_options = {"content-type": file.content_type}
         file_path = f"{userId}/{file_name}"
-        document_id = str(uuid.uuid4())
+        await db.uploadeddocuments.create(data={
+            "id": document_id, "userId": userId, "notebookId": notebookId,
+            "name": file.filename, "fileType": file.content_type, "fileSize": str(len(file_content)),
+            "storageUrl": file_path, "status": "PROCESSING",
+        })
+        metadata_created = True
         
         # upload file to Supabase Storage
         upload_file_to_supabase(
@@ -85,7 +113,7 @@ async def upload_document(
         )
         
         background_tasks.add_task(
-            process_and_ingest,
+            ingest_uploaded_document,
             file_bytes=file_content,
             filename=file.filename,
             content_type=file.content_type,
@@ -104,6 +132,8 @@ async def upload_document(
         }
         
     except Exception as e:
+        if metadata_created:
+            await db.uploadeddocuments.update(where={"id": document_id}, data={"status": "FAILED"})
         logger.error(f"Supabase upload error for user {userId}: {str(e)}")
         set_document_status(
             document_id=document_id,
@@ -112,4 +142,3 @@ async def upload_document(
             error=str(e),
         )
         raise HTTPException(status_code=500, detail=f"Could not save file")
-    

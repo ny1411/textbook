@@ -1,5 +1,5 @@
 from services.status import is_user_ingesting
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional, List, Union, Literal
 import logging
@@ -12,6 +12,12 @@ from agents.graph import graph
 from agents.state import AgentState
 from core.telemetry import create_langfuse_config
 from services.caching import get_cached_response, set_cached_response
+from uuid import UUID
+from starlette.concurrency import run_in_threadpool
+from core.auth import require_user, AuthenticatedUser
+from db.prisma_client import get_database
+from services.chat_history import begin_turn, complete_turn, fail_turn, saved_response
+from services.conversation_titles import assign_title
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +32,8 @@ class ChatRequest(BaseModel):
     user_id: str
     query: str = Field(..., min_length=1, max_length=8000)
     history: List[HistoryMessage] = Field(default_factory=list, max_length=20)
-    conversation_id: Optional[str] = Field(None, description="Optional conversation/session ID to group messages in telemetry.")
+    conversation_id: Optional[str] = Field(None, description="Persisted conversation/thread UUID.")
+    request_id: Optional[str] = None
     document_id: Optional[str] = None
     document_ids: Optional[List[str]] = None
     notebook_id: Optional[str] = None
@@ -40,8 +47,13 @@ class CitationItem(BaseModel):
     text: str = Field(..., description="This is the text inside the referenced citation.")
     chunk_id: str = Field(..., description="This is the chunk ID where citation must be referred to.")
     rerank_score: Optional[float] = Field(None, description="This is the rerank score of the citation.")
+    document_name: Optional[str] = None
+    source_unavailable: bool = False
 
 class ChatResponse(BaseModel):
+    conversation_id: Optional[str] = None
+    message_id: Optional[str] = None
+    request_id: Optional[str] = None
     query: str
     answer: str
     applied_query: str
@@ -56,8 +68,7 @@ class AgentChatResponse(ChatResponse):
     iteration_count: Optional[int] = None
 
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:    
+def _linear_chat(request: ChatRequest) -> ChatResponse:
     cached_response = None if request.history else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -169,8 +180,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
-@router.post("/agent/chat", response_model=AgentChatResponse)
-async def agent_chat(request: ChatRequest) -> AgentChatResponse:
+def _agent_chat(request: ChatRequest) -> AgentChatResponse:
     cached_response = None if request.history else get_cached_response(
         user_id=request.user_id,
         document_id=request.document_id,
@@ -259,3 +269,53 @@ async def agent_chat(request: ChatRequest) -> AgentChatResponse:
     except Exception as e:
         logger.error(f"Agentic chat failed for user {request.user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Agentic chat failed: {str(e)}")
+
+
+async def chat(request: ChatRequest) -> ChatResponse:
+    return await run_in_threadpool(_linear_chat, request)
+
+
+async def agent_chat(request: ChatRequest) -> AgentChatResponse:
+    return await run_in_threadpool(_agent_chat, request)
+
+
+async def persisted_chat(request, user, db, background_tasks, agent_mode=False):
+    if not request.conversation_id or not request.request_id or not request.notebook_id:
+        raise HTTPException(422, "conversation_id, notebook_id and request_id are required.")
+    try:
+        for value in (request.conversation_id, request.notebook_id, request.request_id):
+            UUID(value)
+    except ValueError:
+        raise HTTPException(422, "Conversation, notebook and request IDs must be UUIDs.")
+    # The access token and database are authoritative, not client-provided user or history fields.
+    request = request.model_copy(update={"user_id": user.id})
+    assistant, token, history = await begin_turn(db, request, user.id, agent_mode)
+    response_type = AgentChatResponse if agent_mode else ChatResponse
+    if token is None:
+        return response_type(**saved_response(assistant))
+    try:
+        request = request.model_copy(update={"history": [HistoryMessage(**m) for m in history]})
+        pipeline = _agent_chat if agent_mode else _linear_chat
+        # Existing inference is synchronous; run it outside the API event loop so CRUD remains responsive.
+        response = await run_in_threadpool(pipeline, request)
+        saved = await complete_turn(db, assistant, token, response, user.id, request.notebook_id)
+    except Exception:
+        try:
+            await fail_turn(db, assistant, token)
+        except Exception:
+            logger.exception("Could not mark turn %s failed; its lease will expire", assistant.id)
+        raise
+    background_tasks.add_task(assign_title, request.conversation_id, response.query, response.answer)
+    return response_type(**saved_response(saved))
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
+                        user: AuthenticatedUser = Depends(require_user), db=Depends(get_database)):
+    return await persisted_chat(request, user, db, background_tasks)
+
+
+@router.post("/agent/chat", response_model=AgentChatResponse)
+async def agent_chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
+                              user: AuthenticatedUser = Depends(require_user), db=Depends(get_database)):
+    return await persisted_chat(request, user, db, background_tasks, agent_mode=True)

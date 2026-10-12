@@ -340,8 +340,12 @@ Use `[x]` to mark tasks as completed.
     - Store active `notebookId` in `useTextbookStore` and pass it to `/api/upload` and `/api/chat`.
     - Add active source checkboxes in `SidebarSources.tsx` allowing users to query all notebook sources (default) or restrict retrieval to selected files.
 - [ ] **Conversation & Chat History Persistence:**
-  - Persist conversation messages, generated answers, and citations into PostgreSQL (`conversations`, `conversation_messages`, and `message_sources` Prisma tables).
-  - Enable multiple notebook threads and past chat history switching.
+  - [x] Persist individual messages, complete answer metadata, and separately numbered citation snapshots through both chat pipelines.
+  - [x] Multiple notebook threads, automatic LLM titles, rename/delete, history switching, and pagination.
+  - [x] Idempotent request IDs, failed-turn retries, generation leases, and authenticated ownership checks.
+  - [x] Retain historical citation excerpts and document names after source deletion.
+  - [ ] Deploy and verify the Prisma migrations against the configured Supabase database (connection works; application tables are not created yet).
+  - Implementation and database setup: `textbook-backend/CHAT_HISTORY.md`.
 - [ ] **Streaming Responses (Server-Sent Events / SSE):**
   - Upgrade `/api/chat` and `/api/agent/chat` from blocking JSON to streaming tokens with citation badges rendering as they arrive.
 

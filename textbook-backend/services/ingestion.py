@@ -119,7 +119,7 @@ def process_and_ingest(
                 status="failed", 
                 error="No extractable text found"
             )
-            return
+            return False
 
         metadata = {
             "source": document_id,
@@ -145,6 +145,7 @@ def process_and_ingest(
             user_id=user_id, 
             status="ready"
         )
+        return True
         
     except Exception as e:
         logger.error(f"Error ingesting document {filename}: {str(e)}", exc_info=True)
@@ -154,3 +155,4 @@ def process_and_ingest(
             status="failed", 
             error=str(e)
         )
+        return False

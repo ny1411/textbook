@@ -2,7 +2,7 @@
 
 import { ChatInputBorder } from "./ChatInputBorder";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 import { ArrowUp, LoaderCircle, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,12 +14,15 @@ import { useDropzone } from "react-dropzone";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 
 interface ChatInputProps {
-    onSend: (message: string, isAgentMode: boolean) => void;
+    value: string;
+    onValueChange: Dispatch<SetStateAction<string>>;
+    onSend: (message: string, isAgentMode: boolean) => boolean | Promise<boolean>;
     isLoading?: boolean;
+    isSendDisabled?: boolean;
 }
 
-export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
-    const [input, setInput] = useState("");
+export function ChatInput({ value: input, onValueChange: setInput, onSend, isLoading = false, isSendDisabled = false }: ChatInputProps) {
+    const [isSubmitting, setSubmitting] = useState(false);
     const [isAgentMode, setAgentMode] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -80,12 +83,18 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
         }
     }
 
-    const handleSubmit = () => {
-        if (!input.trim() || isLoading) return;
-        onSend(input.trim(), isAgentMode);
-        setInput("");
-        if (textareaRef.current) {
-            textareaRef.current.style.height = "auto";
+    const handleSubmit = async () => {
+        if (!input.trim() || isLoading || isSendDisabled || isSubmitting) return;
+        const submitted = input;
+        setSubmitting(true);
+        try {
+            const accepted = await onSend(input.trim(), isAgentMode);
+            if (!accepted) return;
+            setInput((current) => current === submitted ? "" : current);
+        } catch {
+            toast.error("Could not send your message. Your draft has been kept.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -115,7 +124,7 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                 <textarea
                     ref={textareaRef}
                     rows={1}
-                    disabled={isLoading}
+                    aria-label="Message"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -146,10 +155,11 @@ export function ChatInput({ onSend, isLoading = false }: ChatInputProps) {
                     {/* Send button */}
                     <button
                         type="button"
+                        aria-label="Send message"
                         onClick={handleSubmit}
-                        disabled={!input.trim() || isLoading}
+                        disabled={!input.trim() || isLoading || isSendDisabled || isSubmitting}
                         className={`p-2 rounded-full transition-all 
-                        ${input.trim() && !isLoading ?
+                        ${input.trim() && !isLoading && !isSendDisabled && !isSubmitting ?
                                 "bg-indigo-500/20 text-indigo-400 cursor-pointer hover:bg-indigo-500/40" :
                                 "cursor-not-allowed text-zinc-600"}`}
                     >

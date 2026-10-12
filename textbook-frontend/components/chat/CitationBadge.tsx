@@ -48,6 +48,8 @@ export function CitationBadge({
                     className="z-50 w-80 max-w-[90vw] p-3.5 rounded-xl bg-zinc-900/95 backdrop-blur-md 
                     border border-zinc-800 shadow-2xl text-zinc-100 text-xs animate-in fade-in zoom-in-95 duration-150"
                 >
+                    {citation.document_name && <p className="mb-1 font-medium text-zinc-200">{citation.document_name}</p>}
+                    {citation.source_unavailable && <p className="mb-2 text-amber-400">Original source unavailable. Saved excerpt retained.</p>}
                     <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-zinc-800">
                         <div className="flex items-center gap-1.5 min-w-0">
                             <FileText size={20} className="text-indigo-400 shrink-0" />
