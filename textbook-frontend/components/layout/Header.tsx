@@ -1,15 +1,7 @@
 "use client";
 
-import {
-    PanelRightClose,
-    PanelRight,
-    PanelLeft,
-    LogIn,
-    SlidersHorizontal,
-} from "lucide-react";
-import Image from "next/image";
-import logo from "@/public/logo.png"
-import { useState } from "react";
+import { BookOpen, PanelRightClose, PanelRight, PanelLeft, SlidersHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import { AuthModal } from "../auth/AuthModal";
@@ -17,103 +9,66 @@ import { UserMenu } from "../auth/UserMenu";
 
 interface HeaderProps {
     textbookTitle: string;
-    userAvatar?: string;
     isStudioOpen?: boolean;
     isSourceOpen?: boolean;
     onToggleStudio?: () => void;
     onToggleSources?: () => void;
 }
 
-export function Header({
-    textbookTitle = "AI Engineering",
-    isStudioOpen = true,
-    onToggleStudio,
-    onToggleSources
-}: HeaderProps) {
-
-    const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
+export function Header({ textbookTitle, isStudioOpen = false, isSourceOpen = false, onToggleStudio, onToggleSources }: HeaderProps) {
+    const [isAuthOpen, setIsAuthOpen] = useState(false);
     const { user, isAuthenticated, signInWithProvider, signOut } = useAuth();
     const setInspectorOpen = useTextbookStore((s) => s.setInspectorOpen);
 
+    useEffect(() => {
+        const openSignIn = () => setIsAuthOpen(true);
+        window.addEventListener("textbook:sign-in", openSignIn);
+        return () => window.removeEventListener("textbook:sign-in", openSignIn);
+    }, []);
+
     return (
         <>
-            <header className="relative z-50 h-12 shrink-0 flex items-center justify-between px-4 border-b border-zinc-700 backdrop-blur-md">
-                {/* Left Zone: Brand and Title */}
-                <div className="flex items-center gap-2">
-                    {/* Mobile Toggle Button for Left Sources (hidden on lg and above) */}
-                    <button
-                        onClick={onToggleSources}
-                        className="lg:hidden p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
-                        title="Toggle Sources"
-                    >
-                        <PanelLeft className="size-4" />
+            <header className="relative z-50 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-3 sm:px-6">
+                <div className="flex min-w-0 items-center gap-3">
+                    <button type="button" onClick={onToggleSources} aria-label={isSourceOpen ? "Close sources" : "Open sources"}
+                        aria-expanded={isSourceOpen} aria-controls="sources-panel"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-foreground lg:hidden">
+                        <PanelLeft size={18} aria-hidden="true" />
                     </button>
-
-                    {/* App Logo */}
-                    <div className="flex items-center gap-2 cursor-pointer">
-                        <Image
-                            src={logo}
-                            alt="logo"
-                            width={30}
-                            height={30}
-                        />
+                    <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+                        <BookOpen className="size-6 text-accent sm:size-7" strokeWidth={1.4} aria-hidden="true" />
+                        <span className="font-serif text-[22px] tracking-tight sm:text-[25px]">Textbook</span>
                     </div>
-                    <span className="text-zinc-500/60">/</span>
-                    {/* Textbook Title */}
-                    <div className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-sm font-medium text-zinc-300">{textbookTitle}</span>
-                    </div>
+                    <span className="mx-2 hidden h-5 w-px bg-border md:block" aria-hidden="true" />
+                    <span className="hidden truncate text-[13px] text-muted md:block">{textbookTitle}</span>
                 </div>
-
-                {/* Right Zone */}
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setInspectorOpen(true)}
-                        title="Open Retrieval Inspector"
-                        aria-label="Open Retrieval Inspector"
-                        aria-haspopup="dialog"
-                        className="flex items-center gap-1.5 p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 transition-colors cursor-pointer"
-                    >
-                        <SlidersHorizontal className="size-4" aria-hidden="true" />
-                        <span className="hidden sm:inline text-xs font-medium">Diagnostics</span>
+                <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+                    <button type="button" onClick={() => setInspectorOpen(true)} title="Open Retrieval Inspector"
+                        aria-label="Open Retrieval Inspector" aria-haspopup="dialog"
+                        className="flex h-9 items-center justify-center gap-2 rounded-lg px-2 text-muted transition-colors hover:bg-surface hover:text-foreground sm:px-2.5">
+                        <SlidersHorizontal size={17} strokeWidth={1.5} aria-hidden="true" />
+                        <span className="hidden text-[13px] md:inline">Diagnostics</span>
                     </button>
-                    {/* Studio Panel Toggle */}
-                    <button
-                        onClick={onToggleStudio}
-                        title={isStudioOpen ? "Collapse Studio" : "Expand Studio"}
-                        className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
-                    >
-                        {isStudioOpen ? (
-                            <PanelRightClose className="size-4" />
-                        ) : (
-                            <PanelRight className="size-4" />
-                        )}
+                    <span className="hidden h-4 w-px bg-border sm:block" aria-hidden="true" />
+                    <button type="button" onClick={onToggleStudio} title={isStudioOpen ? "Close Studio" : "Open Studio"}
+                        aria-label={isStudioOpen ? "Close Studio" : "Open Studio"} aria-expanded={isStudioOpen} aria-controls="studio-panel"
+                        className={`flex h-9 items-center justify-center gap-2 rounded-lg px-2 text-[13px] transition-colors hover:bg-surface hover:text-foreground sm:px-2.5 ${isStudioOpen ? "bg-surface text-foreground" : "text-muted"}`}>
+                        {isStudioOpen ? <PanelRightClose size={18} strokeWidth={1.5} aria-hidden="true" /> : <PanelRight size={18} strokeWidth={1.5} aria-hidden="true" />}
+                        <span className="hidden sm:inline">Studio</span>
                     </button>
-                    {/* Subtle Separator */}
-                    <div className="h-4 w-[1px] bg-zinc-800 mx-1" />
-
-                    {/* Avatar */}
+                    <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
                     {!isAuthenticated ? (
-                        <button onClick={() => setIsAuthOpen(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-sm transition-all cursor-pointer"
-                        >
-                            <span>Sign In</span>
-                            <LogIn className="size-3.5" />
+                        <button type="button" onClick={() => setIsAuthOpen(true)} aria-haspopup="dialog"
+                            className="h-9 rounded-[9px] border border-accent/55 px-3.5 text-xs text-foreground transition-colors hover:border-accent hover:bg-surface sm:px-5 sm:text-[13px]">
+                            Sign in
                         </button>
-                    ) : (
-                        <UserMenu user={user} onSignOut={signOut} />
-                    )}
+                    ) : <UserMenu user={user} onSignOut={signOut} />}
                 </div>
             </header>
-            <AuthModal
-                isOpen={isAuthOpen}
-                onClose={() => setIsAuthOpen(false)}
-                onSignIn={(provider) => {
-                    signInWithProvider(provider);
-                    setIsAuthOpen(false);
-                }}
-            />
+            <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onSignIn={(provider) => {
+                void signInWithProvider(provider);
+                setIsAuthOpen(false);
+            }} />
         </>
-    )
+    );
 }

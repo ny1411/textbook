@@ -27,38 +27,38 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
 
     return (
         <div
-            className={`flex gap-3.5 max-w-3xl mx-auto mb-6 
+            className={`flex gap-3 max-w-[820px] mx-auto mb-7
                 ${isUser ? "justify-end" : "justify-start"}`}>
 
             {!isUser && (
                 <div
-                    className="w-8 h-8 rounded-xl shrink-0 
-                flex items-center justify-center 
-                bg-indigo-500/20 text-indigo-400 
-                border border-indigo-500/30">
-                    <Sparkles size={20} />
+                    className="w-8 h-8 rounded-full shrink-0
+                flex items-center justify-center
+                bg-[#211b16] text-[#c49b75]
+                border border-[#584536]">
+                    <Sparkles size={17} strokeWidth={1.5} />
                 </div>
             )}
 
             {/* Container */}
             <div
-                className={`flex flex-col min-w-0 max-w-[85%] ${isUser ? "items-end" : "items-start"
+                className={`flex flex-col min-w-0 ${isUser ? "max-w-[85%] items-end" : "flex-1 items-start"
                     }`}
             >
                 {!isUser && (
                     <div className="flex flex-wrap items-center gap-1.5 mb-1.5 text-[11px]">
                         {message.intent && message.intent !== "textbook_rag" ? (
-                            <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">
+                            <span className="px-2 py-0.5 rounded-full bg-[#2b241e] text-[#c7b5a3]">
                                 {message.intent === "casual_chat" ? "Conversation" : "General knowledge"}
                             </span>
                         ) : message.isAgentMode ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 font-medium">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#30251c] text-[#c49b75] border border-[#584536] font-medium">
                                 <Sparkles size={11} />
                                 Agentic RAG
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 font-medium">
-                                <Zap size={11} className="text-amber-400" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#2b241e] text-[#aa9b8c] border border-[#494036] font-medium">
+                                <Zap size={11} className="text-[#d3ae82]" />
                                 Fast RAG
                             </span>
                         )}
@@ -66,8 +66,8 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                         {message.intent === "textbook_rag" && message.agentMetadata?.is_grounded !== undefined && (
                             <span
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${message.agentMetadata.is_grounded
-                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                                    : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                    ? "bg-[#8b9d76]/10 text-[#a9b49b] border border-[#738361]/40"
+                                    : "bg-[#c49b75]/10 text-[#d3ae82] border border-[#705640]"
                                     }`}
                             >
                                 {message.agentMetadata.is_grounded ? (
@@ -84,7 +84,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
 
                         {message.intent === "textbook_rag" && message.agentMetadata?.confidence_score !== undefined &&
                             message.agentMetadata.confidence_score !== null && (
-                                <span className="px-2 py-0.5 rounded-full bg-zinc-800/80 text-zinc-300 font-mono">
+                                <span className="px-2 py-0.5 rounded-full bg-[#2b241e]/80 text-[#c7b5a3] font-mono">
                                     {message.agentMetadata.confidence_score}% confidence
                                 </span>
                             )}
@@ -92,7 +92,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                         {message.appliedQuery &&
                             message.appliedQuery !== message.content && (
                                 <span
-                                    className="text-zinc-500 italic max-w-xs truncate"
+                                    className="text-[#8d8073] italic max-w-xs truncate"
                                     title={`Applied Query: ${message.appliedQuery}`}
                                 >
                                     (Rewritten: &ldquo;{message.appliedQuery}&rdquo;)
@@ -101,9 +101,9 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                     </div>
                 )}
                 <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${isUser
-                        ? "bg-indigo-600 text-white shadow-md rounded-tr-sm"
-                        : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-sm shadow-sm w-full"
+                    className={`rounded-2xl border px-4 py-3 font-[Georgia,serif] text-[16px] leading-[1.7] ${isUser
+                        ? "border-[#604b3b] bg-[#3a2c22] text-[#eee5d8] rounded-tr-md"
+                        : "bg-[#1b1815]/70 border-[#494036] text-[#e5dacc] rounded-tl-md w-full"
                         }`}
                 >
                     {message.attachments && message.attachments.length > 0 && (
@@ -114,7 +114,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                     {isUser ? (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                     ) : (
-                        <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
+                        <div className="prose prose-invert max-w-none text-[16px] leading-[1.7] prose-pre:bg-[#141210] prose-pre:border prose-pre:border-[#38302a] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-3 [&_code]:font-mono [&_code]:text-[13px] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_h1]:mb-3 [&_h1]:text-2xl [&_h2]:mb-2 [&_h2]:text-xl [&_h3]:mb-2 [&_h3]:text-lg [&_table]:w-full [&_td]:border [&_td]:border-[#38302a] [&_td]:p-2 [&_th]:border [&_th]:border-[#38302a] [&_th]:p-2">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm, [remarkCitations, citationOptions]]}
                                 components={{
@@ -136,7 +136,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                                                 href={href}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-indigo-400 underline hover:text-indigo-300"
+                                                className="text-[#d5ae88] underline underline-offset-3 hover:text-[#e8c7a6]"
                                                 {...props}
                                             >
                                                 {children}
@@ -158,7 +158,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                 {!isUser && <ReadAloud id={`message-${message.id}`} text={message.content} title="Assistant reply" />}
 
                 {!isUser && message.warning && (
-                    <div role="note" className="mt-2 flex items-center gap-1.5 text-xs text-amber-400">
+                    <div role="note" className="mt-2 flex items-center gap-1.5 text-xs text-[#d3ae82]">
                         <AlertTriangle size={13} className="shrink-0" />
                         {message.warning}
                     </div>
@@ -175,9 +175,9 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                 )}
 
                 {!isUser && message.citations && message.citations.length > 0 && (
-                    <div className="mt-3 pt-2.5 border-t border-zinc-800/80 w-full">
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mb-2">
-                            <FileSpreadsheet size={13} className="text-indigo-400" />
+                    <div className="mt-3 pt-2.5 border-t border-[#38302a]/80 w-full">
+                        <div className="flex items-center gap-1.5 text-xs text-[#aa9b8c] font-medium mb-2">
+                            <FileSpreadsheet size={13} className="text-[#c49b75]" />
                             <span>Cited Sources ({message.citations.length})</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -194,7 +194,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                 )}
             </div>
             {isUser && (
-                <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-zinc-800 text-zinc-300 border border-zinc-700">
+                <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center bg-[#211b16] text-[#c7b5a3] border border-[#494036]">
                     <UserRound size={16} />
                 </div>
             )}

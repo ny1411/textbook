@@ -90,33 +90,33 @@ function OverviewSession({ notebookId, documentIds, names, available, hint }: {
         setError(null);
     }
 
-    return <section aria-label="Audio Overview" className="rounded-xl border border-indigo-500/25 bg-indigo-500/5 p-3 space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-indigo-200"><Headphones size={15} /> Audio Overview</div>
-        <p className="text-[11px] leading-relaxed text-zinc-400">A two-speaker conversation about selected passages from your sources.</p>
-        {names.length > 0 && <p className="text-[11px] text-zinc-300 break-words" title={names.join(", ")}>{names.length} selected {names.length === 1 ? "source" : "sources"}: {names.join(", ")}</p>}
-        {hint && <p className="text-[11px] text-zinc-400">{hint}</p>}
+    return <section aria-label="Audio Overview" className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-center gap-2 text-xs font-medium text-foreground"><Headphones size={15} className="text-accent" /> Audio Overview</div>
+        <p className="text-xs leading-relaxed text-muted">A two-speaker conversation about selected passages from your sources.</p>
+        {names.length > 0 && <p className="break-words text-xs text-muted" title={names.join(", ")}>{names.length} selected {names.length === 1 ? "source" : "sources"}: {names.join(", ")}</p>}
+        {hint && <p className="text-xs leading-relaxed text-muted">{hint}</p>}
         <div className="flex flex-wrap gap-2">
             <button type="button" disabled={!available || loading} onClick={() => void generate()}
-                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium hover:bg-indigo-500 disabled:opacity-40">
+                className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-medium text-background transition-colors hover:bg-accent/85 disabled:opacity-40">
                 {loading ? <LoaderCircle size={13} className="animate-spin" /> : error || overview ? <RotateCcw size={13} /> : <Headphones size={13} />}
                 {loading ? "Generating overview…" : error ? "Retry overview" : overview ? "Regenerate overview" : "Generate overview"}
             </button>
-            {loading && <button type="button" onClick={cancel} className="flex items-center gap-1 rounded-lg px-2 py-2 text-xs text-zinc-300 hover:bg-zinc-800"><X size={13} /> Cancel</button>}
+            {loading && <button type="button" onClick={cancel} className="flex items-center gap-1 rounded-lg px-2 py-2 text-xs text-muted hover:bg-accent/10"><X size={13} /> Cancel</button>}
         </div>
-        {loading && <p role="status" className="text-[11px] text-zinc-400">Preparing the discussion and two voices. This may take a minute.</p>}
-        {error && <p role="alert" className="text-xs leading-relaxed text-amber-300">{error}</p>}
+        {loading && <p role="status" className="text-xs leading-relaxed text-muted">Preparing the discussion and two voices. This may take a minute.</p>}
+        {error && <p role="alert" className="text-xs leading-relaxed text-accent">{error}</p>}
         {overview && <div className="space-y-3">
             <audio ref={audio} aria-label="Audio Overview playback" src={overview.url} controls preload="metadata"
                 className="h-10 w-full min-w-0" onError={() => setError("The overview audio could not be played. Regenerate it to try again.")} />
-            <a href={overview.url} download="audio-overview.wav" className="inline-flex items-center gap-1.5 text-xs text-indigo-300 hover:text-indigo-200"><Download size={13} /> Download audio</a>
+            <a href={overview.url} download="audio-overview.wav" className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-foreground"><Download size={13} /> Download audio</a>
             <details className="text-xs">
-                <summary className="cursor-pointer text-zinc-300">Discussion transcript</summary>
+                <summary className="cursor-pointer text-foreground">Discussion transcript</summary>
                 <div className="mt-3 space-y-3">
-                    <p className="text-[10px] text-zinc-500">Host: {overview.voices.Host} · Guest: {overview.voices.Guest}. AI generated from selected passages; check the original sources.</p>
+                    <p className="text-[11px] leading-relaxed text-muted">Host: {overview.voices.Host} · Guest: {overview.voices.Guest}. AI generated from selected passages; check the original sources.</p>
                     {overview.turns.map((turn, index) => <div key={index} className="space-y-1">
-                        <p className="font-semibold text-indigo-300">{turn.speaker}</p>
-                        <p className="leading-relaxed text-zinc-300">{turn.text}</p>
-                        <p className="text-[10px] text-zinc-500">{turn.source_ids.map((id) => overview.sources.find((source) => source.id === id)?.name).filter(Boolean).join(" · ")}</p>
+                        <p className="font-medium text-accent">{turn.speaker}</p>
+                        <p className="font-display text-sm leading-relaxed text-foreground">{turn.text}</p>
+                        <p className="text-[11px] text-muted">{turn.source_ids.map((id) => overview.sources.find((source) => source.id === id)?.name).filter(Boolean).join(" · ")}</p>
                     </div>)}
                 </div>
             </details>

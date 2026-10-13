@@ -38,8 +38,8 @@ export function CitationBadge({
             <span
                 className="inline-flex items-center
             px-1.5 py-0.2 mx-0.5 text-xs font-medium
-            rounded bg-zinc-800 text-zinc-400
-            border border-zinc-700 select-none">
+            rounded bg-[#2b241e] text-[#aa9b8c]
+            border border-[#494036] select-none">
                 [{sourceId}]
             </span>
         )
@@ -67,9 +67,9 @@ export function CitationBadge({
                         pinned.current = !pinned.current;
                         setOpen(pinned.current);
                     }}
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 text-xs font-semibold rounded-md 
-                    bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/30 hover:text-indigo-300 
-                    border border-indigo-500/30 transition-all cursor-pointer select-none align-baseline"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 text-xs font-semibold rounded-md
+                    bg-[#c49b75]/10 text-[#c49b75] hover:bg-[#c49b75]/20 hover:text-[#d5ae88]
+                    border border-[#705640] transition-all cursor-pointer select-none align-baseline"
                     title={`Source ${sourceId}: Click to inspect source excerpt`}>
                     <span>[{sourceId}]</span>
                 </button>
@@ -89,35 +89,35 @@ export function CitationBadge({
                     side="top"
                     align="center"
                     sideOffset={6}
-                    className="z-50 w-80 max-w-[90vw] p-3.5 rounded-xl bg-zinc-900/95 backdrop-blur-md 
-                    border border-zinc-800 shadow-2xl text-zinc-100 text-xs animate-in fade-in zoom-in-95 duration-150"
+                    className="z-50 w-80 max-w-[90vw] p-3.5 rounded-xl bg-[#1d1916]/95 backdrop-blur-md
+                    border border-[#38302a] shadow-2xl text-[#eee5d8] text-xs animate-in fade-in zoom-in-95 duration-150"
                 >
-                    <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-zinc-800">
+                    <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-[#38302a]">
                         <div className="flex items-center gap-1.5 min-w-0">
-                            <FileText size={20} className="text-indigo-400 shrink-0" />
-                            <span className="font-semibold text-zinc-200 truncate">
+                            <FileText size={20} className="text-[#c49b75] shrink-0" />
+                            <span className="font-semibold text-[#ddd1c2] truncate">
                                 Source {sourceId}
                             </span>
                             {citation.page_number !== null && citation.page_number !== undefined && (
-                                <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-800 text-zinc-400 font-mono">
+                                <span className="px-1.5 py-0.5 text-[10px] rounded bg-[#2b241e] text-[#aa9b8c] font-mono">
                                     p. {citation.page_number}
                                 </span>
                             )}
                         </div>
                         {scorePercentage !== null && (
                             <span
-                                className="px-1.5 py-0.5 text-[10px] rounded-full font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                                className="px-1.5 py-0.5 text-[10px] rounded-full font-medium bg-[#8b9d76]/10 text-[#a9b49b] border border-[#738361]/30"
                                 title="Normalized cross-encoder relevance; not a calibrated probability"
                             >
                                 {scorePercentage}% match
                             </span>
                         )}
                     </div>
-                    <div data-lenis-prevent className="max-h-40 overflow-y-auto pr-1 text-zinc-300 leading-relaxed text-[11px] bg-zinc-950/60 p-2 rounded-lg border border-zinc-800/80 font-normal">
+                    <div data-lenis-prevent className="max-h-40 overflow-y-auto pr-1 text-[#c7b5a3] leading-relaxed text-[11px] bg-[#141210]/60 p-2 rounded-lg border border-[#38302a]/80 font-normal">
                         &ldquo;{citation.text}&ldquo;
                     </div>
 
-                    <div className="mt-2.5 pt-2 flex items-center justify-between text-[10px] text-zinc-500 border-t border-zinc-800/60">
+                    <div className="mt-2.5 pt-2 flex items-center justify-between text-[10px] text-[#8d8073] border-t border-[#38302a]/60">
                         <span className="truncate max-w-[170px]" title={citation.document_id || ""}>
                             Doc: {citation.document_id || "document"}
                         </span>
@@ -129,14 +129,14 @@ export function CitationBadge({
                                     setOpen(false);
                                     onCitationClick(citation);
                                 }}
-                                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer"
+                                className="flex items-center gap-1 text-[#c49b75] hover:text-[#d5ae88] font-medium cursor-pointer"
                             >
                                 <span>View Source</span>
                                 <ExternalLink size={12} />
                             </button>
                         )}
                     </div>
-                    <Popover.Arrow className="fill-zinc-900" />
+                    <Popover.Arrow className="fill-[#1d1916]" />
                 </Popover.Content>
             </Popover.Portal>
         </Popover.Root>

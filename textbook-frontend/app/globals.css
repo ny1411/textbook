@@ -1,28 +1,78 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --background: #141210;
+  --foreground: #eee5d8;
+  --surface: #1c1916;
+  --surface-raised: #25201c;
+  --muted: #a69a8c;
+  --accent: #c49b75;
+  --border: #38302a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
+  --font-display: Georgia, "Times New Roman", serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Keep utility styling in secondary states within the shared warm palette. */
+  --color-zinc-50: #f5eee5;
+  --color-zinc-100: #eee5d8;
+  --color-zinc-200: #dfd4c7;
+  --color-zinc-300: #c6b9aa;
+  --color-zinc-400: #a69a8c;
+  --color-zinc-500: #928577;
+  --color-zinc-600: #6a5e53;
+  --color-zinc-700: #443a31;
+  --color-zinc-800: #302923;
+  --color-zinc-900: #1c1916;
+  --color-zinc-950: #141210;
+  --color-indigo-100: #eee5d8;
+  --color-indigo-200: #e1c6ab;
+  --color-indigo-300: #d5b492;
+  --color-indigo-400: #c49b75;
+  --color-indigo-500: #a77a54;
+  --color-indigo-600: #765339;
+  --color-indigo-700: #60432f;
+  --color-indigo-800: #4b3528;
+  --color-indigo-900: #35271f;
+  --color-indigo-950: #241c17;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.research-canvas {
+  background: radial-gradient(ellipse at 85% 0%, #8b614014, transparent 55%), var(--background);
+}
+
+button:not(:disabled), summary, select:not(:disabled) {
+  cursor: pointer;
+}
+
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+::selection {
+  background: #c49b7538;
+  color: #f5eee5;
+}
+
+input, textarea, select {
+  accent-color: var(--accent);
 }
 
 /* Custom slim scrollbar */
@@ -36,15 +86,24 @@ body {
 }
 
 ::-webkit-scrollbar-thumb{
-  background: rgba(255, 255, 255, 0.1);
+  background: #a69a8c30;
   border-radius: 100px;
 }
 
 ::-webkit-scrollbar-thumb:hover{
-  background: rgba(255, 255, 255, 0.2);
+  background: #a69a8c50;
   cursor: grab;
 }
 
 ::-webkit-scrollbar-thumb:active{
   cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,0 +1,32 @@
+.seek {
+    appearance: none;
+    height: 4px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.seek::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.seek::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.seek:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 5px;
+}
+
+.seek:disabled {
+    cursor: default;
+}

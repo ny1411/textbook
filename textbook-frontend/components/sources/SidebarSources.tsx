@@ -1,6 +1,6 @@
 "use client";
 
-import { Files, Upload } from "lucide-react";
+import { BookOpen, File, Files } from "lucide-react";
 import { useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { deleteDocument } from "@/lib/api/documents";
@@ -67,14 +67,14 @@ export function SidebarSources() {
     };
 
     return (
-        <div className="h-full flex flex-col p-4">
+        <div className="h-full min-h-0 flex flex-col px-5 pt-5">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3">
+            <div className="flex items-center justify-between pb-5">
                 <div className="flex items-center gap-2">
-                    <Files size={20} className="text-indigo-400" />
-                    <h2 className="text-sm font-semibold text-zinc-200">Sources</h2>
+                    <Files size={18} strokeWidth={1.5} className="text-accent" aria-hidden="true" />
+                    <h2 className="text-[14px] font-medium text-foreground">Sources</h2>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-zinc-400" title="Select all sources">
+                <label className="flex items-center gap-2 text-xs text-muted" title="Select all sources">
                     <span>{selectedCount}/{selectableSources.length}</span>
                     <input
                         type="checkbox"
@@ -82,15 +82,16 @@ export function SidebarSources() {
                         disabled={selectableSources.length === 0}
                         onChange={(event) => event.target.checked ? selectAllSources() : deselectAllSources()}
                         aria-label="Select all sources"
-                        className="size-4 accent-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`size-3.5 accent-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40 ${selectableSources.length === 0 ? "sr-only" : ""}`}
                     />
                 </label>
             </div>
-            <div data-lenis-prevent className="flex-1 overflow-y-auto space-y-2 pr-1">
+            <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto space-y-2 pb-5">
                 {sources.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-800 rounded-2xl text-zinc-500"><Upload size={20} className="mb-2 text-zinc-600" />
-                        <p className="flex text-xs font-medium text-zinc-400">Add sources by dropping files <br /> in chat or clicking + icon</p>
-
+                    <div className="flex min-h-[190px] flex-col items-center justify-center rounded-[10px] border border-dashed border-border px-4 py-7 text-center">
+                        <File size={28} strokeWidth={1.2} className="mb-4 text-muted" aria-hidden="true" />
+                        <p className="font-serif text-[17px] text-foreground">Your research starts here</p>
+                        <p className="mt-2 max-w-[185px] text-[12px] leading-5 text-muted">Add PDFs or notes with the <span className="text-foreground">+</span> in chat.</p>
                     </div>
                 ) : (
                     sources.map((source) => (
@@ -111,6 +112,10 @@ export function SidebarSources() {
                         />
                     ))
                 )}
+            </div>
+            <div className="flex shrink-0 items-center gap-3 border-t border-border py-5 text-[11px] text-muted">
+                <BookOpen size={22} strokeWidth={1.25} className="shrink-0 text-accent" aria-hidden="true" />
+                <span>Your personal research space</span>
             </div>
             <SourceViewerModel
                 source={visibleInspection}

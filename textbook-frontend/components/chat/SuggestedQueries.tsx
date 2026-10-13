@@ -1,78 +1,57 @@
 "use client";
 
-import { BookOpen, CircleAlert, GitCompare, Sparkles } from "lucide-react";
-import { HeroMeshGradient } from "./HeroMeshGradient";
+import { BookOpen, Lightbulb, PencilLine } from "lucide-react";
 import { useSourceStore } from "@/stores/useSourcesStore";
 import { useUserStore } from "@/stores/useUserStore";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 
 interface SuggestedQueriesProps {
     onSelectQuery: (query: string) => void;
+    disabled?: boolean;
 }
 
 const SUGGESTED_QUERIES = [
-    {
-        icon: BookOpen,
-        label: "Summarize Concepts",
-        query: "Summarize the concepts and takeaways from uploaded documents.",
-    }, {
-        icon: GitCompare,
-        label: "Compare Findings",
-        query: "Compare the arguments and findings discussed across the sources.",
-    }, {
-        icon: CircleAlert,
-        label: "Explain Methodology",
-        query: "Explain the core methodology and architectural decisions presented in texts.",
-    },
+    { icon: Lightbulb, label: "Understand a concept", query: "Explain a key concept from my sources in simple terms, with examples." },
+    { icon: PencilLine, label: "Help me write", query: "Help me write a clear summary of the main ideas in my sources." },
+    { icon: BookOpen, label: "Explore a topic", query: "What are the most interesting topics to explore across my sources?" },
 ];
 
-export function SuggestedQueries({ onSelectQuery }: SuggestedQueriesProps) {
+export function WelcomeHeading() {
+    return (
+        <div className="mb-9 text-center">
+            <h1 className="font-[Georgia,serif] text-[36px] leading-[1.15] font-normal tracking-[-0.035em] text-[#eee5d8] sm:text-[46px] lg:text-[52px]">
+                How can I help you today?
+            </h1>
+            <p className="mt-4 text-[15px] leading-relaxed text-[#b5a79a]">
+                A little curiosity. A deeper understanding.
+            </p>
+        </div>
+    );
+}
+
+export function SuggestedQueries({ onSelectQuery, disabled = false }: SuggestedQueriesProps) {
     const userId = useUserStore((state) => state.userId);
     const notebookId = useTextbookStore((state) => state.activeNotebookId);
     const sampleReady = useSourceStore((state) => state.source.some((source) => source.userId === userId &&
         source.notebookId === notebookId && source.sampleKey === "ai-engineering-v1" && source.status === "ready" && !source.deletionPending));
     const queries = sampleReady ? [
-        { icon: BookOpen, label: "Explore hybrid search", query: "How do dense and sparse retrieval complement each other in hybrid search?" },
-        { icon: GitCompare, label: "Calculate retrieval quality", query: "If three of four relevant passages appear in five results, what are Recall@5 and Precision@5?" },
-        { icon: CircleAlert, label: "Check citation support", query: "Why does a citation badge alone not prove that an answer is grounded?" },
+        { icon: Lightbulb, label: "Understand a concept", query: "How do dense and sparse retrieval complement each other in hybrid search?" },
+        { icon: PencilLine, label: "Help me write", query: "Help me write a summary of how retrieval quality is measured, using the sample textbook." },
+        { icon: BookOpen, label: "Explore a topic", query: "Why does a citation badge alone not prove that an answer is grounded?" },
     ] : SUGGESTED_QUERIES;
+
     return (
-        <div className="relative isolate w-full max-w-2xl mx-auto flex flex-col items-center justify-center overflow-hidden rounded-3xl p-6 text-center animate-in fade-in duration-300">
-            <HeroMeshGradient />
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 text-indigo-400 shadow-inner">
-                <Sparkles size={20} />
-            </div>
-            <h2 className="text-xl font-semibold text-zinc-100 tracking-tight">
-                Want to explore further?
-            </h2>
-            <p className="text-sm text-zinc-400 mt-1.5 max-w-md">
-                {sampleReady ? "Your sample is ready. Try a question, inspect a citation, and save a Studio note." : "Ask questions from your uploaded documents."}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-8 w-full">
-                {queries.map((chip, idx) => {
-                    const Icon = chip.icon;
-                    return (
-                        <button
-                            key={idx}
-                            type="button"
-                            onClick={() => onSelectQuery(chip.query)}
-                            className="flex flex-col items-start text-left p-3 rounded-xl border border-zinc-800 bg-zinc-950/70
-                         hover:bg-zinc-800/80 hover:border-zinc-700 transition-all cursor-pointer group"
-                        >
-                            <div className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors mb-2">
-                                <Icon size={16} />
-                            </div>
-                            <span className="text-xs font-semibold text-zinc-200 group-hover:text-white">
-                                {chip.label}
-                            </span>
-                            <span className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-snug">
-                                {chip.query}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
+        <div aria-label="Suggested questions" className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+            {queries.map((chip) => {
+                const Icon = chip.icon;
+                return (
+                    <button key={chip.label} type="button" disabled={disabled} onClick={() => onSelectQuery(chip.query)}
+                        className="flex min-h-[54px] items-center justify-center gap-3 rounded-[10px] border border-[#494036] bg-[#1b1815]/50 px-3 py-3 text-left text-[#ddd1c2] transition-colors hover:border-[#8a7059] hover:bg-[#27211c] disabled:cursor-wait disabled:opacity-50">
+                        <Icon size={20} strokeWidth={1.4} className="shrink-0 text-[#c49b75]" />
+                        <span className="font-[Georgia,serif] text-[14px] leading-snug">{chip.label}</span>
+                    </button>
+                );
+            })}
         </div>
     );
-
 }

@@ -73,18 +73,17 @@ export function SampleTextbookLoader({ userId, notebookId }: { userId: string; n
 
     if ((scoped.length > 0 && !sample) || sample?.status === "ready" || sample?.deletionPending) return null;
     return (
-        <div className="mx-auto mb-6 max-w-2xl rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4 text-left">
-            <BookOpen size={20} className="mb-2 text-indigo-400" />
-            <p className="text-sm font-medium text-zinc-200">Start with a sample textbook</p>
-            <p className="mt-1 text-xs leading-relaxed text-zinc-400">Explore RAG, hybrid search, and evaluation. Ask a question, inspect its citations, then save an answer to Studio.</p>
-            {sample?.status === "processing" ? <p role="status" className="mt-3 flex items-center gap-2 text-xs text-indigo-300"><LoaderCircle size={14} className="animate-spin" />Indexing the sample…</p> : null}
+        <div className="mx-auto mb-5 max-w-2xl rounded-xl border border-border bg-surface/40 p-4 text-left">
+            <div className="flex items-center gap-2 text-accent"><BookOpen size={16} strokeWidth={1.5} aria-hidden="true" /><p className="text-xs font-medium text-foreground">Start with a sample textbook</p></div>
+            <p className="mt-2 text-xs leading-relaxed text-muted">Explore AI engineering, ask a question, and follow its citations back to the source.</p>
+            {sample?.status === "processing" ? <p role="status" className="mt-3 flex items-center gap-2 text-xs text-accent"><LoaderCircle size={14} className="animate-spin" />Indexing the sample…</p> : null}
             {sample?.status === "failed" ? <p role="alert" className="mt-3 text-xs text-amber-300">Sample indexing failed. Retry to finish loading it.</p> : null}
             {error ? <p role="alert" className="mt-3 text-xs text-amber-300">{error}</p> : null}
             <button type="button" onClick={() => void load()} disabled={loading}
-                className="mt-3 w-full rounded-xl bg-indigo-500 px-3 py-2.5 text-xs font-medium text-white transition-colors hover:bg-indigo-400 disabled:cursor-wait disabled:opacity-60">
+                className="mt-3 rounded-lg border border-accent/40 px-3 py-2 text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5 disabled:cursor-wait disabled:opacity-60">
                 {loading ? "Loading sample textbook…" : sample || error ? "Retry sample loading" : "Load Sample AI Engineering Textbook"}
             </button>
-            <p className="mt-2 text-[11px] text-zinc-500">Original CC0 sample · No file needed · Remove it anytime</p>
+            <p className="mt-2 text-[11px] text-muted">Original CC0 sample · No file needed · Remove it anytime</p>
         </div>
     );
 }

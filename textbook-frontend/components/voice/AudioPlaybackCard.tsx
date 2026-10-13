@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight, LoaderCircle, Pause, Play, RotateCcw, X } fr
 import { synthesizeSpeech } from "@/lib/api/voice";
 import { speechParts } from "@/lib/voice-text";
 import { useTextbookStore } from "@/stores/useTextbookStore";
-import { PlaybackMesh } from "./PlaybackMesh";
 import { useVoicePlayback, type PlaybackSource } from "./VoicePlaybackProvider";
+import styles from "./AudioPlaybackCard.module.css";
 
 function clock(value: number) {
     const seconds = Math.max(0, Math.floor(Number.isFinite(value) ? value : 0));
@@ -84,17 +84,16 @@ export function AudioPlaybackCard({ source }: { source: PlaybackSource }) {
         catch { setPlaying(false); setError("Playback could not start. Press Play to try again."); }
     }
 
-    return <section aria-label={`Audio playback: ${source.title}`} className="relative mt-3 w-full min-w-0 overflow-hidden rounded-xl border border-indigo-500/30 bg-zinc-950 p-3 text-zinc-100">
-        <PlaybackMesh playing={playing} />
-        <div className="relative">
-            <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="truncate text-xs font-medium">{source.title}</p>
-                <button type="button" onClick={stop} aria-label="Close audio playback" className="shrink-0 rounded p-1.5 hover:bg-white/10"><X size={15} /></button>
+    return <section aria-label={`Audio playback: ${source.title}`} className="mt-3 w-full min-w-0 rounded-2xl border border-accent/30 bg-surface p-4 text-foreground">
+        <div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="truncate font-display text-sm">{source.title}</p>
+                <button type="button" onClick={stop} aria-label="Close audio playback" className="shrink-0 rounded-md p-1.5 text-muted transition-colors hover:bg-accent/10 hover:text-foreground"><X size={15} /></button>
             </div>
-            {parts.length > 1 && <div className="mb-2 flex items-center justify-between gap-2 text-xs text-zinc-300">
-                <button type="button" disabled={part === 0} onClick={() => changePart(part - 1)} aria-label="Previous audio part" className="rounded p-1.5 hover:bg-white/10 disabled:opacity-30"><ChevronLeft size={16} /></button>
+            {parts.length > 1 && <div className="mb-3 flex items-center justify-between gap-2 text-xs text-muted">
+                <button type="button" disabled={part === 0} onClick={() => changePart(part - 1)} aria-label="Previous audio part" className="rounded-md p-1.5 hover:bg-accent/10 disabled:opacity-30"><ChevronLeft size={16} /></button>
                 <span>Part {part + 1} of {parts.length}</span>
-                <button type="button" disabled={part === parts.length - 1} onClick={() => changePart(part + 1)} aria-label="Next audio part" className="rounded p-1.5 hover:bg-white/10 disabled:opacity-30"><ChevronRight size={16} /></button>
+                <button type="button" disabled={part === parts.length - 1} onClick={() => changePart(part + 1)} aria-label="Next audio part" className="rounded-md p-1.5 hover:bg-accent/10 disabled:opacity-30"><ChevronRight size={16} /></button>
             </div>}
             <audio ref={audioRef} src={activeAsset} preload="auto"
                 onLoadedMetadata={(event) => {
@@ -111,26 +110,27 @@ export function AudioPlaybackCard({ source }: { source: PlaybackSource }) {
             <div className="flex items-center gap-3">
                 <button type="button" aria-label={playing ? "Pause audio" : "Play audio"} disabled={loading || !activeAsset}
                     onClick={() => { if (playing) audioRef.current?.pause(); else void play(); }}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/50 disabled:opacity-40">
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full border border-accent/50 bg-background text-accent transition-colors hover:bg-accent/10 disabled:opacity-40">
                     {loading ? <LoaderCircle size={18} className="animate-spin" /> : playing ? <Pause size={18} /> : <Play size={18} />}
                 </button>
                 <div className="min-w-0 flex-1">
                     <input type="range" aria-label={parts.length > 1 ? `Seek audio part ${part + 1}` : "Seek audio"}
                         min={0} max={duration || 1} step={0.1} value={Math.min(position, duration || 1)} disabled={loading || !duration}
                         onChange={(event) => { const next = Number(event.target.value); if (audioRef.current) audioRef.current.currentTime = next; setPosition(next); }}
-                        className="block w-full accent-indigo-400" />
-                    <div className="mt-1 flex justify-between text-[10px] tabular-nums text-zinc-300"><span>{clock(position)}</span><span>{clock(duration)}</span></div>
+                        style={{ background: `linear-gradient(to right, var(--accent) ${duration ? position / duration * 100 : 0}%, var(--border) ${duration ? position / duration * 100 : 0}%)` }}
+                        className={`${styles.seek} block w-full disabled:opacity-40`} />
+                    <div className="mt-2 flex justify-between text-[10px] tabular-nums text-muted"><span>{clock(position)}</span><span>{clock(duration)}</span></div>
                 </div>
                 <label className="shrink-0 text-xs"><span className="sr-only">Playback speed</span>
                     <select aria-label="Playback speed" value={speed} onChange={(event) => {
                         const rate = Number(event.target.value); setSpeed(rate); if (audioRef.current) audioRef.current.playbackRate = rate;
-                    }} className="rounded bg-zinc-900/70 px-1 py-1.5 text-zinc-100">
+                    }} className="rounded-md border border-border bg-background px-2 py-1.5 text-foreground">
                         {[1, 1.25, 1.5, 2].map((value) => <option key={value} value={value}>{value}×</option>)}
                     </select>
                 </label>
             </div>
-            {loading && <p role="status" className="mt-2 text-xs text-zinc-300">Preparing audio…</p>}
-            {error && <div role="alert" className="mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-300">
+            {loading && <p role="status" className="mt-3 text-xs text-muted">Preparing audio…</p>}
+            {error && <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 text-xs text-accent">
                 <p>{error}</p><button type="button" className="inline-flex items-center gap-1 underline" onClick={() => {
                     audioRef.current?.pause(); const url = assets.current.get(part); if (url) URL.revokeObjectURL(url);
                     assets.current.delete(part); setAsset(null); setError(null); setLoading(true); setPlaying(false);

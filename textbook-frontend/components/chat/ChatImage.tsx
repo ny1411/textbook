@@ -23,7 +23,7 @@ export function ChatImage({ attachment }: { attachment: ChatAttachment }) {
 
     const current = source.id === attachment.id ? source : undefined;
     return (
-        <div className="w-40 max-w-full overflow-hidden rounded-lg border border-white/20 bg-zinc-950/30">
+        <div className="w-40 max-w-full overflow-hidden rounded-lg border border-white/20 bg-[#141210]/30">
             {current?.url ? (
                 <a href={current.url} target="_blank" rel="noopener noreferrer" aria-label={`Open image ${attachment.name}`} className="relative block h-28 w-full">
                     <Image unoptimized fill src={current.url} alt={attachment.name} sizes="160px"
@@ -32,7 +32,7 @@ export function ChatImage({ attachment }: { attachment: ChatAttachment }) {
             ) : current?.failed ? (
                 <button type="button" onClick={() => { setSource({ id: "" }); setAttempt((value) => value + 1); }}
                     className="h-28 w-full px-2 text-xs underline">Retry loading image</button>
-            ) : <div role="status" className="flex h-28 items-center justify-center text-xs">Loading image…</div>}
+            ) : <div role="status" className="flex h-28 items-center justify-center text-xs">Loading imageâ€¦</div>}
             <p className="truncate px-2 py-1 text-xs" title={attachment.name}>{attachment.name}</p>
         </div>
     );
