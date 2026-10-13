@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useOwnedWorkspace } from "@/hooks/useOwnedWorkspace";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import { useVoicePlayback } from "@/components/voice/VoicePlaybackProvider";
+import { SelectMenu } from "@/components/ui/select-menu";
 
 interface ChatInterfaceProps {
     onCitationClick?: (citation: CitationItem) => void;
@@ -68,14 +69,13 @@ export default function ChatInterface({ onCitationClick }: ChatInterfaceProps) {
     return (
         <div className="flex h-full min-h-0 flex-col">
             {workspace.authenticated && workspace.notebooks.length > 0 && (
-                <label className="flex min-h-11 items-center gap-3 border-b border-[#38302a] px-5 py-2 text-xs text-[#aa9b8c] sm:px-6">
-                    Notebook
-                    <select aria-label="Notebook" value={workspace.notebookId}
-                        onChange={(event) => useTextbookStore.getState().setActiveNotebookId(event.target.value)}
-                        className="min-w-0 max-w-full rounded-md border border-[#494036] bg-[#1d1916] px-2.5 py-1.5 text-[#ddd1c2]">
-                        {workspace.notebooks.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                    </select>
-                </label>
+                <div className="flex min-h-11 items-center gap-3 border-b border-[#38302a] px-5 py-2 text-xs text-[#aa9b8c] sm:px-6">
+                    <span aria-hidden>Notebook</span>
+                    <SelectMenu label="Notebook" value={workspace.notebookId}
+                        onChange={(value) => useTextbookStore.getState().setActiveNotebookId(value)}
+                        options={workspace.notebooks.map((item) => ({ value: item.id, label: item.name }))}
+                        className="min-w-0 max-w-full" />
+                </div>
             )}
             {!workspace.authenticated ? <SignedOutWelcome /> : workspace.error ? (
                 <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-[#b5a79a]">
@@ -121,19 +121,19 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
     return (
         <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
             <div className="flex flex-wrap items-center gap-3 border-b border-[#38302a] px-5 py-2 text-xs sm:px-6">
-                <label className="flex min-w-0 flex-1 items-center gap-3 text-[#aa9b8c]">
-                    Chat
-                    <select aria-label="Saved chats" value={chat.activeConversationId ?? ""} disabled={navigationBlocked}
-                        onChange={(event) => {
+                <div className="flex min-w-0 flex-1 items-center gap-3 text-[#aa9b8c]">
+                    <span aria-hidden>Chat</span>
+                    <SelectMenu label="Saved chats" value={chat.activeConversationId ?? ""} disabled={navigationBlocked}
+                        onChange={(value) => {
                             stopPlayback();
                             useTextbookStore.getState().setActiveCitation(null);
-                            void chat.selectConversation(event.target.value);
+                            void chat.selectConversation(value);
                             setComposerVersion((value) => value + 1);
-                        }} className="min-w-0 w-full max-w-lg rounded-md border border-[#494036] bg-[#1d1916] px-2.5 py-1.5 text-[#ddd1c2]">
-                        {!chat.activeConversationId && <option value="">Start a new chat</option>}
-                        {chat.conversations.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-                    </select>
-                </label>
+                        }} options={[
+                            ...(!chat.activeConversationId ? [{ value: "", label: "Start a new chat" }] : []),
+                            ...chat.conversations.map((item) => ({ value: item.id, label: item.title })),
+                        ]} className="min-w-0 w-full max-w-lg" />
+                </div>
                 <button type="button" onClick={() => {
                     stopPlayback();
                     useTextbookStore.getState().setActiveCitation(null);

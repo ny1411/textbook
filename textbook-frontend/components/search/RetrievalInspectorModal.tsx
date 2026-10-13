@@ -18,6 +18,8 @@ import { useSourceStore } from "@/stores/useSourcesStore";
 import type { SearchResultItem } from "@/types/api";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useTextbookStore } from "@/stores/useTextbookStore";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { SmoothInput } from "@/components/ui/smooth-input";
 
 interface RetrievalInspectorModal {
     isOpen: boolean;
@@ -109,17 +111,17 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                         <form onSubmit={handleRunDiagnostics} className="space-y-3">
                             <div className="flex flex-col gap-2 sm:flex-row">
                                 <div className="relative flex-1">
-                                    <Search
-                                        size={16}
-                                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-                                    />
-                                    <input
+                                    <SmoothInput
                                         type="text"
                                         aria-label="Retrieval query"
                                         value={query}
                                         onChange={(e) => setQuery(e.target.value)}
                                         placeholder="Enter diagnostic query (e.g. 'What is gradient descent and backpropagation?')..."
                                         className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-foreground transition-colors placeholder:text-muted focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
+                                    />
+                                    <Search
+                                        size={16}
+                                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
                                     />
                                 </div>
                                 <button
@@ -144,20 +146,20 @@ export function RetrievalInspectorModal({ isOpen, onClose }: RetrievalInspectorM
                                 <div className="flex items-center gap-1.5">
                                     <Filter size={13} className="text-muted" />
                                     <span>Document:</span>
-                                    <select
-                                        aria-label="Document to inspect"
+                                    <SelectMenu
+                                        label="Document to inspect"
                                         value={selectedDocId}
-                                        onChange={(e) => setSelectedDocId(e.target.value)}
-                                        className="max-w-48 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-foreground focus:border-accent/60 focus:outline-none"
-                                    >
-                                        <option value="">All Uploaded Documents</option>
-                                        {sources.filter((src) => src.userId === userId && src.notebookId === activeNotebookId).map((src) => (
-                                            <option key={src.documentId ?? src.filepath} value={src.documentId ?? ""}
-                                                disabled={!src.documentId || src.status !== "ready" || src.deletionPending}>
-                                                {src.filename}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={setSelectedDocId}
+                                        className="min-w-0 max-w-48"
+                                        options={[
+                                            { value: "", label: "All Uploaded Documents" },
+                                            ...sources.filter((src) => src.userId === userId && src.notebookId === activeNotebookId).map((src) => ({
+                                                value: src.documentId ?? `unavailable:${src.filepath}`,
+                                                label: src.filename,
+                                                disabled: !src.documentId || src.status !== "ready" || src.deletionPending,
+                                            })),
+                                        ]}
+                                    />
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span>Top K:</span>

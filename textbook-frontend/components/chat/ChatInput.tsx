@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
-import { ArrowUp, ChevronDown, ImagePlus, LoaderCircle, Mic, PlusCircle, RotateCcw, Square, Upload, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ArrowUp, ImagePlus, LoaderCircle, RotateCcw, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { ChatInputBorder } from "./ChatInputBorder";
@@ -17,6 +17,15 @@ import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { useVoicePlayback } from "@/components/voice/VoicePlaybackProvider";
 import { AudioPlaybackCard } from "@/components/voice/AudioPlaybackCard";
 import { cn } from "@/lib/utils";
+import { UploadButton, type UploadStatus } from "@/components/ui/upload-button";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { SmoothTextarea } from "@/components/ui/smooth-input";
+import { VoiceInput } from "@/components/spectrumui/blocks/ai-assistants/voice-input";
+
+const REASONING_OPTIONS = [
+    { value: "fast", label: "Fast mode" },
+    { value: "agentic", label: "Agentic mode" },
+];
 
 interface PendingImage {
     id: string;
@@ -41,7 +50,8 @@ interface ChatInputProps {
 export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading = false, disabled = false, welcome = false, onRequestSignIn }: ChatInputProps) {
     const [input, setInput] = useState("");
     const [isAgentMode, setAgentMode] = useState(false);
-    const [isUploadingSources, setIsUploadingSources] = useState(false);
+    const [sourceUploadStatus, setSourceUploadStatus] = useState<UploadStatus>("idle");
+    const [sourceUploadProgress, setSourceUploadProgress] = useState<number | undefined>();
     const [isUploadingImages, setIsUploadingImages] = useState(false);
     const [images, setImages] = useState<PendingImage[]>([]);
     const [attachmentError, setAttachmentError] = useState<string | null>(null);
@@ -51,12 +61,15 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
     const imagesRef = useRef<PendingImage[]>([]);
     const submittedIds = useRef(new Set<string>());
     const uploadController = useRef<AbortController | null>(null);
+    const sourceUploadBusy = useRef(false);
+    const failedSourceFiles = useRef<File[]>([]);
     const busy = useRef(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const imagePickerRef = useRef<HTMLInputElement>(null);
     const userId = useUserStore((s) => s.userId);
     const addSource = useSourceStore((s) => s.addSource);
     const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
+    const isUploadingSources = sourceUploadStatus === "uploading";
     const baseBlocked = disabled || isLoading || isUploadingImages;
     const blocked = baseBlocked;
 
@@ -111,9 +124,15 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
     }
 
     const handleUploadFiles = async (files: File[]) => {
-        if (!files.length || blocked || isUploadingSources) return;
+        if (!files.length || blocked || sourceUploadBusy.current) return;
         if (onRequestSignIn) { onRequestSignIn(); return; }
-        setIsUploadingSources(true);
+        sourceUploadBusy.current = true;
+        setSourceUploadStatus("uploading");
+        setSourceUploadProgress(files.length > 1 ? 0 : undefined);
+        setAttachmentError(null);
+        const failed: File[] = [];
+        const errors: string[] = [];
+        let completed = 0;
         try {
             for (const file of files) {
                 try {
@@ -122,12 +141,25 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                     addSource({ userId, filename: request.filename, filepath: request.filepath, documentId: request.document_id,
                         notebookId: activeNotebookId, status: "processing", size: file.size, type: file.type, uploadedAt: new Date() });
                     toast.success(`Uploaded "${file.name}"`);
-                } catch {
+                } catch (error) {
+                    failed.push(file);
+                    errors.push(`"${file.name}": ${error instanceof Error ? error.message : "Upload failed. Please retry."}`);
                     toast.error(`Failed to upload "${file.name}"`);
+                } finally {
+                    completed += 1;
+                    // Fetch has no upload byte events. Count completed files only.
+                    if (files.length > 1) setSourceUploadProgress(completed / files.length);
                 }
             }
-        } finally { setIsUploadingSources(false); }
+        } finally {
+            sourceUploadBusy.current = false;
+            failedSourceFiles.current = failed;
+            setSourceUploadStatus(failed.length ? "error" : "done");
+            if (errors.length) setAttachmentError(errors.join(" "));
+        }
     };
+
+    const resetSourceUpload = useCallback(() => setSourceUploadStatus("idle"), []);
 
     function onDropRejected(rejections: FileRejection[]) {
         setAttachmentError(rejections.map(({ file, errors }) => `"${file.name}": ${errors.map((error) => error.message).join(", ")}`).join(" "));
@@ -257,13 +289,6 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                 </div>}
                 {attachmentError && <p role="alert" className="mb-2 px-2 text-xs text-[#d3ae82]">{attachmentError}</p>}
                 {voiceActive && <div className="mb-3 rounded-xl border border-[#705640] bg-[#c49b75]/5 px-3 py-2">
-                    <div className="flex items-center gap-2">
-                        <span className="size-2 shrink-0 rounded-full bg-[#c28d78] motion-safe:animate-pulse" />
-                        <p role="status" className="shrink-0 text-xs text-[#c7b5a3]">{voiceStatus === "requesting" ? "Allow microphone accessâ€¦" : voiceStatus === "stopping" ? "Finishing transcriptâ€¦" : "Recording"}</p>
-                        <span aria-label="Recording duration" className="shrink-0 text-xs tabular-nums text-[#d5ae88]">{Math.floor(voiceElapsed / 60)}:{String(voiceElapsed % 60).padStart(2, "0")}</span>
-                        <canvas ref={waveformRef} width={280} height={30} aria-hidden="true" data-live-waveform className="h-7 min-w-0 flex-1" />
-                        <button type="button" aria-label="Cancel voice recording" onClick={cancelVoice} className="shrink-0 rounded p-1.5 text-[#aa9b8c] hover:text-[#eee5d8]"><X size={15} /></button>
-                    </div>
                     {voiceTranscript && <p className="mt-2 max-h-16 overflow-y-auto text-xs text-[#c7b5a3]">{voiceTranscript}</p>}
                     <label className="mt-2 flex items-center gap-2 text-xs text-[#aa9b8c]">
                         <input type="checkbox" checked={autoSendVoice} onChange={(event) => setAutoSendVoice(event.target.checked)} className="accent-[#c49b75]" />
@@ -271,39 +296,34 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                     </label>
                 </div>}
                 {voiceError && <p role="alert" className="mb-2 px-2 text-xs text-[#d3ae82]">{voiceError}</p>}
-                <textarea ref={textareaRef} data-lenis-prevent rows={1} disabled={voiceBlocked} value={input}
+                <SmoothTextarea ref={textareaRef} data-lenis-prevent rows={1} disabled={voiceBlocked} value={input}
                     onChange={(event) => setInput(event.target.value)} onPaste={handlePaste}
                     onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void handleSubmit(); } }}
                     aria-label="Ask a question"
                     placeholder={isAgentMode ? "Ask with deeper reasoning..." : "Ask anything about your sources..."}
                     className="relative max-h-[180px] w-full resize-none overflow-y-auto bg-transparent px-1 font-[Georgia,serif] text-[18px] leading-relaxed text-[#eee5d8] outline-none placeholder:text-[#b5a79a] selection:bg-[#c49b75]/20 sm:text-[20px]" />
                 <div className={cn("flex items-center justify-between gap-2 pt-5", welcome ? "mt-auto" : "mt-1")}>
-                    <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-                        <button type="button" onClick={onRequestSignIn ?? sourcePicker.open} disabled={isUploadingSources || voiceBlocked} aria-label="Upload sources"
-                            title="Add documents to your sources"
-                            className="cursor-pointer rounded-lg p-1.5 text-[#c7b5a3] transition-colors hover:bg-[#38302a] hover:text-[#eee5d8] disabled:opacity-40 sm:p-2">
-                            {isUploadingSources ? <LoaderCircle size={21} className="animate-spin" /> : <PlusCircle size={21} strokeWidth={1.5} />}
-                        </button>
-                        <button type="button" onClick={() => { if (onRequestSignIn) onRequestSignIn(); else imagePickerRef.current?.click(); }} disabled={voiceBlocked || images.length >= MAX_CHAT_IMAGES}
+                    <div className={cn("flex min-w-0 items-center gap-1 sm:gap-2", voiceActive && "flex-1")}>
+                        {!voiceActive && <UploadButton status={sourceUploadStatus} progress={sourceUploadProgress}
+                            label="Upload" ariaLabel="Upload sources" compact="responsive" disabled={voiceBlocked}
+                            onStart={() => {
+                                if (onRequestSignIn) onRequestSignIn();
+                                else if (sourceUploadStatus === "error" && failedSourceFiles.current.length) void handleUploadFiles(failedSourceFiles.current);
+                                else sourcePicker.open();
+                            }} onReset={resetSourceUpload} />}
+                        {!voiceActive && <button type="button" onClick={() => { if (onRequestSignIn) onRequestSignIn(); else imagePickerRef.current?.click(); }} disabled={voiceBlocked || images.length >= MAX_CHAT_IMAGES}
                             aria-label="Attach images" title="Attach up to 4 images (PNG, JPEG, WebP), 10 MB each"
-                            className="rounded-lg p-1.5 text-[#c7b5a3] transition-colors hover:bg-[#38302a] hover:text-[#eee5d8] disabled:opacity-40 sm:p-2"><ImagePlus size={21} strokeWidth={1.5} /></button>
-                        <button type="button" disabled={baseBlocked || voiceStatus === "stopping"}
-                            aria-label={voiceStatus === "recording" ? "Stop voice recording" : voiceStatus === "requesting" ? "Cancel voice recording" : "Start voice input"}
-                            aria-pressed={voiceActive} title="Dictate a question (up to 2 minutes)"
-                            onClick={() => {
+                            className="rounded-lg p-1.5 text-[#c7b5a3] transition-colors hover:bg-[#38302a] hover:text-[#eee5d8] disabled:opacity-40 sm:p-2"><ImagePlus size={21} strokeWidth={1.5} /></button>}
+                        <VoiceInput state={voiceStatus === "stopping" ? "processing" : voiceStatus === "error" ? "idle" : voiceStatus}
+                            elapsed={voiceElapsed} waveformRef={waveformRef} disabled={baseBlocked}
+                            onConfirm={stopVoice} onCancel={cancelVoice}
+                            onStart={() => {
                                 if (onRequestSignIn) { onRequestSignIn(); return; }
-                                if (voiceStatus === "recording") stopVoice();
-                                else if (voiceStatus === "requesting") cancelVoice();
-                                else { setStartingText(input); playback.stop(); void startVoice(); }
-                            }}
-                            className={`rounded-lg p-1.5 transition-colors disabled:opacity-40 sm:p-2 ${voiceActive ? "bg-[#694338]/30 text-[#dfa48d]" : "text-[#c7b5a3] hover:bg-[#38302a] hover:text-[#eee5d8]"}`}>
-                            {voiceStatus === "recording" ? <Square size={18} /> : voiceStatus === "requesting" ? <LoaderCircle size={21} className="animate-spin" /> : <Mic size={21} strokeWidth={1.5} />}
-                        </button>
-                        <button type="button" onClick={() => setAgentMode(!isAgentMode)} disabled={voiceBlocked}
-                            aria-pressed={isAgentMode} aria-label="Toggle agentic reasoning"
-                            className={`ml-1 flex cursor-pointer items-center gap-2 border-l border-[#494036] py-1 pl-2 text-[11px] whitespace-nowrap transition-colors sm:ml-2 sm:pl-4 sm:text-sm ${isAgentMode ? "text-[#d5ae88]" : "text-[#c7b5a3] hover:text-[#eee5d8]"}`}>
-                            <span>{isAgentMode ? "Agentic mode" : "Fast mode"}</span><ChevronDown size={14} strokeWidth={1.5} />
-                        </button>
+                                setStartingText(input); playback.stop(); void startVoice();
+                            }} />
+                        {!voiceActive && <SelectMenu label="Reasoning mode" value={isAgentMode ? "agentic" : "fast"}
+                            options={REASONING_OPTIONS} onChange={(value) => setAgentMode(value === "agentic")}
+                            disabled={voiceBlocked} size="compact" className="w-[88px] sm:w-[140px]" />}
                     </div>
                     <button type="button" onClick={() => void handleSubmit()} disabled={!canSend} aria-label="Send message"
                         className={`flex size-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${canSend ? "cursor-pointer border-[#c49b75] bg-[#c49b75] text-[#21180f] hover:bg-[#d3ae8b]" : "cursor-not-allowed border-[#775c45] bg-[#9b7757] text-[#241b13] opacity-65"}`}>

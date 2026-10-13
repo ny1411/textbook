@@ -151,7 +151,7 @@ export function useVoiceRecording(onComplete: (transcript: string, allowAutoSend
                 const canvas = waveformRef.current;
                 const drawing = canvas?.getContext("2d");
                 if (canvas && drawing) {
-                    drawing.clearRect(0, 0, canvas.width, canvas.height); drawing.fillStyle = "#a5b4fc";
+                    drawing.clearRect(0, 0, canvas.width, canvas.height); drawing.fillStyle = "#c49b75";
                     for (let bar = 0; bar < 28; bar++) {
                         const energy = samples[Math.floor(bar * samples.length / 28)] / 255;
                         const height = Math.max(3, energy * (canvas.height - 4));

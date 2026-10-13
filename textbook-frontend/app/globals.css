@@ -107,3 +107,17 @@ input, textarea, select {
     scroll-behavior: auto !important;
   }
 }
+
+/* Native selection/caret behavior remains available for touch and high contrast. */
+[data-smooth-input] :is(input, textarea):is([data-composing="true"], [data-native-caret="true"]) {
+  caret-color: var(--accent) !important;
+}
+
+@media (pointer: coarse), (forced-colors: active) {
+  [data-smooth-input] :is(input, textarea) {
+    caret-color: auto !important;
+  }
+  [data-smooth-caret] {
+    display: none;
+  }
+}

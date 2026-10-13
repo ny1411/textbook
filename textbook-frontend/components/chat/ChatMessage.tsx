@@ -11,6 +11,7 @@ import { ReadAloud } from "@/components/voice/ReadAloud";
 import { AgentMetrics } from "./AgentMetrics";
 import { ChatImage } from "./ChatImage";
 import { remarkCitations } from "@/lib/remark-citations";
+import { HoverCardGroup } from "@/components/ui/hover-card";
 
 interface ChatMessageProps {
     message: ChatMessageItem;
@@ -26,6 +27,7 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
     const citationOptions = useMemo(() => ({ sourceIds: [...citationsById.keys()] }), [citationsById]);
 
     return (
+        <HoverCardGroup>
         <div
             className={`flex gap-3 max-w-[820px] mx-auto mb-7
                 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -199,5 +201,6 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                 </div>
             )}
         </div>
+        </HoverCardGroup>
     )
 }

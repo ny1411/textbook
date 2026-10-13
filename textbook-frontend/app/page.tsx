@@ -7,6 +7,7 @@ import { RetrievalInspectorModal } from "@/components/search/RetrievalInspectorM
 import { SidebarSources } from "@/components/sources/SidebarSources";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import { useEffect, useState } from "react";
+import { SubtleMeshGradient } from "@/components/ui/subtle-mesh-gradient";
 
 export default function Home() {
   const [isStudioOpen, setIsStudioOpen] = useState(false);
@@ -70,7 +71,8 @@ export default function Home() {
         </aside>
 
         {/* Center Panel */}
-        <section aria-label="Research chat" className="research-canvas flex-1 min-w-0 flex flex-col h-full relative" data-lenis-prevent>
+        <section aria-label="Research chat" className="research-canvas isolate flex-1 min-w-0 flex flex-col h-full relative" data-lenis-prevent>
+          <SubtleMeshGradient className="-z-10" />
           <ChatInterface onCitationClick={(citation) => {
             useTextbookStore.getState().setActiveCitation(citation);
             useTextbookStore.getState().setActiveStudioTab("citation");

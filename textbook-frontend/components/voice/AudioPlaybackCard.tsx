@@ -7,6 +7,8 @@ import { speechParts } from "@/lib/voice-text";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import { useVoicePlayback, type PlaybackSource } from "./VoicePlaybackProvider";
 import styles from "./AudioPlaybackCard.module.css";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { SubtleMeshGradient } from "@/components/ui/subtle-mesh-gradient";
 
 function clock(value: number) {
     const seconds = Math.max(0, Math.floor(Number.isFinite(value) ? value : 0));
@@ -84,7 +86,8 @@ export function AudioPlaybackCard({ source }: { source: PlaybackSource }) {
         catch { setPlaying(false); setError("Playback could not start. Press Play to try again."); }
     }
 
-    return <section aria-label={`Audio playback: ${source.title}`} className="mt-3 w-full min-w-0 rounded-2xl border border-accent/30 bg-surface p-4 text-foreground">
+    return <section aria-label={`Audio playback: ${source.title}`} className="relative isolate mt-3 w-full min-w-0 rounded-2xl border border-accent/30 bg-surface p-4 text-foreground">
+        <SubtleMeshGradient kind="audio" playing={playing} className="-z-10" />
         <div>
             <div className="mb-3 flex items-center justify-between gap-2">
                 <p className="truncate font-display text-sm">{source.title}</p>
@@ -121,13 +124,10 @@ export function AudioPlaybackCard({ source }: { source: PlaybackSource }) {
                         className={`${styles.seek} block w-full disabled:opacity-40`} />
                     <div className="mt-2 flex justify-between text-[10px] tabular-nums text-muted"><span>{clock(position)}</span><span>{clock(duration)}</span></div>
                 </div>
-                <label className="shrink-0 text-xs"><span className="sr-only">Playback speed</span>
-                    <select aria-label="Playback speed" value={speed} onChange={(event) => {
-                        const rate = Number(event.target.value); setSpeed(rate); if (audioRef.current) audioRef.current.playbackRate = rate;
-                    }} className="rounded-md border border-border bg-background px-2 py-1.5 text-foreground">
-                        {[1, 1.25, 1.5, 2].map((value) => <option key={value} value={value}>{value}×</option>)}
-                    </select>
-                </label>
+                <SelectMenu label="Playback speed" value={String(speed)} onChange={(value) => {
+                    const rate = Number(value); setSpeed(rate); if (audioRef.current) audioRef.current.playbackRate = rate;
+                }} options={[1, 1.25, 1.5, 2].map((value) => ({ value: String(value), label: `${value}×` }))}
+                    className="w-[84px] shrink-0" />
             </div>
             {loading && <p role="status" className="mt-3 text-xs text-muted">Preparing audio…</p>}
             {error && <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 text-xs text-accent">
