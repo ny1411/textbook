@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:deployment": "node --test tests/deployment-config.test.mjs",
     "test:citations": "node --test tests/citations.test.mjs",
     "test:stream": "node --test tests/event-stream.test.mjs"
   },
