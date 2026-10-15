@@ -33,7 +33,7 @@ async def notebooks(db, user):
         await tx.execute('INSERT INTO users (id, email, name, "updatedAt") VALUES (%s::uuid, %s, %s, NOW()) '
             'ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, "updatedAt" = NOW()',
             user.id, user.email, user.name)
-        rows = await tx.query('SELECT * FROM notebooks WHERE "userId" = %s::uuid ORDER BY "createdAt", id LIMIT 100', user.id)
+        rows = await tx.query('SELECT * FROM notebooks WHERE "userId" = %s::uuid ORDER BY "createdAt", id', user.id)
         if not rows:
             rows = await tx.query('INSERT INTO notebooks (id, "userId", name, "updatedAt") '
                 'VALUES (%s::uuid, %s::uuid, %s, NOW()) RETURNING *', str(uuid4()), user.id, "Research notebook")
@@ -44,6 +44,23 @@ async def own_notebook(db, user_id, notebook_id):
     rows = await db.query('SELECT id FROM notebooks WHERE id = %s::uuid AND "userId" = %s::uuid', notebook_id, user_id)
     if not rows:
         raise HTTPException(404, "Notebook not found")
+
+
+async def create_notebook(db, user, name, notebook_id=None):
+    notebook_id = notebook_id or str(uuid4())
+    async with db.transaction() as tx:
+        # Share the bootstrap lock so first-login GET and creation cannot race.
+        await tx.query("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", user.id)
+        await tx.execute('INSERT INTO users (id, email, name, "updatedAt") VALUES (%s::uuid, %s, %s, NOW()) '
+            'ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, "updatedAt" = NOW()',
+            user.id, user.email, user.name)
+        await tx.execute('INSERT INTO notebooks (id, "userId", name, "updatedAt") '
+            'VALUES (%s::uuid, %s::uuid, %s, NOW()) ON CONFLICT (id) DO NOTHING', notebook_id, user.id, name)
+        rows = await tx.query('SELECT id, name FROM notebooks WHERE id = %s::uuid AND "userId" = %s::uuid',
+            notebook_id, user.id)
+        if not rows:
+            raise HTTPException(404, "Notebook not found")
+    return notebook_item(rows[0])
 
 
 async def own_conversation(db, user_id, conversation_id, notebook_id=None):

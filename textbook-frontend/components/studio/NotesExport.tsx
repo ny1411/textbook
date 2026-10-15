@@ -51,7 +51,7 @@ export function NotesExport({ notes, notebookTitle = "Studio Notes" }: NotesExpo
                     type="button"
                     disabled={!notes.length || exporting !== null}
                     onClick={() => void exportNotes(format)}
-                    className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-accent/40 hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     {exporting === format ? <Loader2 size={13} className="animate-spin" aria-hidden="true" /> : <Download size={13} aria-hidden="true" />}
                     {exporting === format ? "Exporting…" : `Export ${format === "md" ? "Markdown" : "PDF"}`}

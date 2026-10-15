@@ -1,6 +1,7 @@
 from uuid import UUID
+from typing import Annotated
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 from core.auth import AuthUser, require_user
 from db.postgres import get_db
 from services import chat_history as history
@@ -13,9 +14,19 @@ class CreateConversation(BaseModel):
     id: UUID | None = None
 
 
+class CreateNotebook(BaseModel):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    id: UUID | None = None
+
+
 @router.get("/notebooks")
 async def notebooks(user: AuthUser = Depends(require_user), db=Depends(get_db)):
     return await history.notebooks(db, user)
+
+
+@router.post("/notebooks", status_code=201)
+async def create_notebook(body: CreateNotebook, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    return await history.create_notebook(db, user, body.name, str(body.id) if body.id else None)
 
 
 @router.get("/conversations")

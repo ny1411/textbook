@@ -84,10 +84,29 @@ GOOGLE_API_KEY="your-google-gemini-api-key"
 QDRANT_URL="https://your-cluster-id.us-east4-0.gcp.cloud.qdrant.io:6333"
 QDRANT_API_KEY="your-qdrant-api-key"
 QDRANT_TIMEOUT_SECONDS="30"
-DATABASE_URL="postgresql://postgres.your-project:your-password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DATABASE_URL="postgresql://postgres.your-project:your-password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=verify-full"
 SUPABASE_URL="https://your-project.supabase.co"
 SUPABASE_SECRET_KEY="your-supabase-service-role-key"
 ```
+
+PostgreSQL connections require `sslmode=require` or `sslmode=verify-full` in
+`DATABASE_URL`; the backend enforces certificate and hostname verification for
+both. It uses `PGSSLROOTCERT` when set, otherwise the system CA file or Certifi's
+CA bundle (including on Windows). Set `PGSSLROOTCERT` to a trusted CA PEM file if
+your database uses a CA outside that bundle. A database configuration or connection
+failure returns 503 from `/api/notebooks` and also prevents image cleanup; Qdrant
+startup can still succeed independently.
+
+For Supabase's pooler, download the database CA certificate from **Database
+Settings → SSL Configuration** in the Supabase dashboard, save it locally, and
+set its path in `.env`, for example:
+
+```env
+PGSSLROOTCERT="C:/Users/neera/Downloads/prod-ca-2021.crt"
+```
+
+URL-encode reserved characters in the password portion of `DATABASE_URL`
+(for example, `@` becomes `%40`). Restart the backend after changing `.env`.
 
 ### 3. Installation
 
@@ -118,13 +137,51 @@ source venv/bin/activate
 **Install dependencies & setup Prisma:**
 ```powershell
 # Install dependencies
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 
-# Generate Prisma client
-prisma generate
+# Optional: generate the client for Prisma-based tools (does not create tables)
+python -m prisma generate
 ```
 
-### 4. Database seeding and setup
+If `pip` reports a launcher error referencing an old project path after moving
+the repository, use `python -m pip` to bypass that launcher. Repair pip and install
+the dependencies in the activated environment:
+
+```powershell
+python -m pip install --force-reinstall pip
+python -m pip install -r requirements.txt
+```
+
+If the environment's Python also fails, recreate `venv` at the current project
+path and reinstall the requirements. Virtual environments should be recreated
+after moving a project because installed command launchers can retain old paths.
+
+### 4. Create the PostgreSQL tables
+
+For a new Supabase project with an empty application schema, review
+`prisma/baseline.sql` (generated from the full current Prisma schema) and
+`prisma/baseline-security.sql`, then run from `textbook-backend/`:
+
+```powershell
+python scripts/init_database.py --apply
+```
+
+This creates all 12 application tables, enums, indexes, foreign keys, attachment
+constraints, and backend-only table protections in one transaction. It uses
+`DATABASE_URL` and `PGSSLROOTCERT` from `.env` and refuses to run if the target
+schema already contains tables/views. Startup and `prisma generate` do not apply
+the schema. The `prisma/changes/` scripts are upgrades for older databases; do
+not run them after initializing this current baseline. For an existing database,
+follow the deployment guidance in `docs/chat-history.md`.
+
+When updating the baseline for a future empty database, regenerate its Prisma
+portion and review the companion security SQL:
+
+```powershell
+python -m prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script --output prisma/baseline.sql
+```
+
+### 5. Optional sample seeding
 ```powershell
 # Reset Qdrant collection and configure HNSW and payload indexes
 python scripts/reset_db.py
@@ -133,13 +190,13 @@ python scripts/reset_db.py
 python scripts/seed_corpus.py
 ```
 
-### 5. Run development server
+### 6. Run development server
 ```powershell
 python -m uvicorn main:app --reload --port 8000
 ```
 - API docs: `http://localhost:8000/docs`
 
-### 6. Run evaluations
+### 7. Run evaluations
 ```powershell
 # Run the complete retrieval and generation benchmark
 python evals/run_evals.py

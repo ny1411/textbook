@@ -23,12 +23,18 @@ export interface UploadProgress {
     error?: string;
 }
 
+// Keep the document picker aligned with the upload API's accepted formats.
 export const ACCEPTED_TYPES = {
     "application/pdf": [".pdf"],
-    "text/plain": [".txt"],
+    "text/plain": [".txt", ".py", ".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".json",
+        ".c", ".cpp", ".cs", ".java", ".rs", ".go", ".swift", ".php"],
+    "text/csv": [".csv"],
     "text/markdown": [".md"],
     "application/msword": [".doc"],
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xls"],
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".ppt"],
-}
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+    "application/vnd.ms-powerpoint": [".ppt"],
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+    "audio/*": [],
+    "image/*": [],
+};

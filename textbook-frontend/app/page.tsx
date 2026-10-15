@@ -4,109 +4,108 @@ import ChatInterface from "@/components/chat/ChatInterface";
 import { Header } from "@/components/layout/Header";
 import { StudioPanel } from "@/components/layout/StudioPanel";
 import { RetrievalInspectorModal } from "@/components/search/RetrievalInspectorModal";
-import { SidebarSources } from "@/components/sources/SidebarSources";
+import { WorkspaceSidebar } from "@/components/layout/WorkspaceSidebar";
+import { ChatSessionProvider } from "@/components/chat/ChatSessionProvider";
+import { useOwnedWorkspace } from "@/hooks/useOwnedWorkspace";
 import { useTextbookStore } from "@/stores/useTextbookStore";
-import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { SubtleMeshGradient } from "@/components/ui/subtle-mesh-gradient";
 
 export default function Home() {
   const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [isSourceOpen, setIsSourceOpen] = useState(false);
-  const [textbookTitle] = useState("AI Engineering");
-  const [userAvatar] = useState("N");
-
+  const workspace = useOwnedWorkspace();
   const { isInspectorOpen, setInspectorOpen, workspaceUserId, activeNotebookId } = useTextbookStore();
 
+  useEffect(() => {
+    if (!isSourceOpen && !isStudioOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      setIsSourceOpen(false);
+      setIsStudioOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isSourceOpen, isStudioOpen]);
+
   return (
-    <div className="h-dvh w-screen flex flex-col overflow-hidden bg-zinc-900 text-zinc-100 antialiased">
-      <Header
-        textbookTitle={textbookTitle}
-        isStudioOpen={isStudioOpen}
-        isSourceOpen={isSourceOpen}
-        onToggleStudio={() => {
-          setIsStudioOpen((open) => !open);
-          setIsSourceOpen(false);
-        }}
-        onToggleSources={() => {
-          setIsSourceOpen((open) => !open);
-          setIsStudioOpen(false);
-        }}
-        userAvatar={userAvatar}
-      />
-      <main className="flex-1 flex overflow-hidden">
-        {/* Backdrop overlay for mobile/tablet when either sidebar is open */}
-        {(isSourceOpen || isStudioOpen) && (
-          <div
-            onClick={() => {
-              setIsSourceOpen(false);
-              setIsStudioOpen(false);
-            }}
-            className={`fixed inset-0 top-12 bg-black/50 z-30 backdrop-blur-xs ${isStudioOpen ? "xl:hidden" : "lg:hidden"}`}
-          />
-        )}
-
-        {/* Left Panel */}
-        <motion.aside
-          aria-label="Sources"
-          animate={{ x: isSourceOpen ? 0 : "-100%" }}
-          transition={{
-            duration: 0.5,
-            delay: 0.1,
-            ease: [0, 0.71, 0.2, 1.01],
-          }}
-          className={`
-            fixed lg:static top-12 bottom-0 left-0 z-40
-            w-72 lg:w-80 shrink-0 bg-zinc-900 border-r border-zinc-700 overflow-y-auto
-            lg:!transform-none
-          `}
-          data-lenis-prevent
-        >
-          <SidebarSources />
-        </motion.aside>
-
-        {/* Center Panel */}
-        <section className="flex-1 min-w-0 flex flex-col h-full relative" data-lenis-prevent>
-          <ChatInterface onCitationClick={(citation) => {
-            useTextbookStore.getState().setActiveCitation(citation);
-            useTextbookStore.getState().setActiveStudioTab("citation");
-            setIsStudioOpen(true);
+    <ChatSessionProvider userId={workspace.userId} notebookId={workspace.notebookId} ready={workspace.ready}>
+      <div className="h-dvh w-full flex flex-col overflow-hidden bg-background text-foreground antialiased">
+        <Header
+          notebooks={workspace.notebooks}
+          notebookId={workspace.notebookId}
+          onCreateNotebook={workspace.createNotebook}
+          isStudioOpen={isStudioOpen}
+          isSourceOpen={isSourceOpen}
+          onToggleStudio={() => {
+            setIsStudioOpen((open) => !open);
             setIsSourceOpen(false);
-          }} />
-        </section>
-
-        {/* Right Panel */}
-        <AnimatePresence>
-          {isStudioOpen && (
-            <motion.aside
-              aria-label="Studio"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 384, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{
-                duration: 0.5,
-                delay: 0.1,
-                ease: [0, 0.71, 0.2, 1.01],
+          }}
+          onToggleSources={() => {
+            setIsSourceOpen((open) => !open);
+            setIsStudioOpen(false);
+          }}
+        />
+        <main className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Backdrop overlay for mobile/tablet when either sidebar is open */}
+          {(isSourceOpen || isStudioOpen) && (
+            <button
+              type="button"
+              aria-label="Close workspace panel"
+              tabIndex={-1}
+              onClick={() => {
+                setIsSourceOpen(false);
+                setIsStudioOpen(false);
               }}
-              className={`
-              fixed xl:static top-12 bottom-0 right-0 z-40 shrink-0 max-w-[100vw]
-              bg-zinc-900 border-zinc-700 overflow-y-auto
-              ${isStudioOpen
-                  ? "w-80 xl:w-96 translate-x-0 border-l"
-                  : "w-80 translate-x-full xl:w-0 xl:translate-x-0 xl:border-l-0 xl:overflow-hidden"
-                }
-              `}
-              data-lenis-prevent
-            >
-              <StudioPanel key={`${workspaceUserId}:${activeNotebookId}`} />
-            </motion.aside>
+              className={`fixed inset-0 top-16 bg-black/60 z-30 ${isStudioOpen ? "xl:hidden" : "lg:hidden"}`}
+            />
           )}
-        </AnimatePresence>
-      </main>
-      <RetrievalInspectorModal
-        key={`${workspaceUserId}:${activeNotebookId}`}
-        isOpen={isInspectorOpen}
-        onClose={() => setInspectorOpen(false)}
-      />
-    </div>
+
+          {/* Left Panel */}
+          <aside
+            id="workspace-sidebar"
+            aria-label="Chats and sources"
+            className={`
+              fixed lg:static top-16 bottom-0 left-0 z-40
+              w-[280px] max-w-[85vw] shrink-0 bg-background border-r border-border overflow-hidden
+              transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 lg:visible
+              ${isSourceOpen ? "translate-x-0 visible" : "-translate-x-full invisible"}
+            `}
+            data-lenis-prevent
+          >
+            <WorkspaceSidebar authenticated={workspace.authenticated} error={workspace.error} sourcesLoading={workspace.sourcesLoading}
+              onRetry={workspace.retry} onNavigate={() => setIsSourceOpen(false)} />
+          </aside>
+
+          {/* Center Panel */}
+          <section aria-label="Research chat" className="research-canvas isolate flex-1 min-w-0 flex flex-col h-full relative" data-lenis-prevent>
+            <SubtleMeshGradient className="-z-10" />
+            <ChatInterface workspace={workspace} onCitationClick={(citation) => {
+              useTextbookStore.getState().setActiveCitation(citation);
+              useTextbookStore.getState().setActiveStudioTab("citation");
+              setIsStudioOpen(true);
+              setIsSourceOpen(false);
+            }} />
+          </section>
+
+          {/* Right Panel */}
+            {isStudioOpen ? (
+              <aside
+                id="studio-panel"
+                aria-label="Studio"
+                className="fixed xl:static top-16 bottom-0 right-0 z-40 w-96 max-w-[90vw] shrink-0 bg-background border-l border-border overflow-y-auto"
+                data-lenis-prevent
+              >
+                <StudioPanel key={`${workspaceUserId}:${activeNotebookId}`} />
+              </aside>
+            ) : null}
+        </main>
+        <RetrievalInspectorModal
+          key={`${workspaceUserId}:${activeNotebookId}`}
+          isOpen={isInspectorOpen}
+          onClose={() => setInspectorOpen(false)}
+        />
+      </div>
+    </ChatSessionProvider>
   );
 }

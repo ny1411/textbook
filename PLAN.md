@@ -253,11 +253,12 @@ Use `[x]` to mark tasks as completed.
 
 ### Phase 15.6: Better UX
 - [x] Prevent lenis to hijak internal scroll areas like scrollable chatbox, scrollable source viewer, etc. Add lenis `data-lenis-prevent` on internal scroll containers, so chat scroll works smoothly.
-- [ ] Add **MeshGradint** to background of central hero section, use [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient).
-- [x] Add **MeshGradint** on audio playback card, use animated shader as a living waveform blob visualizer from [Shader Paper Design Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`
+- [x] Add **MeshGradient** to the central research canvas using [Paper Mesh Gradient](https://shaders.paper.design/mesh-gradient), with low-opacity charcoal/copper colors, a bounded pixel budget, and a static reduced-motion/WebGL fallback.
+- [x] Add **MeshGradient** on the audio playback card using [Paper Mesh Gradient](https://shaders.paper.design/mesh-gradient). When playing, `speed={0.2}`, when paused, `speed={0.05}`; keep the effect subdued to match the current theme.
 - [ ] Add **Heatmap** effect during image generation using [Shader Paper Design Heatmap](https://shaders.paper.design/heatmap).
-- [x] Add **LiquidMetal** blob pulse effect when agent is in reflecting/thinking mode. Use [Shader Paper Design Liquid Metal](https://shaders.paper.design/liquid-metal).
-- [x] Add **PulsatingBorder** effect to chat input container when agent is generating responses. Use [Shader Paper Design Pulsating Border](https://shaders.paper.design/pulsing-border).
+- [x] Show [Spectrum Thinking Dots](https://ui.spectrumhq.in/blocks/ai-assistants#thinking-dots) while a response is being prepared, replacing the earlier LiquidMetal blob treatment with a quieter indicator.
+- [x] Add a subdued copper **Pulsing Border** to the busy composer using [Paper Pulsing Border](https://shaders.paper.design/pulsing-border), with low bloom/intensity and a static reduced-motion/WebGL fallback.
+- Component sources, implementation paths, and adaptations: [UI component inventory](docs/ui-components.md).
 
 #### Phase 15.7: Verification & End-to-End Polish
 - [ ] Verify full roundtrip with FastAPI backend: PDF upload -> Hybrid Search -> Rerank -> Generation with Citations -> UI Render.

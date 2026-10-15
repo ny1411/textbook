@@ -1,6 +1,6 @@
 import { UserProfile } from "@/stores/useUserStore";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface UserMenuProps {
     user: UserProfile | null;
@@ -10,16 +10,42 @@ interface UserMenuProps {
 
 export function UserMenu({ user, onSignOut, onOpenSettings }: UserMenuProps) {
     const [isOpen, setIsOpen] = useState<boolean>(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const closeOutside = (event: PointerEvent) => {
+            if (!menuRef.current?.contains(event.target as Node)) setIsOpen(false);
+        };
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsOpen(false);
+                triggerRef.current?.focus();
+            }
+        };
+        window.addEventListener("pointerdown", closeOutside);
+        window.addEventListener("keydown", closeOnEscape);
+        return () => {
+            window.removeEventListener("pointerdown", closeOutside);
+            window.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [isOpen]);
 
     const userInitials = user?.name
         ? user?.name.slice(0, 1).toUpperCase()
-        : user?.email?.slice(0, 1).toUpperCase();
+        : user?.email?.slice(0, 1).toUpperCase() || "R";
     return (
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
             <button
+                type="button"
+                ref={triggerRef}
                 onClick={() => setIsOpen(!isOpen)}
-                className="size-7 rounded-full bg-indigo-600/20 border border-indigo-500/40 hover:ring-2 hover:ring-indigo-500/40 flex items-center justify-center transition-all cursor-pointer overflow-hidden"
-                title="Account Settings"
+                className="flex size-9 items-center justify-center overflow-hidden rounded-full border border-accent/40 bg-surface transition-colors hover:border-accent"
+                aria-label="Open account menu"
+                aria-expanded={isOpen}
+                aria-controls="account-menu"
+                title="Account"
             >
                 {user?.avatarUrl ? (
                     <Image
@@ -31,7 +57,7 @@ export function UserMenu({ user, onSignOut, onOpenSettings }: UserMenuProps) {
                         className="size-full object-cover"
                     />
                 ) : (
-                    <span className="text-xs font-semibold text-indigo-400">
+                    <span className="text-xs font-medium text-accent">
                         {userInitials}
                     </span>
                 )}
@@ -39,18 +65,16 @@ export function UserMenu({ user, onSignOut, onOpenSettings }: UserMenuProps) {
             {isOpen && (
                 <>
                     <div
-                        onClick={() => setIsOpen(false)}
-                        className="fixed inset-0 z-40"
-                    />
-                    <div
-                        className="absolute flex flex-col justify-start items-start 
-                        right-0 top-9 z-50 w-60 text-sm rounded-2xl 
-                        border border-zinc-700/80 bg-zinc-900/95 
-                        backdrop-blur-md p-4 shadow-2xl 
-                        animate-in fade-in zoom-in-95 duration-150"
+                        id="account-menu"
+                        className="absolute right-0 top-12 z-50 flex w-60 flex-col items-start rounded-xl border border-border bg-background p-3 text-sm shadow-xl"
                     >
-                        <button
-                            className="hover:bg-gray-600/10 px-2 py-1.5 w-full rounded-lg text-start text-zinc-300 transition-colors cursor-pointer"
+                        <div className="mb-2 w-full border-b border-border px-2 pb-3">
+                            <p className="truncate text-xs text-foreground">{user?.name || "Researcher"}</p>
+                            <p className="mt-1 truncate text-[11px] text-muted">{user?.email}</p>
+                        </div>
+                        {onOpenSettings ? <button
+                            type="button"
+                            className="w-full rounded-lg px-2 py-2 text-start text-xs text-muted transition-colors hover:bg-surface hover:text-foreground"
                             onClick={() => {
                                 setIsOpen(false);
                                 onOpenSettings?.();
@@ -59,10 +83,11 @@ export function UserMenu({ user, onSignOut, onOpenSettings }: UserMenuProps) {
                             <span>
                                 Settings
                             </span>
-                        </button>
+                        </button> : null}
                         {/* Sign Out Button */}
                         <button
-                            className="hover:bg-gray-600/10 px-2 py-1.5 w-full rounded-lg text-start text-zinc-300 transition-colors cursor-pointer"
+                            type="button"
+                            className="w-full rounded-lg px-2 py-2 text-start text-xs text-muted transition-colors hover:bg-surface hover:text-foreground"
                             onClick={() => {
                                 setIsOpen(false);
                                 onSignOut();

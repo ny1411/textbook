@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import ssl
+import certifi
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
@@ -86,7 +87,9 @@ async def get_db():
             try:
                 url = connection_url(os.environ.get("DATABASE_URL", ""))
                 schema = parse_qs(urlsplit(os.environ["DATABASE_URL"]).query).get("schema", ["public"])[0]
-                ca_file = os.environ.get("PGSSLROOTCERT") or ssl.get_default_verify_paths().cafile
+                # Windows can have trusted certificates without an OpenSSL CA
+                # file. Use Mozilla's bundle when no explicit/system file exists.
+                ca_file = os.environ.get("PGSSLROOTCERT") or ssl.get_default_verify_paths().cafile or certifi.where()
                 if not ca_file:
                     raise ValueError("PostgreSQL CA trust is missing")
                 # Pool warnings can include connection details. API failures are
