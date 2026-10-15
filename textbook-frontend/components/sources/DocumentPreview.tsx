@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Component, useEffect, useState, type ReactNode } from "react";
-import { LoaderCircle } from "lucide-react";
+import { Download, LoaderCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import type { SourceDocument } from "@/types/source";
 
@@ -27,7 +27,7 @@ class PreviewBoundary extends Component<{ children: ReactNode }, { failed: boole
 type LoadedDocument = { url: string; text?: string };
 const TEXT_EXTENSIONS = new Set(["txt", "md", "csv", "tsv", "py", "js", "ts", "jsx", "tsx", "html", "css", "json", "c", "cpp", "cs", "java", "rs", "go", "swift", "php"]);
 
-export function DocumentPreview({ source }: { source: SourceDocument }) {
+export function DocumentPreview({ source, details }: { source: SourceDocument; details?: ReactNode }) {
     const [loaded, setLoaded] = useState<LoadedDocument>();
     const [error, setError] = useState<string>();
     const [attempt, setAttempt] = useState(0);
@@ -59,11 +59,10 @@ export function DocumentPreview({ source }: { source: SourceDocument }) {
         return () => { controller.abort(); if (url) URL.revokeObjectURL(url); };
     }, [source.documentId, extension, mediaType, isText, attempt]);
 
-    if (error) return <div role="alert" className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted"><p>{error}</p><button type="button" className="rounded-lg border border-border px-4 py-2 text-foreground" onClick={() => setAttempt((n) => n + 1)}>Retry preview</button></div>;
-    if (!loaded) return <LoadingPreview />;
-
     let content: ReactNode;
-    if (extension === "pdf" || mediaType === "application/pdf") content = <PDFViewer src={loaded.url} className="h-full" defaultZoom="fit-width" showUpload={false} showDownload={false} />;
+    if (error) content = <div role="alert" className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted"><p>{error}</p><button type="button" className="rounded-lg border border-border px-4 py-2 text-foreground" onClick={() => setAttempt((n) => n + 1)}>Retry preview</button></div>;
+    else if (!loaded) content = <LoadingPreview />;
+    else if (extension === "pdf" || mediaType === "application/pdf") content = <PDFViewer src={loaded.url} className="h-full" defaultZoom="fit-width" showUpload={false} showDownload={false} />;
     else if (["doc", "docx"].includes(extension)) content = <DocxViewer src={loaded.url} fileName={source.filename} className="h-full" defaultZoom="fit-width" isDark={isDark} onIsDarkChange={setIsDark} showUpload={false} showDownload={false} />;
     else if (extension === "xlsx") content = <XlsxViewer src={loaded.url} fileName={source.filename} className="h-full" isDark={isDark} onIsDarkChange={setIsDark} showUpload={false} showDownload={false} />;
     else if (["ppt", "pptx"].includes(extension)) content = <PptxViewer src={loaded.url} fileName={source.filename} className="h-full" defaultZoom="fit-width" showUpload={false} showDownload={false} />;
@@ -76,9 +75,13 @@ export function DocumentPreview({ source }: { source: SourceDocument }) {
     else content = <p className="p-6 text-sm text-muted">Preview is unavailable for this file format. Download the original to open it.</p>;
 
     return <div className="flex h-full min-h-0 flex-col">
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-2 text-xs text-muted">
-            <span>{source.size === undefined ? "Document preview" : `${(source.size / 1024).toFixed(0)} KB`}</span>
-            <a href={loaded.url} download={source.filename} className="text-accent underline underline-offset-4">Download original</a>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border pb-3 text-xs text-muted">
+            {details}
+            {loaded ? <a href={loaded.url} download={source.filename} className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-2 text-accent transition-colors hover:bg-surface-raised">
+                <Download className="size-3.5" aria-hidden="true" /> Download
+            </a> : <button type="button" disabled className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-2 text-muted opacity-50">
+                <Download className="size-3.5" aria-hidden="true" /> Download
+            </button>}
         </div>
         <div className="min-h-0 flex-1"><PreviewBoundary key={`${source.documentId}:${attempt}`}>{content}</PreviewBoundary></div>
         <div id="portal" />
