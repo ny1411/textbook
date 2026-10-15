@@ -2,8 +2,9 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { SourceDocument } from "@/types/source";
-import { Calendar, FileText, HardDrive, X } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import { useRef } from "react";
+import { DocumentPreview } from "./DocumentPreview";
 
 interface SourceViewerModelProps {
     source: SourceDocument | null;
@@ -21,7 +22,7 @@ export function SourceViewerModel({ source, isOpen, onClose }: SourceViewerModel
                 <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 animate-in fade-in duration-200" />
                 <Dialog.Content data-lenis-prevent className="fixed top-1/2 left-1/2
                 -translate-x-1/2 -translate-y-1/2
-                w-[calc(100%_-_32px)] max-w-lg max-h-[88dvh] overflow-y-auto bg-background border border-border
+                w-[calc(100%_-_32px)] max-w-6xl h-[88dvh] flex flex-col overflow-hidden bg-background border border-border
                 p-6 rounded-2xl z-50 shadow-2xl"
                     style={{ animationDuration: "200ms" }}
                     onOpenAutoFocus={() => {
@@ -45,28 +46,9 @@ export function SourceViewerModel({ source, isOpen, onClose }: SourceViewerModel
                             </button>
                         </Dialog.Close>
                     </div>
-                    <Dialog.Description className="mt-4 text-xs text-muted">Details for this research source.</Dialog.Description>
-                    <div className="mt-4 space-y-3 text-xs text-muted">
-                        <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/40">
-                            <span className="flex items-center gap-2">
-                                <HardDrive size={20} /> File Size
-                            </span>
-                            <span className="font-mono text-foreground">
-                                {source.size ? `${(source.size / 1024).toFixed(0)} KB` : "Unknown size"}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/40">
-                            <span className="flex items-center gap-2">
-                                <Calendar size={14} /> Uploaded
-                            </span>
-                            <span className="font-mono text-foreground">
-                                {source.uploadedAt ? new Date(source.uploadedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "Just now"}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/40">
-                            <span>Path</span>
-                            <span className="max-w-[65%] truncate font-mono text-muted" title={source.filepath}>{source.filepath}</span>
-                        </div>
+                    <Dialog.Description className="sr-only">Document preview for this research source.</Dialog.Description>
+                    <div className="min-h-0 flex-1 overflow-hidden pt-4">
+                        {isOpen && <DocumentPreview key={source.documentId ?? source.filepath} source={source} />}
                     </div>
                 </Dialog.Content>
             </Dialog.Portal>

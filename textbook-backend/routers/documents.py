@@ -1,5 +1,8 @@
 import logging
-from fastapi import APIRouter, Depends, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException, Response
+from starlette.concurrency import run_in_threadpool
+from urllib.parse import quote
+from services.storage import download_file_from_supabase
 from pydantic import BaseModel
 from uuid import UUID
 from core.auth import require_user, AuthUser
@@ -30,6 +33,19 @@ async def document_status(document_id: UUID, user: AuthUser = Depends(require_us
     row = await own_document(db, user.id, str(document_id))
     return {"document_id": str(document_id), "status": "failed" if row["deletionPending"] else STATUS[row["status"]],
         "deletion_pending": row["deletionPending"]}
+
+
+@router.get("/documents/{document_id}/content")
+async def document_content(document_id: UUID, user: AuthUser = Depends(require_user), db=Depends(get_db)):
+    row = await own_document(db, user.id, str(document_id))
+    if row["deletionPending"]:
+        raise HTTPException(404, "Source is being removed")
+    data = await run_in_threadpool(download_file_from_supabase, "textbook-documents", row["storageUrl"])
+    return Response(data, media_type="application/octet-stream", headers={
+        "Content-Disposition": "attachment; filename*=UTF-8''" + quote(row["name"] or "Document", safe=""),
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+    })
 
 
 @router.get("/documents")

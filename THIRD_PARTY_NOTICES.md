@@ -17,3 +17,7 @@ The measured spring caret in `components/ui/smooth-input.tsx` is adapted from **
 ## Package dependencies
 
 Paper Shaders, Motion, Radix, Lucide, and react-dropzone are consumed as package dependencies. Their upstream licenses/notices remain in the distributed packages. Source/documentation URLs are included in the component inventory.
+
+## Extend UI
+
+Document viewers in `components/extend/` and their supporting shadcn primitives are adapted from [Extend UI](https://github.com/extend-hq/ui), copyright (c) 2026 CrowdView Inc, dba Extend, with portions copyright (c) 2023 shadcn. MIT License; the complete upstream notice is preserved in [docs/licenses/extend-ui.txt](docs/licenses/extend-ui.txt). Local changes connect authenticated source bytes, add multi-format routing, adapt primitive APIs and theme tokens, and repair the scroll viewport hook. Unused editor components are omitted.

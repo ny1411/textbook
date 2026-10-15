@@ -41,3 +41,5 @@ The upstream source is adapted in this repository, so re-running an add command 
 - Phase 392–401: diagram generation, its backend endpoint, Heatmap generation loader, and figure actions are still planned. The app currently has no `/api/image/generate` flow; this update does not show a simulated generation action or claim that feature is complete.
 
 Attribution and copied-source licenses are recorded in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
+
+Sources previews use [Extend UI document viewers](https://www.extend.ai/ui/docs/components/pdf-viewer), installed from the style-aware registry on October 15, 2026. `components/sources/DocumentPreview.tsx` lazily selects the PDF, DOCX, XLSX, PPTX/PPT, or CSV viewer in `components/extend/`; text/code, images, and audio have native content previews. The content endpoint checks document ownership and pending deletion before downloading private Storage bytes. Blob URLs are revoked on close or scope changes. HTML is shown as text. Legacy DOC support remains experimental upstream. Corrupt or unsupported files retain an original-file download.
