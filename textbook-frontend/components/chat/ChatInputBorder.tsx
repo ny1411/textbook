@@ -9,15 +9,18 @@ interface ChatInputBorderProps {
     isActive: boolean;
     isAgentMode?: boolean;
 }
-export function ChatInputBorder({ isActive }: ChatInputBorderProps) {
+export function ChatInputBorder({ isActive, isAgentMode = false }: ChatInputBorderProps) {
     const enabled = useShaderEffects();
     if (!isActive) return null;
-    return <div aria-hidden="true" data-composer-pulse className="pointer-events-none absolute -inset-px overflow-hidden rounded-[20px] border border-accent/45">
-        {enabled && <PulsingBorder colors={["#c49b75", "#806248", "#a58b70"]} colorBack="#00000000"
+    const colors = isAgentMode
+        ? ["#c49b75", "#e1c6ab", "#a77a54", "#eee5d8"]
+        : ["#a77a54", "#c49b75", "#dfbb97", "#806248"];
+    return <div aria-hidden="true" data-composer-pulse className="pointer-events-none absolute -inset-[2px] overflow-hidden rounded-[21px] border border-accent/60">
+        {enabled && <PulsingBorder colors={colors} colorBack="#00000000"
             scale={1} aspectRatio="auto" margin={0}
-            roundness={0.3} thickness={0.035} softness={0.7} intensity={0.18} bloom={0.08}
-            spots={2} spotSize={0.15} pulse={0.12} smoke={0} speed={0.35}
-            minPixelRatio={0.5} maxPixelCount={80_000} webGlContextAttributes={shaderContextOptions}
-            className="opacity-55" style={{ width: "100%", height: "100%" }} />}
+            roundness={0.35} thickness={0.08} softness={1} intensity={0.5} bloom={0.55}
+            spots={3} spotSize={0.2} pulse={0.3} smoke={0.25} smokeSize={0.7} speed={0.9}
+            minPixelRatio={0.5} maxPixelCount={160_000} webGlContextAttributes={shaderContextOptions}
+            className="opacity-90" style={{ width: "100%", height: "100%" }} />}
     </div>;
 }

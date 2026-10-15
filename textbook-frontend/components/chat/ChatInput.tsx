@@ -232,6 +232,7 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
         const controller = new AbortController();
         uploadController.current = controller;
         setAttachmentError(null);
+        let submittedDraft: string | undefined;
         try {
             let conversationId: string | undefined;
             const attachments: ChatAttachment[] = [];
@@ -245,15 +246,22 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
             }
             if (retryImageId || controller.signal.aborted) return;
             for (const attachment of attachments) submittedIds.current.add(attachment.id);
+            // onSend resolves after the entire reply. Clear at handoff, before waiting for it.
+            submittedDraft = transcriptOverride ?? input;
+            setInput("");
             const accepted = await onSend(query, isAgentMode, attachments, conversationId);
             if (accepted) {
-                setInput("");
                 for (const image of imagesRef.current) URL.revokeObjectURL(image.preview);
                 updateImages([]);
             } else {
+                setInput((current) => current || submittedDraft!);
                 for (const attachment of attachments) submittedIds.current.delete(attachment.id);
             }
         } catch (error) {
+            if (submittedDraft !== undefined && !controller.signal.aborted) {
+                const draft = submittedDraft;
+                setInput((current) => current || draft);
+            }
             if (!controller.signal.aborted) setAttachmentError(error instanceof Error ? error.message : "Could not upload images. Please retry.");
         } finally {
             busy.current = false;
