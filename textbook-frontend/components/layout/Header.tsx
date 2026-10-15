@@ -6,16 +6,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import { AuthModal } from "../auth/AuthModal";
 import { UserMenu } from "../auth/UserMenu";
+import { NotebookSelector, type NotebookSelectorProps } from "./NotebookSelector";
+import { cn } from "@/lib/utils";
 
-interface HeaderProps {
-    textbookTitle: string;
+interface HeaderProps extends NotebookSelectorProps {
     isStudioOpen?: boolean;
     isSourceOpen?: boolean;
     onToggleStudio?: () => void;
     onToggleSources?: () => void;
 }
 
-export function Header({ textbookTitle, isStudioOpen = false, isSourceOpen = false, onToggleStudio, onToggleSources }: HeaderProps) {
+export function Header({ notebooks, notebookId, onCreateNotebook, isStudioOpen = false, isSourceOpen = false, onToggleStudio, onToggleSources }: HeaderProps) {
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const { user, isAuthenticated, signInWithProvider, signOut } = useAuth();
     const setInspectorOpen = useTextbookStore((s) => s.setInspectorOpen);
@@ -30,17 +31,17 @@ export function Header({ textbookTitle, isStudioOpen = false, isSourceOpen = fal
         <>
             <header className="relative z-50 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-3 sm:px-6">
                 <div className="flex min-w-0 items-center gap-3">
-                    <button type="button" onClick={onToggleSources} aria-label={isSourceOpen ? "Close sources" : "Open sources"}
-                        aria-expanded={isSourceOpen} aria-controls="sources-panel"
+                    <button type="button" onClick={onToggleSources} aria-label={isSourceOpen ? "Close chats and sources" : "Open chats and sources"}
+                        aria-expanded={isSourceOpen} aria-controls="workspace-sidebar"
                         className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-foreground lg:hidden">
                         <PanelLeft size={18} aria-hidden="true" />
                     </button>
                     <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
                         <BookOpen className="size-6 text-accent sm:size-7" strokeWidth={1.4} aria-hidden="true" />
-                        <span className="font-serif text-[22px] tracking-tight sm:text-[25px]">Textbook</span>
+                        <span className={cn("font-serif text-[22px] tracking-tight sm:text-[25px]", notebooks.length > 0 && "hidden sm:inline")}>Textbook</span>
                     </div>
                     <span className="mx-2 hidden h-5 w-px bg-border md:block" aria-hidden="true" />
-                    <span className="hidden truncate text-[13px] text-muted md:block">{textbookTitle}</span>
+                    {isAuthenticated && notebooks.length > 0 && <NotebookSelector notebooks={notebooks} notebookId={notebookId} onCreateNotebook={onCreateNotebook} />}
                 </div>
                 <div className="flex shrink-0 items-center gap-1 sm:gap-3">
                     <button type="button" onClick={() => setInspectorOpen(true)} title="Open Retrieval Inspector"

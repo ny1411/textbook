@@ -11,8 +11,14 @@ import { SourceDocument } from "@/types/source";
 import { useDocumentPoller } from "@/hooks/useDocumentStatusPoller";
 import { useUserStore } from "@/stores/useUserStore";
 import { useTextbookStore } from "@/stores/useTextbookStore";
+import { SidebarListSkeleton } from "@/components/layout/WorkspaceSkeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function SidebarSources() {
+export function SidebarSources({ isLoading = false, error, onRetry }: {
+    isLoading?: boolean;
+    error?: string;
+    onRetry?: () => void;
+}) {
     useDocumentPoller();
 
     const allSources = useSourceStore((s) => s.source);
@@ -75,19 +81,20 @@ export function SidebarSources() {
                     <h2 className="text-[14px] font-medium text-foreground">Sources</h2>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-muted" title="Select all sources">
-                    <span>{selectedCount}/{selectableSources.length}</span>
+                    {isLoading ? <Skeleton aria-label="Loading source count" className="h-3 w-8" /> : <span>{selectedCount}/{selectableSources.length}</span>}
                     <input
                         type="checkbox"
                         checked={allSelected}
-                        disabled={selectableSources.length === 0}
+                        disabled={isLoading || !!error || selectableSources.length === 0}
                         onChange={(event) => event.target.checked ? selectAllSources() : deselectAllSources()}
                         aria-label="Select all sources"
                         className={`size-3.5 accent-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40 ${selectableSources.length === 0 ? "sr-only" : ""}`}
                     />
                 </label>
             </div>
-            <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto space-y-2 pb-5">
-                {sources.length === 0 ? (
+            <div data-lenis-prevent aria-busy={isLoading} className="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto pb-5">
+                {error ? <div role="alert" className="text-xs leading-5 text-muted">{error} {onRetry && <button type="button" onClick={onRetry} className="text-accent underline">Retry workspace</button>}</div>
+                : isLoading ? <SidebarListSkeleton kind="sources" /> : sources.length === 0 ? (
                     <div className="flex min-h-[190px] flex-col items-center justify-center rounded-[10px] border border-dashed border-border px-4 py-7 text-center">
                         <File size={28} strokeWidth={1.2} className="mb-4 text-muted" aria-hidden="true" />
                         <p className="font-serif text-[17px] text-foreground">Your research starts here</p>

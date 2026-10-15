@@ -4,7 +4,7 @@ The source inventory, original URLs, integration points, and local modifications
 
 ## Xevrion UI Lab
 
-Select Menu, Hover Card, Upload Button, and the reduced-motion hook are adapted from [Xevrion UI Lab](https://github.com/xevrion/ui-lab), by Yash Bavadiya. Copyright (c) 2026 Yash Bavadiya. MIT License; the full upstream copyright and permission notice is preserved in [docs/licenses/xevrion-ui-lab.txt](docs/licenses/xevrion-ui-lab.txt).
+Select Menu, Sliding Tabs, Hover Card, Upload Button, and the reduced-motion hook are adapted from [Xevrion UI Lab](https://github.com/xevrion/ui-lab), by Yash Bavadiya. Copyright (c) 2026 Yash Bavadiya. MIT License; the full upstream copyright and permission notice is preserved in [docs/licenses/xevrion-ui-lab.txt](docs/licenses/xevrion-ui-lab.txt).
 
 ## Spectrum UI
 

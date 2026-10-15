@@ -85,6 +85,13 @@ first-login bootstrap safe across tabs. Existing notebooks are reused. The UI
 lists owned notebooks, remembers only an owned selection, and reloads persisted
 sources before enabling chat. Unauthenticated users receive a sign-in prompt.
 
+`POST /api/notebooks` creates a notebook for the verified account. Its JSON body
+contains `name` (trimmed, 1–100 characters) and an optional UUID `id` for safe
+retries. It returns `{id, name}` with status 201. The selector's **Create notebook**
+action opens a naming dialog and selects the saved notebook. Conversations retain
+their required `notebookId` foreign key; messages remain linked through
+`conversationId`. No schema migration is needed for notebook creation.
+
 Uploads store `uploaded_documents` metadata before returning, using the same
 UUID as Qdrant ingestion and status polling. Background ingestion updates its
 persistent status to COMPLETED/FAILED. Metadata failure removes only the newly

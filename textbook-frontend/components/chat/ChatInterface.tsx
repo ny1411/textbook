@@ -1,19 +1,16 @@
 "use client";
 
-import { useChat } from "@/hooks/useChat";
+import { useChatSession } from "./ChatSessionProvider";
 import { CitationItem } from "@/types/api";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChatInput } from "./ChatInput";
-import { LoaderCircle, Plus } from "lucide-react";
+import { ConversationSkeleton, MessageSkeleton } from "@/components/layout/WorkspaceSkeletons";
 import { ChatLoadingIndicator } from "./ChatLoadingIndicator";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedQueries, WelcomeHeading } from "./SuggestedQueries";
 import { SampleTextbookLoader } from "@/components/sources/SampleTextbookLoader";
 import { cn } from "@/lib/utils";
-import { useOwnedWorkspace } from "@/hooks/useOwnedWorkspace";
-import { useTextbookStore } from "@/stores/useTextbookStore";
-import { useVoicePlayback } from "@/components/voice/VoicePlaybackProvider";
-import { SelectMenu } from "@/components/ui/select-menu";
+import type { useOwnedWorkspace } from "@/hooks/useOwnedWorkspace";
 
 interface ChatInterfaceProps {
     onCitationClick?: (citation: CitationItem) => void;
@@ -64,28 +61,18 @@ function SignedOutWelcome() {
     );
 }
 
-export default function ChatInterface({ onCitationClick }: ChatInterfaceProps) {
-    const workspace = useOwnedWorkspace();
+export default function ChatInterface({ workspace, onCitationClick }: ChatInterfaceProps & {
+    workspace: ReturnType<typeof useOwnedWorkspace>;
+}) {
     return (
         <div className="flex h-full min-h-0 flex-col">
-            {workspace.authenticated && workspace.notebooks.length > 0 && (
-                <div className="flex min-h-11 items-center gap-3 border-b border-[#38302a] px-5 py-2 text-xs text-[#aa9b8c] sm:px-6">
-                    <span aria-hidden>Notebook</span>
-                    <SelectMenu label="Notebook" value={workspace.notebookId}
-                        onChange={(value) => useTextbookStore.getState().setActiveNotebookId(value)}
-                        options={workspace.notebooks.map((item) => ({ value: item.id, label: item.name }))}
-                        className="min-w-0 max-w-full" />
-                </div>
-            )}
             {!workspace.authenticated ? <SignedOutWelcome /> : workspace.error ? (
                 <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-[#b5a79a]">
                     <p>{workspace.error}</p>
                     <button type="button" onClick={workspace.retry} className="text-[#c49b75] underline underline-offset-4">Retry workspace</button>
                 </div>
             ) : !workspace.ready ? (
-                <div role="status" className="flex flex-1 items-center justify-center gap-2 text-sm text-[#b5a79a]">
-                    <LoaderCircle size={16} className="animate-spin text-[#c49b75]" /> Loading your workspace…
-                </div>
+                <ConversationSkeleton />
             ) : (
                 <NotebookChat key={`${workspace.userId}:${workspace.notebookId}`} userId={workspace.userId}
                     notebookId={workspace.notebookId} onCitationClick={onCitationClick} />
@@ -95,17 +82,14 @@ export default function ChatInterface({ onCitationClick }: ChatInterfaceProps) {
 }
 
 function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProps & { userId: string; notebookId: string }) {
-    const chat = useChat(userId, notebookId);
+    // This component only mounts inside the ready workspace session.
+    const chat = useChatSession()!;
     const { messages, isLoading, isAgentMode, sendMessage } = chat;
-    const [isUploadingImages, setIsUploadingImages] = useState(false);
-    const [composerVersion, setComposerVersion] = useState(0);
-    const { stop: stopPlayback } = useVoicePlayback();
-    useEffect(() => () => stopPlayback(), [stopPlayback]);
+    const { composerVersion, navigationBlocked, setIsUploadingImages } = chat;
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const firstMessage = useRef<string | undefined>(undefined);
     const isWelcome = messages.length === 0;
-    const navigationBlocked = isLoading || isUploadingImages || chat.isHistoryLoading;
     const inputBlocked = chat.isHistoryLoading || !!chat.historyError || chat.canRetryMessage;
 
     useEffect(() => {
@@ -118,41 +102,17 @@ function NotebookChat({ userId, notebookId, onCitationClick }: ChatInterfaceProp
         }
     }, [messages, isLoading]);
 
+    if (chat.isHistoryLoading && messages.length === 0) return <ConversationSkeleton />;
+
     return (
         <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-            <div className="flex flex-wrap items-center gap-3 border-b border-[#38302a] px-5 py-2 text-xs sm:px-6">
-                <div className="flex min-w-0 flex-1 items-center gap-3 text-[#aa9b8c]">
-                    <span aria-hidden>Chat</span>
-                    <SelectMenu label="Saved chats" value={chat.activeConversationId ?? ""} disabled={navigationBlocked}
-                        onChange={(value) => {
-                            stopPlayback();
-                            useTextbookStore.getState().setActiveCitation(null);
-                            void chat.selectConversation(value);
-                            setComposerVersion((value) => value + 1);
-                        }} options={[
-                            ...(!chat.activeConversationId ? [{ value: "", label: "Start a new chat" }] : []),
-                            ...chat.conversations.map((item) => ({ value: item.id, label: item.title })),
-                        ]} className="min-w-0 w-full max-w-lg" />
-                </div>
-                <button type="button" onClick={() => {
-                    stopPlayback();
-                    useTextbookStore.getState().setActiveCitation(null);
-                    void chat.newConversation();
-                    setComposerVersion((value) => value + 1);
-                }} disabled={navigationBlocked}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[#c49b75] transition-colors hover:bg-[#2d251e] disabled:opacity-40">
-                    <Plus size={14} /> New chat
-                </button>
-                {chat.hasMoreConversations && <button type="button" onClick={chat.loadMoreConversations}
-                    disabled={navigationBlocked} className="text-[#c49b75] disabled:opacity-40">More chats</button>}
-            </div>
             {chat.historyError && <div role="alert" className="px-5 py-3 text-xs text-[#d3ae82]">
                 {chat.historyError} <button type="button" onClick={chat.retryHistory} className="underline">Retry history</button>
             </div>}
-            {chat.isHistoryLoading && <p role="status" className="px-5 py-2 text-xs text-[#aa9b8c]">Loading saved messages…</p>}
             <div className={cn("flex min-h-0 flex-1 flex-col", isWelcome ? "overflow-y-auto px-5 py-8 sm:px-8" : "overflow-hidden")} data-lenis-prevent>
                 <div className={cn("flex min-h-0 flex-col", isWelcome ? "mx-auto my-auto w-full max-w-[820px] py-4" : "flex-1 overflow-hidden")}>
                     <div ref={scrollRef} data-lenis-prevent className={cn(isWelcome ? "shrink-0" : "min-h-0 flex-1 overflow-y-auto px-4 py-7 scroll-smooth sm:px-6")}>
+                        {chat.isHistoryLoading && !chat.isConversationListLoading && <MessageSkeleton label="Loading saved messages" />}
                         {chat.hasOlder && <button type="button" onClick={chat.loadOlder} disabled={navigationBlocked}
                             className="mx-auto mb-5 block text-xs text-[#c49b75] disabled:opacity-40">Load older messages</button>}
                         {isWelcome ? <WelcomeHeading /> : (

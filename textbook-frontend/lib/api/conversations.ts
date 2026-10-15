@@ -20,6 +20,12 @@ export function getNotebooks(signal?: AbortSignal) {
     return apiClient<Notebook[]>("/api/notebooks", { signal });
 }
 
+export function createNotebook(name: string, id: string, signal?: AbortSignal) {
+    return apiClient<Notebook>("/api/notebooks", {
+        method: "POST", body: JSON.stringify({ name, id }), signal,
+    });
+}
+
 export function getConversations(notebookId: string, signal?: AbortSignal, offset = 0) {
     return apiClient<Page<Conversation>>(`/api/conversations?notebook_id=${encodeURIComponent(notebookId)}&offset=${offset}`, { signal });
 }

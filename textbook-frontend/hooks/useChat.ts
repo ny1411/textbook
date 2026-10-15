@@ -15,6 +15,7 @@ export function useChat(userId: string, notebookId: string) {
     const [isLoading, setIsLoading] = useState(false);
     const [streamStatus, setStreamStatus] = useState<string | null>(null);
     const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+    const [isConversationListLoading, setIsConversationListLoading] = useState(true);
     const [historyError, setHistoryError] = useState<string | null>(null);
     const [isAgentMode, setIsAgentMode] = useState(false);
     const [nextBefore, setNextBefore] = useState<number | null>(null);
@@ -52,6 +53,7 @@ export function useChat(userId: string, notebookId: string) {
                 if (!abort.signal.aborted && navigation.current === version) {
                     busy.current = false;
                     setIsHistoryLoading(false);
+                    setIsConversationListLoading(false);
                 }
             }
         })();
@@ -290,6 +292,7 @@ export function useChat(userId: string, notebookId: string) {
         if (busy.current || !abort || nextOffset === null) return;
         busy.current = true;
         setIsHistoryLoading(true);
+        setIsConversationListLoading(true);
         try {
             const page = await getConversations(notebookId, abort.signal, nextOffset);
             if (abort.signal.aborted) return;
@@ -298,17 +301,17 @@ export function useChat(userId: string, notebookId: string) {
         } catch {
             if (!abort.signal.aborted) toast.error("Could not load more chats. Please retry.");
         } finally {
-            if (!abort.signal.aborted) { busy.current = false; setIsHistoryLoading(false); }
+            if (!abort.signal.aborted) { busy.current = false; setIsHistoryLoading(false); setIsConversationListLoading(false); }
         }
     }, [notebookId, nextOffset]);
 
-    return { messages, conversations, activeConversationId, isLoading, streamStatus, isHistoryLoading, historyError, isAgentMode,
+    return { messages, conversations, activeConversationId, isLoading, streamStatus, isHistoryLoading, isConversationListLoading, historyError, isAgentMode,
         sendMessage, ensureConversation, selectConversation, newConversation, loadOlder, loadMoreConversations,
         cancelMessage: () => requestController.current?.abort(),
         hasOlder: nextBefore !== null, hasMoreConversations: nextOffset !== null, canRetryMessage,
         retryHistory: () => {
             if (activeConversationId) void selectConversation(activeConversationId, true);
-            else { setIsHistoryLoading(true); setAttempt((value) => value + 1); }
+            else { setIsHistoryLoading(true); setIsConversationListLoading(true); setAttempt((value) => value + 1); }
         },
         retryMessage: () => { const draft = pending.current; if (draft) void sendMessage(draft.query, draft.mode, draft.attachments, draft.conversationId, draft.requestId); } };
 }

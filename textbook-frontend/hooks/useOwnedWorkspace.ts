@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getNotebooks, getSources, type Notebook } from "@/lib/api/conversations";
+import { createNotebook, getNotebooks, getSources, type Notebook } from "@/lib/api/conversations";
 import { useUserStore } from "@/stores/useUserStore";
 import { useTextbookStore } from "@/stores/useTextbookStore";
 import { useSourceStore } from "@/stores/useSourcesStore";
@@ -49,6 +49,19 @@ export function useOwnedWorkspace() {
     const error = state.owner === userId ? state.error : undefined;
     const sourceError = sourceState.scope === scope ? sourceState.error : undefined;
     return { userId, authenticated, notebookId, notebooks, error: error ?? sourceError,
+        sourcesLoading: authenticated && !error && sourceState.scope !== scope,
+        createNotebook: async (name: string, id: string, signal: AbortSignal) => {
+            if (!authenticated) throw new Error("Sign in to create a notebook.");
+            const notebook = await createNotebook(name, id, signal);
+            signal.throwIfAborted();
+            if (useUserStore.getState().userId !== userId || !useUserStore.getState().isAuthenticated) {
+                throw new Error("Your account changed. Please try again.");
+            }
+            setState((current) => ({ owner: userId,
+                notebooks: [...(current.owner === userId ? current.notebooks : []).filter((item) => item.id !== notebook.id), notebook] }));
+            useTextbookStore.getState().setActiveNotebookId(notebook.id);
+            return notebook;
+        },
         ready: authenticated && ownedNotebook && sourceState.scope === scope && !sourceError,
         retry: () => setAttempt((value) => value + 1) };
 }
