@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, ImagePlus, LoaderCircle, RotateCcw, Upload, X } from "lucide-react";
+import { ArrowUp, LoaderCircle, RotateCcw, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { ChatInputBorder } from "./ChatInputBorder";
@@ -65,12 +65,11 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
     const failedSourceFiles = useRef<File[]>([]);
     const busy = useRef(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const imagePickerRef = useRef<HTMLInputElement>(null);
     const userId = useUserStore((s) => s.userId);
     const addSource = useSourceStore((s) => s.addSource);
     const activeNotebookId = useTextbookStore((s) => s.activeNotebookId);
     const isUploadingSources = sourceUploadStatus === "uploading";
-    const baseBlocked = disabled || isLoading || isUploadingImages;
+    const baseBlocked = disabled || isLoading || isUploadingImages || isUploadingSources;
     const blocked = baseBlocked;
 
     function updateImages(next: PendingImage[]) {
@@ -127,6 +126,7 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
         if (!files.length || blocked || sourceUploadBusy.current) return;
         if (onRequestSignIn) { onRequestSignIn(); return; }
         sourceUploadBusy.current = true;
+        onBusyChange(true);
         setSourceUploadStatus("uploading");
         setSourceUploadProgress(files.length > 1 ? 0 : undefined);
         setAttachmentError(null);
@@ -153,6 +153,7 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
             }
         } finally {
             sourceUploadBusy.current = false;
+            onBusyChange(false);
             failedSourceFiles.current = failed;
             setSourceUploadStatus(failed.length ? "error" : "done");
             if (errors.length) setAttachmentError(errors.join(" "));
@@ -165,20 +166,27 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
         setAttachmentError(rejections.map(({ file, errors }) => `"${file.name}": ${errors.map((error) => error.message).join(", ")}`).join(" "));
     }
 
-    const { getRootProps, isDragActive } = useDropzone({
+    const { getRootProps, getInputProps, open: openFilePicker, isDragActive } = useDropzone({
         onDrop: (files) => {
-            const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-            const sourceFiles = files.filter((file) => !file.type.startsWith("image/"));
+            // Images supported by chat stay attached to the message; other files become sources.
+            const imageFiles: File[] = [];
+            const sourceFiles: File[] = [];
+            for (const file of files) {
+                const inferredType = Object.entries(CHAT_IMAGE_ACCEPT).find(([, extensions]) =>
+                    extensions.some((extension) => file.name.toLowerCase().endsWith(extension)))?.[0];
+                const type = file.type || inferredType;
+                if (type && CHAT_IMAGE_TYPES.includes(type)) {
+                    imageFiles.push(file.type ? file : new File([file], file.name, { type, lastModified: file.lastModified }));
+                } else sourceFiles.push(file);
+            }
             if (imageFiles.length) addImages(imageFiles);
             if (sourceFiles.length) void handleUploadFiles(sourceFiles);
         },
         onDropRejected,
         accept: { ...ACCEPTED_TYPES, ...CHAT_IMAGE_ACCEPT },
-        maxSize: 50 * 1024 * 1024, noClick: true, noKeyboard: true, noPaste: true, disabled: blocked || isUploadingSources,
+        maxSize: 50 * 1024 * 1024, noClick: true, noKeyboard: true, noPaste: true,
+        disabled: blocked || isUploadingSources,
     });
-    const sourcePicker = useDropzone({ onDrop: handleUploadFiles, onDropRejected,
-        accept: ACCEPTED_TYPES, maxSize: 50 * 1024 * 1024, noClick: true, noKeyboard: true, noPaste: true,
-        disabled: blocked || isUploadingSources });
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -265,9 +273,7 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
         <div className={cn("w-full shrink-0", !welcome && "px-4 pt-3 pb-4 sm:px-6")}>
             <div {...getRootProps()} className={cn("relative mx-auto flex w-full max-w-[820px] flex-col rounded-[20px] border border-[#705640] bg-[#201c18]/70 p-4 transition-colors focus-within:border-[#b08c69] sm:p-5", welcome ? "min-h-[170px]" : "min-h-[124px]")}>
                 <ChatInputBorder isActive={isLoading || isUploadingImages} isAgentMode={isAgentMode} />
-                <input {...sourcePicker.getInputProps()} />
-                <input ref={imagePickerRef} type="file" accept="image/png,image/jpeg,image/webp" multiple hidden aria-label="Choose chat images"
-                    onChange={(event) => { addImages(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
+                <input {...getInputProps({ "aria-label": "Choose files to upload" })} />
                 {isDragActive && <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-[20px] border-2 border-dashed border-[#c49b75] bg-[#201c18]/95">
                     <Upload className="size-8 text-[#c49b75]" /><p className="text-sm text-[#ddd1c2]">Drop images to attach, or documents to add sources</p>
                 </div>}
@@ -296,7 +302,7 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                     </label>
                 </div>}
                 {voiceError && <p role="alert" className="mb-2 px-2 text-xs text-[#d3ae82]">{voiceError}</p>}
-                <SmoothTextarea ref={textareaRef} data-lenis-prevent rows={1} disabled={voiceBlocked} value={input}
+                <SmoothTextarea ref={textareaRef} data-chat-input data-lenis-prevent rows={1} disabled={voiceBlocked} value={input}
                     onChange={(event) => setInput(event.target.value)} onPaste={handlePaste}
                     onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void handleSubmit(); } }}
                     aria-label="Ask a question"
@@ -305,15 +311,12 @@ export function ChatInput({ onSend, ensureConversation, onBusyChange, isLoading 
                 <div className={cn("flex items-center justify-between gap-2 pt-5", welcome ? "mt-auto" : "mt-1")}>
                     <div className={cn("flex min-w-0 items-center gap-1 sm:gap-2", voiceActive && "flex-1")}>
                         {!voiceActive && <UploadButton status={sourceUploadStatus} progress={sourceUploadProgress}
-                            label="Upload" ariaLabel="Upload sources" compact="responsive" disabled={voiceBlocked}
+                            label="Upload" ariaLabel="Upload files" compact="responsive" disabled={voiceBlocked}
                             onStart={() => {
                                 if (onRequestSignIn) onRequestSignIn();
                                 else if (sourceUploadStatus === "error" && failedSourceFiles.current.length) void handleUploadFiles(failedSourceFiles.current);
-                                else sourcePicker.open();
+                                else openFilePicker();
                             }} onReset={resetSourceUpload} />}
-                        {!voiceActive && <button type="button" onClick={() => { if (onRequestSignIn) onRequestSignIn(); else imagePickerRef.current?.click(); }} disabled={voiceBlocked || images.length >= MAX_CHAT_IMAGES}
-                            aria-label="Attach images" title="Attach up to 4 images (PNG, JPEG, WebP), 10 MB each"
-                            className="rounded-lg p-1.5 text-[#c7b5a3] transition-colors hover:bg-[#38302a] hover:text-[#eee5d8] disabled:opacity-40 sm:p-2"><ImagePlus size={21} strokeWidth={1.5} /></button>}
                         <VoiceInput state={voiceStatus === "stopping" ? "processing" : voiceStatus === "error" ? "idle" : voiceStatus}
                             elapsed={voiceElapsed} waveformRef={waveformRef} disabled={baseBlocked}
                             onConfirm={stopVoice} onCancel={cancelVoice}

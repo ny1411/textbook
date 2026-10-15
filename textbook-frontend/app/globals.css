@@ -66,6 +66,20 @@ button:not(:disabled), summary, select:not(:disabled) {
   outline-offset: 4px;
 }
 
+/* Suppress the outline only while a control is being pressed. */
+:is(button, a, input, textarea, select, [tabindex]):active {
+  outline: none;
+}
+
+/* The rounded composer frame already indicates focus for this text field. */
+textarea[data-chat-input]:focus-visible {
+  outline: none;
+}
+
+input[data-notebook-name]:focus-visible {
+  outline: none;
+}
+
 ::selection {
   background: #c49b7538;
   color: #f5eee5;
