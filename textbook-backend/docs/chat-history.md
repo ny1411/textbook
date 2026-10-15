@@ -27,9 +27,12 @@ Do this before deploying the new backend:
    reviewed upgrade `prisma/changes/issue-19-history.sql` against a staging copy,
    and apply it once in the intended schema. It runs in one transaction and
    fails if already applied. It preserves existing messages and source rows.
-3. For an empty database, create a reviewed baseline from the **full current**
-   Prisma schema using the normal Prisma migration tooling. Do not apply the
-   upgrade afterward: its columns/indexes already exist in that baseline.
+3. For an empty database, review `prisma/baseline.sql` (generated from the **full
+   current** Prisma schema) and `prisma/baseline-security.sql`, then run
+   `python scripts/init_database.py --apply` from the backend directory. The
+   initializer requires an empty application schema and applies the baseline
+   plus backend-only RLS/access protections in one transaction. Do not apply the
+   upgrades afterward: their columns/indexes already exist in that baseline.
    `verification/issue-19/baseline.sql` is only a test fixture subset, not a
    deployment baseline.
 4. Verify a real Supabase login, upload, Fast reply, Agent reply, browser reload,
@@ -91,6 +94,12 @@ retries. It returns `{id, name}` with status 201. The selector's **Create notebo
 action opens a naming dialog and selects the saved notebook. Conversations retain
 their required `notebookId` foreign key; messages remain linked through
 `conversationId`. No schema migration is needed for notebook creation.
+
+The composer's single **Upload** picker accepts the upload API's document, code,
+image, and audio formats. PNG/JPEG/WebP images become message attachments; other
+files become sources in the selected notebook. Existing image limits (four images,
+10 MiB each) and document limits (50 MiB each) still apply. File selection support
+does not change the backend's existing extraction/ingestion behavior.
 
 Uploads store `uploaded_documents` metadata before returning, using the same
 UUID as Qdrant ingestion and status polling. Background ingestion updates its
